@@ -781,7 +781,7 @@
             return <VisaoResumo titulo={tituloDaVisao} dados={dadosParaExibicao} onVoltarClick={handleVoltar} filtro={filtroTexto} onFiltroChange={e => setFiltroTexto(e.target.value)} />;
           case 'boasVindas':
           default:
-            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar, ou veja o resumo geral.</p></div>;
+            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione uma unidade para começar, ou veja o resumo geral.</p></div>;
         }
       };
 
@@ -804,7 +804,7 @@
 
             <div className="p-4 bg-gray-50 rounded-lg border mb-8 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-grow w-full md:w-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Selecione a sigla</label>
                     <select onChange={handleServicoChange} value={servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base">
                         <option value="">Selecione...</option>
                         <option value="creas">CREAS</option>
