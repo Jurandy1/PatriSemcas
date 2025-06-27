@@ -75,67 +75,273 @@
         );
     }
     
-    // --- COMPONENTE PRINCIPAL DA APLICAÇÃO ---
-    function App() {
-      const [visaoAtiva, setVisaoAtiva] = useState('boasVindas');
-      const [isLoading, setIsLoading] = useState(false);
-      const [dadosExibidos, setDadosExibidos] = useState([]);
-      const [tituloDaVisao, setTituloDaVisao] = useState('Bem-vindo!');
-      const [servicoSelecionado, setServicoSelecionado] = useState('');
-      const [unidadeSelecionada, setUnidadeSelecionada] = useState('');
-      const [cardData, setCardData] = useState({ totalItems: '...', totalAtencao: '...', totalDoacao: '...' });
-      const [chartConfig, setChartConfig] = useState(null);
-      const [chartConfigResumo2, setChartConfigResumo2] = useState(null);
+    function VisaoUnidade({ titulo, dados }) {
+      const chartConfig = GerarConfigGraficoEstado(dados);
+      const totalDoacoes = dados.filter(item => item.donation === 'Sim').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+      const relatorioTexto = GerarRelatorioUnidade(dados);
 
-      useEffect(() => {
-        fetch('./dados/resumo_cards.js')
-          .then(res => res.json())
-          .then(data => setCardData(data))
-          .catch(error => console.error("Erro ao carregar dados dos cards:", error));
-      }, []);
-      
-      useEffect(() => {
-        if (!dadosExibidos || dadosExibidos.length === 0) {
-          setChartConfig(null);
-          setChartConfigResumo2(null);
-          return;
-        }
-        const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
-        const stateColors = ['#16A34A', '#3B82F6', '#FBBF24', '#EF4444'];
-        
-        const stateCounts = dadosExibidos.reduce((acc, item) => {
-            acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity);
+      return (
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">{titulo}</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              <Grafico config={chartConfig} />
+              <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200 text-center">
+                <h3 className="text-lg font-semibold text-purple-800">Itens de Doação</h3>
+                <p className="text-3xl font-bold text-purple-700 mt-2">{totalDoacoes}</p>
+              </div>
+            </div>
+            <div className="lg:col-span-3 bg-white p-6 rounded-lg shadow-md border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3>
+              <div className="text-gray-600 space-y-2" dangerouslySetInnerHTML={{ __html: relatorioTexto }}></div>
+            </div>
+          </div>
+          <TabelaDeItens items={dados} />
+        </div>
+      );
+    }
+    
+    function VisaoResumo({ titulo, dados, onVoltarClick }) {
+        const configGraficoEstado = GerarConfigGraficoEstado(dados, 'Total de Itens por Estado');
+        const configGraficoUnidade = GerarConfigGraficoUnidade(dados);
+        return (
+            <div>
+                <div className="flex justify-between items-start">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6">{titulo}</h2>
+                    <button 
+                        onClick={onVoltarClick} 
+                        className="mb-6 px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                        &larr; Voltar à Seleção
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Grafico config={configGraficoEstado} />
+                    <Grafico config={configGraficoUnidade} />
+                </div>
+                <TabelaDeItens items={dados} />
+            </div>
+        );
+    }
+    
+    // --- FUNÇÕES HELPER PARA GERAR CONFIGURAÇÕES E RELATÓRIOS ---
+    function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
+        if (!dados || dados.length === 0) return null;
+        const stateCounts = dados.reduce((acc, item) => {
+            acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
             return acc;
         }, {});
-        setChartConfig({
+        const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
+        const stateColors = ['#16A34A', '#3B82F6', '#FBBF24', '#EF4444'];
+        return {
             type: 'bar',
             data: {
                 labels: stateOrder,
                 datasets: [{ label: 'Quantidade', data: stateOrder.map(state => stateCounts[state] || 0), backgroundColor: stateColors }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: 'Itens por Estado de Conservação', font: { size: 16 } } } }
-        });
-        
-        if (visaoAtiva === 'resumo') {
-            const unitCounts = dadosExibidos.reduce((acc, item) => {
-                const unitName = item.unit_condition.split(' - ')[0];
-                acc[unitName] = (acc[unitName] || 0) + parseInt(item.quantity);
-                return acc;
-            }, {});
-            setChartConfigResumo2({
-                type: 'pie',
-                data: {
-                    labels: Object.keys(unitCounts),
-                    datasets: [{ data: Object.values(unitCounts), backgroundColor: ['#34D399', '#3B82F6', '#FBBF24', '#EF4444', '#A855F7', '#F97316', '#14B8A6', '#6366F1', '#F59E0B', '#D946EF'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Distribuição de Itens por Unidade', font: { size: 16 } } } }
-            });
-        }
-      }, [dadosExibidos, visaoAtiva]);
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, title: { display: true, text: titulo, font: { size: 16 } } } }
+        };
+    }
 
-      // ==================================================================
-      // LISTA DE UNIDADES ATUALIZADA
-      // ==================================================================
+    function GerarConfigGraficoUnidade(dados) {
+        if (!dados || dados.length === 0) return null;
+        const unitCounts = dados.reduce((acc, item) => {
+            const unitName = item.unit_condition.split(' - ')[0];
+            acc[unitName] = (acc[unitName] || 0) + parseInt(item.quantity, 10);
+            return acc;
+        }, {});
+        return {
+            type: 'pie',
+            data: {
+                labels: Object.keys(unitCounts),
+                datasets: [{ data: Object.values(unitCounts), backgroundColor: ['#34D399', '#3B82F6', '#FBBF24', '#EF4444', '#A855F7', '#F97316', '#14B8A6', '#6366F1', '#F59E0B', '#D946EF'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Distribuição de Itens por Unidade', font: { size: 16 } } } }
+        };
+    }
+    
+    function GerarRelatorioUnidade(dados) {
+        if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
+        const stateCounts = dados.reduce((acc, item) => {
+            acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
+            return acc;
+        }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
+        
+        const totalUnitItems = Object.values(stateCounts).reduce((sum, count) => sum + count, 0);
+        let reportLines = [];
+        reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens.`);
+        reportLines.push(`A situação geral é: <strong>${stateCounts.Novo}</strong> novos, <strong>${stateCounts.Bom}</strong> bons, <strong>${stateCounts.Regular}</strong> regulares e <strong>${stateCounts.Avariado}</strong> avariados.`);
+
+        const avariados = dados.filter(item => item.state === 'Avariado');
+        if (avariados.length > 0) {
+            reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${avariados.length} tipos de itens avariados, necessitando de manutenção ou substituição:`);
+            const listaAvariados = avariados.map(item => `<li>${item.quantity}x ${item.description}</li>`).join('');
+            reportLines.push(`<ul>${listaAvariados}</ul>`);
+        } else {
+            reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado registado. A unidade está em boas condições operacionais.`);
+        }
+        return reportLines.join('<br>');
+    }
+    
+    // --- COMPONENTE PRINCIPAL DA APLICAÇÃO ---
+    function App() {
+      const [visaoAtiva, setVisaoAtiva] = useState('boasVindas');
+      const [dadosExibidos, setDadosExibidos] = useState([]);
+      const [tituloDaVisao, setTituloDaVisao] = useState('Bem-vindo!');
+      const [servicoSelecionado, setServicoSelecionado] = useState('');
+      const [unidadeSelecionada, setUnidadeSelecionada] = useState('');
+      
+      const cardData = { totalItems: 328, totalAtencao: 43, totalDoacao: 22 };
+      
+      const creasData = [
+          { "id": "cre_1", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_2", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_3", "description": "Ar-Condicionado Electrolux 18.000 BTU", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_4", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_5", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_6", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_7", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_8", "description": "Ar-Condicionado Consul 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_9", "description": "Ar-Condicionado HQ 9.000 BTU", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_10", "description": "Ar-Condicionado HQ 9.000 BTU", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_11", "description": "Ar-Condicionado Philco 18.000 BTU", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_12", "description": "Ar-Condicionado Agratto 12.000 BTU", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_13", "description": "Armário em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_14", "description": "Armário em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_15", "description": "Armário em Aço", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_16", "description": "Armário em Aço", "unit_condition": "Centro", "quantity": 2, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_17", "description": "Armário em Aço", "unit_condition": "Sol e Mar", "quantity": 8, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_18", "description": "Armário em Aço", "unit_condition": "Cidade Operária", "quantity": 7, "state": "Bom", "donation": "Não" },
+          { "id": "cre_19", "description": "Armário em MDF", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_20", "description": "Armário em MDF", "unit_condition": "Centro", "quantity": 1, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_21", "description": "Armário em MDF", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_22", "description": "Arquivo em Aço", "unit_condition": "Bacanga", "quantity": 3, "state": "Bom", "donation": "Não" },
+          { "id": "cre_23", "description": "Arquivo em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_24", "description": "Arquivo em Aço", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não" },
+          { "id": "cre_25", "description": "Arquivo em Aço", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_26", "description": "Bebedouro de Coluna", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_27", "description": "Bebedouro de Coluna Esmaltec", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_28", "description": "Bebedouro de Coluna Esmaltec", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_29", "description": "Cadeira de Plástico", "unit_condition": "Bacanga", "quantity": 24, "state": "Bom", "donation": "Não" },
+          { "id": "cre_30", "description": "Cadeira de Plástico", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não" },
+          { "id": "cre_31", "description": "Cadeira de Plástico", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_32", "description": "Cadeira de Plástico Branca", "unit_condition": "Bacanga", "quantity": 32, "state": "Bom", "donation": "Não" },
+          { "id": "cre_33", "description": "Cadeira de Plástico Branca", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não" },
+          { "id": "cre_34", "description": "Cadeira de Plástico Branca", "unit_condition": "Sol e Mar", "quantity": 8, "state": "Bom", "donation": "Não" },
+          { "id": "cre_35", "description": "Cadeira de Plástico Branca", "unit_condition": "Cidade Operária", "quantity": 8, "state": "Bom", "donation": "Não" },
+          { "id": "cre_36", "description": "Cadeira de Plástico Verde", "unit_condition": "Bacanga", "quantity": 16, "state": "Bom", "donation": "Não" },
+          { "id": "cre_37", "description": "Cadeira de Plástico Verde (Atendimento)", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_38", "description": "Cadeira de Plástico Verde (Usuário)", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_39", "description": "Cadeira de Plástico Infantil", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_40", "description": "Cadeira de Plástico Infantil", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não" },
+          { "id": "cre_41", "description": "Cadeira de Plástico Infantil", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_42", "description": "Cadeira de Plástico Infantil", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_43", "description": "Cadeira Palito", "unit_condition": "Bacanga", "quantity": 3, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_44", "description": "Cadeira Palito", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Não" },
+          { "id": "cre_45", "description": "Cadeira Palito", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não" },
+          { "id": "cre_46", "description": "Cadeira Palito", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não" },
+          { "id": "cre_47", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_48", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_49", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_50", "description": "Cadeira de Palhinha", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_51", "description": "Cadeira em Polímero Azul", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_52", "description": "Cadeira em Polímero Azul", "unit_condition": "Centro", "quantity": 3, "state": "Regular", "donation": "Sim" },
+          { "id": "cre_53", "description": "Cadeira em Polímero Azul", "unit_condition": "Sol e Mar", "quantity": 38, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_54", "description": "Cadeira em Polímero Preta", "unit_condition": "Sol e Mar", "quantity": 15, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_55", "description": "Cadeira Giratória Azul", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_56", "description": "Cadeira Giratória Azul", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_57", "description": "Cadeira Giratória Azul", "unit_condition": "Cidade Operária", "quantity": 6, "state": "Bom", "donation": "Não" },
+          { "id": "cre_58", "description": "Cadeira Giratória Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_59", "description": "Cadeira Tipo Presidente Preta", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_60", "description": "Cadeira Presidente", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_61", "description": "Cadeira", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_62", "description": "Longarina Preta 3 Lugares", "unit_condition": "Sol e Mar", "quantity": 4, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_63", "description": "Longarina 5 Lugares", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Novo", "donation": "Não" },
+          { "id": "cre_64", "description": "Longarina 3 Lugares Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_65", "description": "Longarina 3 Lugares Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Regular", "donation": "Não" },
+          { "id": "cre_66", "description": "Computador Positivo", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_67", "description": "CPU Positivo Completo", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_68", "description": "Estante em Aço", "unit_condition": "Bacanga", "quantity": 4, "state": "Regular", "donation": "Não" },
+          { "id": "cre_69", "description": "Estante em Aço", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Não" },
+          { "id": "cre_70", "description": "Estante em Aço", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_71", "description": "Estante em Aço", "unit_condition": "Cidade Operária", "quantity": 5, "state": "Bom", "donation": "Não" },
+          { "id": "cre_72", "description": "Fogão 4 Bocas", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_73", "description": "Fogão 4 Bocas", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_74", "description": "Fogão 4 Bocas", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_75", "description": "Fogão 4 Bocas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_76", "description": "Geladeira Esmaltec", "unit_condition": "Bacanga", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_77", "description": "Geladeira Esmaltec", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_78", "description": "Geladeira Esmaltec", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_79", "description": "Geladeira Esmaltec", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_80", "description": "Frigobar", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_81", "description": "Impressora OfficeJet Pro 8600", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_82", "description": "Impressora Brother HL1202", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_83", "description": "Mesa para Escritório", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_84", "description": "Mesa para Escritório", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_85", "description": "Mesa para Escritório", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_86", "description": "Mesa para Escritório", "unit_condition": "Sol e Mar", "quantity": 3, "state": "Novo", "donation": "Não" },
+          { "id": "cre_87", "description": "Mesa para Escritório", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_88", "description": "Mesa para Escritório", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Novo", "donation": "Não" },
+          { "id": "cre_89", "description": "Mesa para Escritório", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_90", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Bacanga", "quantity": 5, "state": "Bom", "donation": "Não" },
+          { "id": "cre_91", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_92", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_93", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_94", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não" },
+          { "id": "cre_95", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_96", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Sol e Mar", "quantity": 3, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_97", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_98", "description": "Mesa para Escritório com 2 Gavetas (Atendimento)", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Sim" },
+          { "id": "cre_99", "description": "Mesa para Escritório com 3 Gavetas", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_100", "description": "Mesa para Escritório com 3 Gavetas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_101", "description": "Mesa para Digitador", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Bom", "donation": "Não" },
+          { "id": "cre_102", "description": "Mesa de Plástico", "unit_condition": "Centro", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_103", "description": "Mesa de Plástico", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_104", "description": "Mesa de Plástico Branca", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_105", "description": "Mesa de Plástico Branca", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_106", "description": "Mesa de Plástico Branca", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não" },
+          { "id": "cre_107", "description": "Mesa de Plástico Infantil", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_108", "description": "Mesa de Plástico Infantil", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não" },
+          { "id": "cre_109", "description": "Mesa de Plástico Infantil", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_110", "description": "Mesa de Plástico Infantil", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não" },
+          { "id": "cre_111", "description": "Mesa em L", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_112", "description": "Mesa em L", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não" },
+          { "id": "cre_113", "description": "Mesa para Computador", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_114", "description": "Mesa Redonda", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_115", "description": "Mesa Redonda", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_116", "description": "Mesa Redonda (Atendimento)", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não" },
+          { "id": "cre_117", "description": "Mesa para Reunião", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Sim" },
+          { "id": "cre_118", "description": "Mesa Tipo Reunião", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Regular", "donation": "Não" },
+          { "id": "cre_119", "description": "Ponto Eletrônico", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_120", "description": "Ponto Eletrônico", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_121", "description": "Televisão HQ", "unit_condition": "Bacanga", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_122", "description": "Televisão HQ", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_123", "description": "Televisão HQ", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_124", "description": "Televisão HQ", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_125", "description": "Totem", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_126", "description": "Ventilador de Coluna", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_127", "description": "Ventilador de Parede", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não" },
+          { "id": "cre_128", "description": "Ventilador de Parede", "unit_condition": "Centro", "quantity": 3, "state": "Novo", "donation": "Não" },
+          { "id": "cre_129", "description": "Ventilador de Parede", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_130", "description": "Rack", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_131", "description": "Switch", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não" },
+          { "id": "cre_132", "description": "Quadro Branco", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não" },
+          { "id": "cre_133", "description": "Nobreak", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Sim" }
+      ];
+      const conselhoData = [
+          {"id":"ct_1","description":"Mesa de Reunião Grande","unit_condition":"ANIL / Bequimão","quantity":1,"state":"Novo","donation":"Não"},
+          {"id":"ct_2","description":"Cadeira Giratória Executiva","unit_condition":"ANIL / Bequimão","quantity":8,"state":"Bom","donation":"Não"},
+          {"id":"ct_3","description":"Bebedouro Industrial","unit_condition":"Vila Luizão / Turu","quantity":2,"state":"Bom","donation":"Não"},
+          {"id":"ct_4","description":"Armário de Arquivo","unit_condition":"Vila Luizão / Turu","quantity":10,"state":"Regular","donation":"Sim"},
+          {"id":"ct_5","description":"Computador Dell","unit_condition":"São Francisco / Cohama","quantity":6,"state":"Bom","donation":"Não"},
+          {"id":"ct_6","description":"Impressora Multifuncional HP","unit_condition":"São Francisco / Cohama","quantity":2,"state":"Avariado","donation":"Não"}
+      ];
+      
+      const allDataSources = {
+        creas: creasData,
+        conselho: conselhoData
+      };
+      
       const unidadesPorServico = {
         creas: [ 
             { id: 'Bacanga', nome: 'CREAS Bacanga' }, 
@@ -144,52 +350,29 @@
             { id: 'Sol e Mar', nome: 'CREAS Sol e Mar' }
         ],
         conselho: [ 
-            { id: 'ANIL', nome: 'CT ANIL' }, 
-            { id: 'BACANGA', nome: 'CT BACANGA' }, 
-            { id: 'CENTRO/ALEAMANHA', nome: 'CT CENTRO/ALEAMANHA' },
-            { id: 'CIDADE OPERARIA', nome: 'CT CIDADE OPERARIA' },
-            { id: 'COHAB', nome: 'CT COHAB' },
-            { id: 'COROADINHO', nome: 'CT COROADINHO' },
-            { id: 'CT ZONA RURAL', nome: 'CT ZONA RURAL' },
-            { id: 'SÃO CRISTOVAO', nome: 'CT SÃO CRISTOVAO' },
-            { id: 'SÃO FRANCISCO', nome: 'CT SÃO FRANCISCO' },
-            { id: 'VILA LUIZAO', nome: 'CT VILA LUIZAO' },
+            { id: 'Anil / Bequimão', nome: 'CT Anil / Bequimão' },
+            { id: 'Bacanga / Itaqui-Bacanga', nome: 'CT Bacanga / Itaqui-Bacanga' },
+            { id: 'Centro / Alemanha', nome: 'CT Centro / Alemanha' },
+            { id: 'Cidade Operária / Cidade Olímpica', nome: 'CT Cidade Operária / Cidade Olímpica' },
+            { id: 'Cohab / Cohatrac', nome: 'CT Cohab / Cohatrac' },
+            { id: 'Coroadinho / João Paulo', nome: 'CT Coroadinho / João Paulo' },
+            { id: 'São Cristóvão / São Raimundo', nome: 'CT São Cristóvão / São Raimundo' },
+            { id: 'São Francisco / Cohama', nome: 'CT São Francisco / Cohama' },
+            { id: 'Vila Luizão / Turu', nome: 'CT Vila Luizão / Turu' },
+            { id: 'Zona Rural', nome: 'CT Zona Rural' },
         ]
       };
       
-      const arquivosDeDados = {
-        creas: './dados/creas_data.js',
-        conselho: './dados/conselho_data.js'
-      };
-
-      const fetchData = (url, processData) => {
-        setIsLoading(true);
-        setVisaoAtiva('carregando');
-        fetch(url)
-          .then(res => res.ok ? res.json() : Promise.reject(`Erro: ${res.statusText}`))
-          .then(data => {
-            processData(data);
-          })
-          .catch(error => {
-            console.error("Falha ao buscar dados:", error);
-            alert("Não foi possível carregar os dados. Verifique se o arquivo existe e o caminho está correto.");
-            setVisaoAtiva('boasVindas');
-          })
-          .finally(() => setIsLoading(false));
-      };
-
       const handleUnidadeChange = (e) => {
         const novaUnidade = e.target.value;
         setUnidadeSelecionada(novaUnidade);
         if (novaUnidade) {
-            setTituloDaVisao(`Carregando: ${novaUnidade}...`);
-            fetchData(arquivosDeDados[servicoSelecionado], allData => {
-                const itensDaUnidade = allData.filter(item => item.unit_condition.startsWith(novaUnidade));
-                setDadosExibidos(itensDaUnidade);
-                setVisaoAtiva('unidade');
-                const unidadeInfo = unidadesPorServico[servicoSelecionado].find(u => u.id === novaUnidade);
-                setTituloDaVisao(`Inventário de ${unidadeInfo.nome}`);
-            });
+            const allItemsForService = allDataSources[servicoSelecionado];
+            const itensDaUnidade = allItemsForService.filter(item => item.unit_condition === novaUnidade);
+            setDadosExibidos(itensDaUnidade);
+            setVisaoAtiva('unidade');
+            const unidadeInfo = unidadesPorServico[servicoSelecionado].find(u => u.id === novaUnidade);
+            setTituloDaVisao(`Inventário de ${unidadeInfo.nome}`);
         } else {
             setVisaoAtiva('boasVindas');
             setTituloDaVisao('Bem-vindo!');
@@ -198,36 +381,43 @@
       };
       
       const handleResumoClick = () => {
-        setTituloDaVisao('Carregando Resumo Geral...');
-        setIsLoading(true);
-        setVisaoAtiva('carregando');
-        Promise.all([
-          fetch(arquivosDeDados.creas).then(res => res.json()),
-          fetch(arquivosDeDados.conselho).then(res => res.json())
-        ])
-          .then(dataArrays => {
-            const allItems = [].concat(...dataArrays);
-            setDadosExibidos(allItems);
-            setTituloDaVisao('Resumo Geral do Inventário');
-            setVisaoAtiva('resumo');
-          })
-          .catch(error => {
-            console.error("Erro ao carregar resumo:", error);
-            setVisaoAtiva('boasVindas');
-          })
-          .finally(() => setIsLoading(false));
+        const allItems = Object.values(allDataSources).flat();
+        setDadosExibidos(allItems);
+        setTituloDaVisao('Resumo Geral do Inventário');
+        setVisaoAtiva('resumo');
+      };
+      
+      const handleVoltar = () => {
+          setVisaoAtiva('boasVindas');
+          setTituloDaVisao('Bem-vindo!');
+          setDadosExibidos([]);
+          setServicoSelecionado('');
+          setUnidadeSelecionada('');
+      };
+      
+      const renderizarVisao = () => {
+        switch(visaoAtiva) {
+          case 'unidade':
+            return <VisaoUnidade titulo={tituloDaVisao} dados={dadosExibidos} />;
+          case 'resumo':
+            return <VisaoResumo titulo={tituloDaVisao} dados={dadosExibidos} onVoltarClick={handleVoltar} />;
+          case 'boasVindas':
+          default:
+            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar.</p></div>;
+        }
       };
 
       return (
         <div>
-          {/* ================================================================== */}
-          {/* BANNER CORRIGIDO - Colocado aqui no topo para garantir a visibilidade */}
-          {/* ================================================================== */}
           <img 
             src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" 
             alt="Banner do Painel de Inventário" 
-            className="w-full max-w-2xl mx-auto h-auto object-contain rounded-lg mb-6"
+            className="w-full max-w-2xl mx-auto h-auto object-contain rounded-lg mb-4"
           />
+          <div className="text-center mb-6">
+              <h1 className="text-xl font-bold text-gray-800">Jurandy</h1>
+              <p className="text-md text-gray-600">Auxiliar Administrativo</p>
+          </div>
           
           <div className="bg-white rounded-lg shadow-xl p-4 md:p-6 lg:p-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
@@ -260,18 +450,7 @@
             </div>
 
             <main className="mt-8">
-              <h2 className="text-3xl font-bold text-gray-800 mb-6">{tituloDaVisao}</h2>
-              {isLoading && <div className="text-center p-20"><p className="text-2xl font-semibold text-blue-600 animate-pulse">A carregar...</p></div>}
-              {!isLoading && visaoAtiva === 'boasVindas' && <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar.</p></div>}
-              {!isLoading && (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') && (
-                <div>
-                  <div className={`grid grid-cols-1 ${visaoAtiva === 'resumo' ? 'lg:grid-cols-2' : ''} gap-6`}>
-                    <Grafico config={chartConfig} />
-                    {visaoAtiva === 'resumo' && <Grafico config={chartConfigResumo2} />}
-                  </div>
-                  <TabelaDeItens items={dadosExibidos} />
-                </div>
-              )}
+              {renderizarVisao()}
             </main>
           </div>
         </div>
