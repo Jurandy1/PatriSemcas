@@ -3,873 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Inventário CREAS</title>
+  <title>Painel de Inventário Dinâmico</title>
+  
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Estilo adicional para o relatório para garantir negrito e quebras de linha */
-    .report-content strong {
-        font-weight: bold;
-    }
-    /* Estilo para garantir que o canvas não ocupe altura excessiva se o gráfico for pequeno */
-    canvas {
-      max-height: 250px; /* Limita a altura do canvas para que o relatório não fique muito longe */
-      width: 100% !important; /* Garante que o canvas ocupe a largura total disponível */
-      height: auto !important; /* Permite que a altura se ajuste automaticamente */
-    }
-  </style>
 </head>
 <body class="bg-gray-100 font-sans">
-  <div id="root" class="container mx-auto p-0"></div>
+
+  <div id="root" class="container mx-auto p-4"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect } = React;
 
-    const initialItems = [
-      {"id":"1","description":"Ar-Condicionado Elbrus 12.000 BTU","unit_condition":"Bacanga","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"2","description":"Ar-Condicionado Elbrus 12.000 BTU","unit_condition":"Sol e Mar - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"3","description":"Ar-Condicionado Electrolux 18.000 BTU","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"4","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"5","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"6","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"7","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"8","description":"Ar-Condicionado Consul 12.000 BTU","unit_condition":"Sol e Mar","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"9","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Sol e Mar","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"10","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"11","description":"Ar-Condicionado Philco 18.000 BTU","unit_condition":"Cidade Operária","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"12","description":"Ar-Condicionado Agratto 12.000 BTU","unit_condition":"Cidade Operária","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"13","description":"Armário em Aço","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Sim"},
-      {"id":"14","description":"Armário em Aço","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"15","description":"Armário em Aço","unit_condition":"Centro","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"16","description":"Armário em Aço","unit_condition":"Centro - Avariados","quantity":2,"state":"Avariado","donation":"Não"},
-      {"id":"17","description":"Armário em Aço","unit_condition":"Sol e Mar","quantity":8,"state":"Bom","donation":"Sim"},
-      {"id":"18","description":"Armário em Aço","unit_condition":"Cidade Operária","quantity":7,"state":"Bom","donation":"Não"},
-      {"id":"19","description":"Armário em MDF","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Sim"},
-      {"id":"20","description":"Armário em MDF","unit_condition":"Centro","quantity":1,"state":"Bom","donation":"Sim"},
-      {"id":"21","description":"Armário em MDF","unit_condition":"Sol e Mar","quantity":2,"state":"Bom","donation":"Sim"},
-      {"id":"22","description":"Arquivo em Aço","unit_condition":"Bacanga","quantity":3,"state":"Bom","donation":"Não"},
-      {"id":"23","description":"Arquivo em Aço","unit_condition":"Bacanga - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"24","description":"Arquivo em Aço","unit_condition":"Centro","quantity":6,"state":"Bom","donation":"Não"},
-      {"id":"25","description":"Arquivo em Aço","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"26","description":"Bebedouro de Coluna","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"27","description":"Bebedouro de Coluna Esmaltec","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"28","description":"Bebedouro de Coluna Esmaltec","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"29","description":"Cadeira de Plástico","unit_condition":"Bacanga","quantity":24,"state":"Bom","donation":"Não"},
-      {"id":"30","description":"Cadeira de Plástico","unit_condition":"Centro","quantity":6,"state":"Bom","donation":"Não"},
-      {"id":"31","description":"Cadeira de Plástico","unit_condition":"Cidade Operária","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"32","description":"Cadeira de Plástico Branca","unit_condition":"Bacanga","quantity":32,"state":"Bom","donation":"Não"},
-      {"id":"33","description":"Cadeira de Plástico Branca","unit_condition":"Centro","quantity":6,"state":"Bom","donation":"Não"},
-      {"id":"34","description":"Cadeira de Plástico Branca","unit_condition":"Sol e Mar","quantity":8,"state":"Bom","donation":"Não"},
-      {"id":"35","description":"Cadeira de Plástico Branca","unit_condition":"Cidade Operária","quantity":8,"state":"Bom","donation":"Não"},
-      {"id":"36","description":"Cadeira de Plástico Verde","unit_condition":"Bacanga","quantity":16,"state":"Bom","donation":"Não"},
-      {"id":"37","description":"Cadeira de Plástico Verde (Atendimento)","unit_condition":"Bacanga","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"38","description":"Cadeira de Plástico Verde (Usuário)","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"39","description":"Cadeira de Plástico Infantil","unit_condition":"Bacanga","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"40","description":"Cadeira de Plástico Infantil","unit_condition":"Centro","quantity":6,"state":"Bom","donation":"Não"},
-      {"id":"41","description":"Cadeira de Plástico Infantil","unit_condition":"Sol e Mar","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"42","description":"Cadeira de Plástico Infantil","unit_condition":"Cidade Operária","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"43","description":"Cadeira Palito","unit_condition":"Bacanga","quantity":3,"state":"Bom","donation":"Sim"},
-      {"id":"44","description":"Cadeira Palito","unit_condition":"Centro","quantity":2,"state":"Regular","donation":"Não"},
-      {"id":"45","description":"Cadeira Palito","unit_condition":"Centro","quantity":3,"state":"Bom","donation":"Não"},
-      {"id":"46","description":"Cadeira Palito","unit_condition":"Cidade Operária","quantity":4,"state":"Bom","donation":"Não"},
-      {"id":"47","description":"Cadeira Palito Preta","unit_condition":"Centro","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"48","description":"Cadeira Palito Preta","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"49","description":"Cadeira Palito Preta","unit_condition":"Centro","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"50","description":"Cadeira de Palhinha","unit_condition":"Cidade Operária","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"51","description":"Cadeira em Polímero Azul","unit_condition":"Centro","quantity":3,"state":"Bom","donation":"Sim"},
-      {"id":"52","description":"Cadeira em Polímero Azul","unit_condition":"Centro","quantity":3,"state":"Regular","donation":"Sim"},
-      {"id":"53","description":"Cadeira em Polímero Azul","unit_condition":"Sol e Mar","quantity":38,"state":"Bom","donation":"Sim"},
-      {"id":"54","description":"Cadeira em Polímero Preta","unit_condition":"Sol e Mar","quantity":15,"state":"Bom","donation":"Sim"},
-      {"id":"55","description":"Cadeira Giratória Azul","unit_condition":"Centro","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"56","description":"Cadeira Giratória Azul","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"57","description":"Cadeira Giratória Azul","unit_condition":"Cidade Operária","quantity":6,"state":"Bom","donation":"Não"},
-      {"id":"58","description":"Cadeira Giratória Azul","unit_condition":"Cidade Operária - Avariados","quantity":2,"state":"Avariado","donation":"Não"},
-      {"id":"59","description":"Cadeira Tipo Presidente Preta","unit_condition":"Bacanga","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"60","description":"Cadeira Presidente","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"61","description":"Cadeira","unit_condition":"Cidade Operária - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"62","description":"Longarina Preta 3 Lugares","unit_condition":"Sol e Mar","quantity":4,"state":"Bom","donation":"Sim"},
-      {"id":"63","description":"Longarina 5 Lugares","unit_condition":"Cidade Operária","quantity":3,"state":"Novo","donation":"Não"},
-      {"id":"64","description":"Longarina 3 Lugares Azul","unit_condition":"Cidade Operária","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"65","description":"Longarina 3 Lugares Azul","unit_condition":"Cidade Operária","quantity":2,"state":"Regular","donation":"Não"},
-      {"id":"66","description":"Computador Positivo","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"67","description":"CPU Positivo Completo","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"68","description":"Estante em Aço","unit_condition":"Bacanga","quantity":4,"state":"Regular","donation":"Não"},
-      {"id":"69","description":"Estante em Aço","unit_condition":"Centro","quantity":2,"state":"Regular","donation":"Não"},
-      {"id":"70","description":"Estante em Aço","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"71","description":"Estante em Aço","unit_condition":"Cidade Operária","quantity":5,"state":"Bom","donation":"Não"},
-      {"id":"72","description":"Fogão 4 Bocas","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"73","description":"Fogão 4 Bocas","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"74","description":"Fogão 4 Bocas","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"75","description":"Fogão 4 Bocas","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"76","description":"Geladeira Esmaltec","unit_condition":"Bacanga","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"77","description":"Geladeira Esmaltec","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"78","description":"Geladeira Esmaltec","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"79","description":"Geladeira Esmaltec","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"80","description":"Frigobar","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"81","description":"Impressora OfficeJet Pro 8600","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"82","description":"Impressora Brother HL1202","unit_condition":"Sol e Mar - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"83","description":"Mesa para Escritório","unit_condition":"Bacanga - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"84","description":"Mesa para Escritório","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"85","description":"Mesa para Escritório","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"86","description":"Mesa para Escritório","unit_condition":"Sol e Mar","quantity":3,"state":"Novo","donation":"Não"},
-      {"id":"87","description":"Mesa para Escritório","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Sim"}, // Este é o item 87
-      {"id":"88","description":"Mesa para Escritório","unit_condition":"Cidade Operária","quantity":3,"state":"Novo","donation":"Não"},
-      {"id":"89","description":"Mesa para Escritório","unit_condition":"Cidade Operária","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"90","description":"Mesa para Escritório (Atendimento)","unit_condition":"Bacanga","quantity":5,"state":"Bom","donation":"Não"},
-      {"id":"91","description":"Mesa para Escritório (Atendimento)","unit_condition":"Bacanga","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"92","description":"Mesa para Escritório (Atendimento)","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"93","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Bacanga - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"94","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Centro","quantity":3,"state":"Bom","donation":"Não"},
-      {"id":"95","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Centro","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"96","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Sol e Mar","quantity":3,"state":"Bom","donation":"Sim"},
-      {"id":"97","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"98","description":"Mesa para Escritório com 2 Gavetas (Atendimento)","unit_condition":"Centro","quantity":2,"state":"Regular","donation":"Sim"},
-      {"id":"99","description":"Mesa para Escritório com 3 Gavetas","unit_condition":"Sol e Mar","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"100","description":"Mesa para Escritório com 3 Gavetas","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"101","description":"Mesa para Digitador","unit_condition":"Cidade Operária","quantity":3,"state":"Bom","donation":"Não"},
-      {"id":"102","description":"Mesa de Plástico","unit_condition":"Centro","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"103","description":"Mesa de Plástico","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"104","description":"Mesa de Plástico Branca","unit_condition":"Bacanga","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"105","description":"Mesa de Plástico Branca","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"106","description":"Mesa de Plástico Branca","unit_condition":"Cidade Operária","quantity":2,"state":"Bom","donation":"Não"},
-      {"id":"107","description":"Mesa de Plástico Infantil","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"108","description":"Mesa de Plástico Infantil","unit_condition":"Centro","quantity":3,"state":"Bom","donation":"Não"},
-      {"id":"109","description":"Mesa de Plástico Infantil","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"110","description":"Mesa de Plástico Infantil","unit_condition":"Cidade Operária","quantity":4,"state":"Bom","donation":"Não"},
-      {"id":"111","description":"Mesa em L","unit_condition":"Bacanga","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"112","description":"Mesa em L","unit_condition":"Sol e Mar","quantity":2,"state":"Novo","donation":"Não"},
-      {"id":"113","description":"Mesa para Computador","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"114","description":"Mesa Redonda","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"115","description":"Mesa Redonda","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"116","description":"Mesa Redonda (Atendimento)","unit_condition":"Centro - Avariados","quantity":1,"state":"Avariado","donation":"Não"},
-      {"id":"117","description":"Mesa para Reunião","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Sim"},
-      {"id":"118","description":"Mesa Tipo Reunião","unit_condition":"Cidade Operária","quantity":1,"state":"Regular","donation":"Não"},
-      {"id":"119","description":"Ponto Eletrônico","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"120","description":"Ponto Eletrônico","unit_condition":"Sol e Mar","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"121","description":"Televisão HQ","unit_condition":"Bacanga","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"122","description":"Televisão HQ","unit_condition":"Centro","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"123","description":"Televisão HQ","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"124","description":"Televisão HQ","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"125","description":"Totem","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"126","description":"Ventilador de Coluna","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"127","description":"Ventilador de Parede","unit_condition":"Bacanga","quantity":1,"state":"Bom","donation":"Não"},
-      {"id":"128","description":"Ventilador de Parede","unit_condition":"Centro","quantity":3,"state":"Novo","donation":"Não"},
-      {"id":"129","description":"Ventilador de Parede","unit_condition":"Sol e Mar","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"130","description":"Rack","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"131","description":"Switch","unit_condition":"Cidade Operária","quantity":1,"state":"Novo","donation":"Não"},
-      {"id":"132","description":"Quadro Branco","unit_condition":"Cidade Operária","quantity":4,"state":"Bom","donation":"Não"},
-      {"id":"133","description":"Nobreak","unit_condition":"Cidade Operária","quantity":1,"state":"Bom","donation":"Sim"}
-    ];
+    // --- COMPONENTE PRINCIPAL DA APLICAÇÃO ---
+    function App() {
+      // --- Estados que controlam a aplicação ---
+      const [visaoAtiva, setVisaoAtiva] = useState('boasVindas'); // 'boasVindas', 'unidade', 'resumo', 'carregando'
+      const [servicoSelecionado, setServicoSelecionado] = useState('');
+      const [unidadeSelecionada, setUnidadeSelecionada] = useState('');
+      const [dadosExibidos, setDadosExibidos] = useState([]);
+      const [tituloDaVisao, setTituloDaVisao] = useState('Bem-vindo!');
 
-    function InventoryApp() {
-      const [items, setItems] = useState(initialItems);
-      const [filter, setFilter] = useState('');
-      const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-      const [activeTab, setActiveTab] = useState('Bacanga');
-
-      // Definir referências para gráficos
-      const chartRefs = {
-        bacanga: useRef(null),
-        centro: useRef(null),
-        solemar: useRef(null), 
-        cidadeoperaria: useRef(null), 
-        unitPie: useRef(null),
-        categorySummary: useRef(null),
-        itemsByCategoryChart: useRef(null),
-        unitStatusChart: useRef(null) 
+      // --- Estruturas de Dados para a Navegação ---
+      const unidadesPorServico = {
+        creas: [
+          { id: 'CREAS Bacanga', nome: 'CREAS Bacanga' },
+          { id: 'CREAS Centro', nome: 'CREAS Centro' },
+        ],
+        cras: [
+          { id: 'CRAS João de Deus', nome: 'CRAS João de Deus' },
+          { id: 'CRAS Cidade Operária', nome: 'CRAS Cidade Operária' },
+        ],
+        conselho: [
+          { id: 'Conselho Tutelar - Área 1', nome: 'Conselho Tutelar - Área 1' },
+          { id: 'Conselho Tutelar - Área 2', nome: 'Conselho Tutelar - Área 2' },
+        ]
+      };
+      
+      const arquivosDeDados = {
+        creas: './dados/creas_data.js',
+        cras: './dados/cras_data.js',
+        conselho: './dados/conselho_data.js'
       };
 
-      // Função auxiliar para normalizar nomes de unidades para filtragem e refs
-      const normalizeUnitName = (name) => {
-        return name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '');
+      // --- Funções que lidam com as ações do usuário ---
+      const handleServicoChange = (e) => {
+        setServicoSelecionado(e.target.value);
+        setUnidadeSelecionada('');
+        setVisaoAtiva('boasVindas');
+        setDadosExibidos([]);
       };
 
-      // Carregar itens do localStorage
-      useEffect(() => {
-        try {
-          const savedItems = localStorage.getItem('inventory');
-          if (savedItems) {
-            setItems(JSON.parse(savedItems));
-          }
-        } catch (e) {
-          console.error('Erro ao carregar do localStorage:', e);
+      const handleUnidadeChange = (e) => {
+        const novaUnidade = e.target.value;
+        setUnidadeSelecionada(novaUnidade);
+        if (novaUnidade) {
+          carregarDadosDaUnidade(servicoSelecionado, novaUnidade);
+        } else {
+          setVisaoAtiva('boasVindas');
+          setDadosExibidos([]);
         }
-      }, []);
+      };
 
-      // Salvar itens no localStorage
-      useEffect(() => {
-        try {
-          localStorage.setItem('inventory', JSON.stringify(items));
-        } catch (e) {
-          console.error('Erro ao salvar no localStorage:', e);
-        }
-      }, [items]);
+      const handleResumoClick = () => {
+        setVisaoAtiva('carregando');
+        setTituloDaVisao('Carregando Resumo Geral...');
+        setServicoSelecionado('');
+        setUnidadeSelecionada('');
 
-      // Calcular totais para os cards de resumo
-      const totalItems = items.reduce((sum, item) => sum + parseInt(item.quantity), 0);
-      const totalRegularAndDamaged = items.filter(item => item.state === 'Regular' || item.state === 'Avariado')
-                                           .reduce((sum, item) => sum + parseInt(item.quantity), 0);
-      const totalDonationItems = items.filter(item => item.donation === 'Sim')
-                                      .reduce((sum, item) => sum + parseInt(item.quantity), 0);
-      // Item 87: Mesa para Escritório em Sol e Mar, doação Sim
-      const donationMaItem = items.find(item => item.id === "87");
-
-
-      // Inicializar e atualizar gráficos com base na aba ativa e nos itens
-      useEffect(() => {
-        const units = ['Bacanga', 'Centro', 'Sol e Mar', 'Cidade Operária'];
-        const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
-
-        // Destruir todos os gráficos existentes antes de tentar recriá-los
-        const chartsToDestroy = [];
-        Object.values(chartRefs).forEach(ref => {
-            if (ref.current && ref.current.chart) {
-                chartsToDestroy.push(ref.current.chart);
-            }
+        Promise.all([
+          fetch(arquivosDeDados.creas).then(res => res.json()),
+          fetch(arquivosDeDados.cras).then(res => res.json()),
+          fetch(arquivosDeDados.conselho).then(res => res.json())
+        ])
+        .then(dataArrays => {
+          const allItems = [].concat(...dataArrays);
+          setDadosExibidos(allItems);
+          setTituloDaVisao('Resumo Geral de Todas as Unidades');
+          setVisaoAtiva('resumo');
+        })
+        .catch(error => {
+          console.error("Erro ao carregar resumo:", error);
+          alert("Falha ao carregar o resumo geral.");
+          setVisaoAtiva('boasVindas');
         });
-        chartsToDestroy.forEach(chart => chart.destroy()); 
-        // Reseta as referências para garantir que novos gráficos sejam criados
-        Object.values(chartRefs).forEach(ref => {
-          if (ref.current) ref.current.chart = null;
-        });
-
-        // Lógica para criar gráficos
-        const createdCharts = [];
-
-        // Gráficos de barras por unidade (apenas para a aba ativa da unidade)
-        units.forEach(unit => {
-          const baseUnitName = unit.split(' - ')[0]; 
-          const chartRefKey = normalizeUnitName(baseUnitName);
-
-          if (activeTab === unit) { 
-            const stateCounts = items
-              .filter(item => normalizeUnitName(item.unit_condition.split(' - ')[0]) === chartRefKey)
-              .reduce((acc, item) => {
-                acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity);
-                return acc;
-              }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0}); 
-
-            const canvas = chartRefs[chartRefKey] ? chartRefs[chartRefKey].current : null;
-
-            if (canvas) { 
-              const newChart = new Chart(canvas, {
-                type: 'bar',
-                data: {
-                  labels: stateOrder,
-                  datasets: [{
-                    label: `Quantidade de Itens - ${unit}`,
-                    data: stateOrder.map(state => stateCounts[state] || 0),
-                    backgroundColor: stateOrder.map(state => 
-                      state === 'Novo' ? '#15803D' : 
-                      state === 'Avariado' ? '#B91C1C' : 
-                      state === 'Regular' ? '#FBBF24' : '#34D399'
-                    ),
-                    borderColor: stateOrder.map(state => 
-                      state === 'Novo' ? '#166534' : 
-                      state === 'Avariado' ? '#991B1B' : 
-                      state === 'Regular' ? '#F59E0B' : '#10B981'
-                    ),
-                    borderWidth: 1
-                  }]
-                },
-                options: {
-                  plugins: { title: { display: true, text: `Itens por Estado - ${unit}` } },
-                  scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantidade' } } }
-                }
-              });
-              canvas.chart = newChart;
-              createdCharts.push(newChart);
-            } else {
-              console.warn(`Canvas para ${unit} (${chartRefKey}) não encontrado na aba ativa.`);
-            }
-          }
-        });
-
-        // Gráfico de pizza: Itens por unidade (SÓ É CRIADO SE A ABA ATIVA NÃO FOR "RESUMO GERAL")
-        let unitPieChartInstance = null;
-        if (activeTab !== 'Resumo Geral') { 
-          const unitCounts = items.reduce((acc, item) => {
-            const unit = item.unit_condition.split(' - ')[0]; 
-            acc[unit] = (acc[unit] || 0) + parseInt(item.quantity);
-            return acc;
-          }, {});
-
-          const unitPieCanvas = chartRefs.unitPie.current;
-          if (unitPieCanvas) {
-            unitPieChartInstance = new Chart(unitPieCanvas, {
-              type: 'pie',
-              data: {
-                labels: units,
-                datasets: [{
-                  data: units.map(unit => unitCounts[unit] || 0),
-                  backgroundColor: ['#34D399', '#3B82F6', '#FBBF24', '#EF4444']
-                }]
-              },
-              options: { plugins: { title: { display: true, text: 'Distribuição de Itens por Unidade' } } }
-            });
-            unitPieCanvas.chart = unitPieChartInstance;
-            createdCharts.push(unitPieChartInstance);
-          } else {
-            console.warn("Canvas para gráfico de pizza (unitPie) não encontrado.");
-          }
-        }
+      };
+      
+      const carregarDadosDaUnidade = (servico, unidade) => {
+        setVisaoAtiva('carregando');
+        setTituloDaVisao(`Carregando dados de ${unidade}...`);
         
-        // --- GRÁFICOS DA ABA 'RESUMO GERAL' ---
-        let categorySummaryChartInstance = null; 
-        let unitStatusChartInstance = null; 
-
-        if (activeTab === 'Resumo Geral') { 
-          // Gráfico de barras: Resumo por Categoria (todos os estados) - Mantido para visão geral do status
-          const allStateCounts = items.reduce((acc, item) => {
-            acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity);
-            return acc;
-          }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0}); 
-
-          const categorySummaryCanvas = chartRefs.categorySummary.current;
-          if (categorySummaryCanvas) { 
-            categorySummaryChartInstance = new Chart(categorySummaryCanvas, {
-              type: 'bar',
-              data: {
-                labels: stateOrder,
-                datasets: [{
-                  label: 'Total de Itens por Estado',
-                  data: stateOrder.map(state => allStateCounts[state] || 0),
-                  backgroundColor: stateOrder.map(state => 
-                    state === 'Novo' ? '#15803D' : 
-                    state === 'Avariado' ? '#B91C1C' : 
-                    state === 'Regular' ? '#FBBF24' : '#34D399'
-                  ),
-                  borderColor: stateOrder.map(state => 
-                    state === 'Novo' ? '#166534' : 
-                    state === 'Avariado' ? '#991B1B' : 
-                    state === 'Regular' ? '#F59E0B' : '#10B981'
-                  ),
-                  borderWidth: 1
-                }]
-              },
-              options: {
-                plugins: { title: { display: true, text: 'Total de Itens por Estado (Todas as Unidades)' } },
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantidade' } } }
-              }
-            });
-            categorySummaryCanvas.chart = categorySummaryChartInstance;
-            createdCharts.push(categorySummaryChartInstance);
-          } else {
-            console.warn("Canvas para gráfico de resumo por categoria (categorySummary) não encontrado.");
-          }
-
-          // NOVO GRÁFICO: Quantidade Total de Itens por Unidade (Status de Uso)
-          const unitDataForChart = units.map(unitName => {
-              const unitStateCounts = items
-                  .filter(item => normalizeUnitName(item.unit_condition.split(' - ')[0]) === normalizeUnitName(unitName))
-                  .reduce((acc, item) => {
-                      acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity);
-                      return acc;
-                  }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-              return { unitName, counts: unitStateCounts };
+        fetch(arquivosDeDados[servico])
+          .then(response => response.json())
+          .then(todosOsItensDoServico => {
+            const itensDaUnidade = todosOsItensDoServico.filter(
+              item => item.unit_condition === unidade
+            );
+            setDadosExibidos(itensDaUnidade);
+            setTituloDaVisao(`Inventário de ${unidade}`);
+            setVisaoAtiva('unidade');
+          })
+          .catch(error => {
+            console.error("Erro ao carregar dados da unidade:", error);
+            alert("Falha ao carregar os dados desta unidade.");
+            setVisaoAtiva('boasVindas');
           });
-
-          const unitStatusCanvas = chartRefs.unitStatusChart.current; 
-          if (unitStatusCanvas) {
-              unitStatusChartInstance = new Chart(unitStatusCanvas, {
-                  type: 'bar',
-                  data: {
-                      labels: units,
-                      datasets: stateOrder.map(state => ({
-                          label: state,
-                          data: units.map(unitName => {
-                              const data = unitDataForChart.find(u => u.unitName === unitName);
-                              return data ? data.counts[state] : 0;
-                          }),
-                          backgroundColor: state === 'Novo' ? '#15803D' : 
-                                           state === 'Avariado' ? '#B91C1C' : 
-                                           state === 'Regular' ? '#FBBF24' : '#34D399',
-                          borderColor: state === 'Novo' ? '#166534' : 
-                                       state === 'Avariado' ? '#991B1B' : 
-                                       state === 'Regular' ? '#F59E0B' : '#10B981',
-                          borderWidth: 1
-                      }))
-                  },
-                  options: {
-                      plugins: {
-                          title: { display: true, text: 'Quantidade de Itens por Unidade (Status de Uso)' },
-                          tooltip: {
-                              mode: 'index',
-                              intersect: false
-                          }
-                      },
-                      scales: {
-                          x: { stacked: true },
-                          y: { beginAtZero: true, stacked: true, title: { display: true, text: 'Quantidade Total' } }
-                      }
-                  }
-              });
-              unitStatusCanvas.chart = unitStatusChartInstance;
-              createdCharts.push(unitStatusChartInstance);
-          } else {
-              console.warn("Canvas para gráfico de status por unidade não encontrado.");
-          }
-        } 
-
-        // Função de limpeza para destruir APENAS os gráficos que foram CRIADOS nesta execução
-        return () => {
-          createdCharts.forEach(chart => chart && chart.destroy());
-        };
-      }, [items, activeTab]); 
-
-      // Filtrar itens por unidade ou categoria
-      const getFilteredItems = (filterType, value) => {
-        let filtered = items;
-        if (filterType === 'unit') {
-          const normalizedValue = normalizeUnitName(value);
-          filtered = items.filter(item => normalizeUnitName(item.unit_condition.split(' - ')[0]) === normalizedValue);
-        } else if (filterType === 'state') {
-          filtered = items.filter(item => item.state === value);
-        } else if (filterType === 'donation') {
-          filtered = items.filter(item => item.donation === value);
-        } else if (filterType === 'description') { 
-          filtered = items.filter(item => item.description === value);
-        }
-        
-        // Aplicar filtro de texto geral
-        return filtered.filter(item =>
-          Object.values(item).some(val =>
-            val.toString().toLowerCase().includes(filter.toLowerCase())
-          )
-        );
       };
-
-      // Ordenar itens
-      const getSortedItems = (filteredItems) => {
-        return [...filteredItems].sort((a, b) => {
-          if (!sortConfig.key) return 0;
-          const aValue = a[sortConfig.key];
-          const bValue = b[sortConfig.key];
-          if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-          if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-          return 0;
-        });
-      };
-
-      // Ordenar tabela
-      const handleSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-          direction = 'descending';
+      
+      // --- Função que decide qual tela renderizar ---
+      const renderizarVisao = () => {
+        switch(visaoAtiva) {
+          case 'carregando':
+            return <div className="text-center p-10"><p className="text-xl font-semibold text-blue-600">Carregando...</p></div>;
+          case 'unidade':
+          case 'resumo':
+            return <TabelaDeItens items={dadosExibidos} />;
+          case 'boasVindas':
+          default:
+            return <div className="text-center p-10"><p className="text-xl text-gray-600">Selecione um serviço e uma unidade para visualizar o inventário.</p></div>;
         }
-        setSortConfig({ key, direction });
-      };
-
-      // Exportar para CSV
-      const exportToCSV = (name, filteredItems) => {
-        const headers = ['Descrição,Unidade_Condição,Quantidade,Estado,Doação'];
-        const csvRows = filteredItems.map(item =>
-          `"${item.description}","${item.unit_condition}",${item.quantity},"${item.state}","${item.donation}"`
-        );
-        const csvContent = headers.concat(csvRows).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `inventario_creas_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      };
-
-      // --- Funções para Gerar Relatórios Descritivos por Unidade ---
-      const generateUnitReport = (unit) => {
-        const unitItems = items.filter(item => normalizeUnitName(item.unit_condition.split(' - ')[0]) === normalizeUnitName(unit));
-        let reportLines = []; 
-
-        const stateCounts = unitItems.reduce((acc, item) => {
-          acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity);
-          return acc;
-        }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-
-        const totalUnitItems = Object.values(stateCounts).reduce((sum, count) => sum + count, 0);
-
-        reportLines.push(`<strong>Relatório do Inventário - CREAS ${unit}</strong>`);
-        reportLines.push(`Total de itens registrados: ${totalUnitItems}.`);
-        reportLines.push(`Situação geral: ${stateCounts.Novo} novos, ${stateCounts.Bom} bons, ${stateCounts.Regular} regulares, ${stateCounts.Avariado} avariados.`);
-
-        // Itens Regulares
-        if (stateCounts.Regular > 0) {
-          reportLines.push(`<strong><br>Itens Regulares:</strong>`);
-          const regularItems = unitItems.filter(item => item.state === 'Regular');
-          regularItems.forEach(item => {
-            reportLines.push(`- ${item.description}`); 
-          });
-        }
-
-        // Itens Avariados
-        let damagedItems = []; // Declarado fora do if para ser acessível globalmente no escopo da função
-        if (stateCounts.Avariado > 0) {
-          reportLines.push(`<strong><br>Itens Avariados:</strong>`); 
-          damagedItems = unitItems.filter(item => item.state === 'Avariado'); // Atribuição
-          damagedItems.forEach(item => {
-            reportLines.push(`- ${item.description}`); 
-          });
-
-          const uselessDamagedItems = damagedItems.filter(item => 
-              item.description.includes('Ar-Condicionado') || 
-              item.description.includes('Geladeira') || 
-              item.description.includes('Fogão') ||
-              item.description.includes('Impressora')
-          );
-          if (uselessDamagedItems.length > 0) {
-              reportLines.push(`<strong><br>Itens sem utilidade ou funcionalidade:</strong>`);
-              uselessDamagedItems.forEach(item => {
-                  reportLines.push(`- ${item.description}`);
-              });
-          }
-        }
-        
-        // Mensagem consolidada de atenção
-        // Ajustado para não incluir essa seção, conforme solicitado
-        
-        const mesasAtendimentoAvariadas = unitItems.filter(item => 
-          item.description.includes('Mesa para Escritório (Atendimento)') && item.state === 'Avariado'
-        );
-        if (mesasAtendimentoAvariadas.length > 0) {
-          reportLines.push(`<br><strong>Urgente: ${mesasAtendimentoAvariadas.length} mesa(s) de atendimento em mau estado.</strong>`); 
-        }
-
-        const cadeirasAtendimentoAvariadas = unitItems.filter(item => 
-          (item.description.includes('Cadeira de Plástico') || item.description.includes('Cadeira Palito') || item.description.includes('Cadeira em Polímero')) && 
-          item.unit_condition.includes(unit) && item.state === 'Avariado' 
-        );
-        if (cadeirasAtendimentoAvariadas.length > 0) {
-          reportLines.push(`<strong>Urgente: ${cadeirasAtendimentoAvariadas.length} cadeira(s) de atendimento em mau estado</strong>, necessitando de reparo ou substituição.`); 
-        }
-        
-        const itemsReceivedAsDonation = unitItems.filter(item => item.donation === 'Sim');
-        if (itemsReceivedAsDonation.length > 0) {
-            reportLines.push(`<br><strong>Doações Recebidas pela SEMCAS nesta unidade:</strong>`);
-            itemsReceivedAsDonation.forEach(item => {
-                reportLines.push(`- ${item.description} (Estado: ${item.state})`);
-            });
-        }
-
-        return reportLines.join('<br />'); 
-      };
-
-
-      // --- Geração de dados para Resumo Geral por Categoria (gráfico e tabela) ---
-      const itemsByCategoryDetailed = items.reduce((acc, item) => {
-          if (!acc[item.description]) {
-              acc[item.description] = {Novo: 0, Bom: 0, Regular: 0, Avariado: 0, Total: 0};
-          }
-          acc[item.description][item.state] += parseInt(item.quantity);
-          acc[item.description].Total += parseInt(item.quantity);
-          return acc;
-      }, {});
-
-      const sortedCategories = Object.keys(itemsByCategoryDetailed).sort();
-      // --- Fim da Geração de dados para Resumo Geral por Categoria ---
+      }
 
       return (
-        <div className="max-w-6xl mx-auto px-0 py-0"> 
-          {/* Banner - Atualizado com nova imagem e classes para melhor ajuste */}
-          <div className="mb-6 text-center">
-            <img
-              src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png"
-              alt="Banner Painel de Inventário CREAS"
-              className="w-full max-w-2xl mx-auto h-auto object-contain rounded-lg" 
-            />
+        <div className="bg-white rounded-lg shadow-xl p-6 min-h-screen">
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">Painel de Inventário</h1>
+          
+          {/* NAVEGAÇÃO */}
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-6 flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-grow w-full md:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+              <select onChange={handleServicoChange} value={servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base">
+                <option value="">Selecione...</option>
+                <option value="creas">CREAS</option>
+                <option value="cras">CRAS</option>
+                <option value="conselho">Conselho Tutelar</option>
+              </select>
+            </div>
+            <div className="flex-grow w-full md:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Unidade</label>
+              <select onChange={handleUnidadeChange} value={unidadeSelecionada} disabled={!servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base disabled:bg-gray-200">
+                <option value="">Selecione...</option>
+                {servicoSelecionado && unidadesPorServico[servicoSelecionado].map((unidade) => (
+                  <option key={unidade.id} value={unidade.id}>{unidade.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full md:w-auto">
+              <button onClick={handleResumoClick} className="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg text-base hover:bg-blue-700">
+                Ver Resumo Geral
+              </button>
+            </div>
           </div>
 
-          <h1 className="text-4xl font-extrabold text-center text-gray-800 mb-8">Painel de Inventário CREAS</h1>
+          {/* ÁREA DE CONTEÚDO DINÂMICO */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-gray-700 mb-4">{tituloDaVisao}</h2>
+            {renderizarVisao()}
+          </div>
+        </div>
+      );
+    }
+    
+    // --- COMPONENTE SIMPLES PARA MOSTRAR A TABELA ---
+    function TabelaDeItens({ items }) {
+      if (items.length === 0) {
+        return <p className="text-gray-500">Nenhum item encontrado para esta seleção.</p>;
+      }
+      const totalItens = items.reduce((sum, item) => sum + item.quantity, 0);
 
-          {/* NOVO DIV ENVOLVENDO TODO O CONTEÚDO RESTANTE com fundo branco principal */}
-          <div className="bg-white rounded-lg shadow-xl p-4 md:p-6 lg:p-8">
-
-            {/* Cards de Resumo Rápido */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500 flex flex-col items-center justify-center">
-                <h3 className="text-xl font-semibold text-blue-800 mb-2">Total de Itens</h3>
-                <p className="text-4xl font-bold text-blue-700">{totalItems}</p>
-              </div>
-              <div className="bg-orange-50 p-6 rounded-lg border-l-4 border-orange-500 flex flex-col items-center justify-center">
-                <h3 className="text-xl font-semibold text-orange-800 mb-2">Itens c/ Atenção</h3>
-                <p className="text-4xl font-bold text-orange-700">{totalRegularAndDamaged}</p>
-                <p className="text-sm text-orange-600 mt-1">(Regular ou Avariado)</p>
-              </div>
-              <div className="bg-purple-50 p-6 rounded-lg border-l-4 border-purple-500 flex flex-col items-center justify-center">
-                <h3 className="text-xl font-semibold text-purple-800 mb-2 text-center">DOAÇÃO DO ESTADO MA</h3> 
-                <p className="text-4xl font-bold text-purple-700">{totalDonationItems}</p>
-              </div>
-            </div>
-
-            {/* Filtro Geral */}
-            <div className="mb-8 p-4 bg-gray-50 rounded-lg shadow-inner border border-gray-200">
-              <input
-                type="text"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Filtrar por qualquer campo..."
-                className="border border-gray-300 p-3 rounded-lg w-full text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150"
-              />
-            </div>
-
-            {/* Abas */}
-            <div className="mb-8">
-              <div className="flex border-b-2 border-gray-200">
-                {['Bacanga', 'Centro', 'Sol e Mar', 'Cidade Operária', 'Resumo Geral'].map(tab => (
-                  <button
-                    key={tab}
-                    className={`px-6 py-3 -mb-0.5 font-medium text-lg ${activeTab === tab ?
-'border-blue-600 text-blue-600 border-b-4' : 'border-transparent text-gray-700'} hover:text-blue-600 hover:border-blue-400 transition duration-200`}
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
+      return (
+        <div>
+          <p className="mb-4 text-lg"><strong>Total de Itens na Lista:</strong> {totalItens}</p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="py-2 px-4 border">Descrição</th>
+                  <th className="py-2 px-4 border">Unidade/Condição</th>
+                  <th className="py-2 px-4 border">Quantidade</th>
+                  <th className="py-2 px-4 border">Estado</th>
+                  <th className="py-2 px-4 border">Doação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(item => (
+                  <tr key={item.id} className="border-t">
+                    <td className="py-2 px-4 border">{item.description}</td>
+                    <td className="py-2 px-4 border">{item.unit_condition}</td>
+                    <td className="py-2 px-4 border text-center">{item.quantity}</td>
+                    <td className="py-2 px-4 border">{item.state}</td>
+                    <td className="py-2 px-4 border">{item.donation}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-
-            {/* Conteúdo das Abas */}
-            <div className="p-0"> 
-              {activeTab === 'Resumo Geral' ? (
-                  <div> 
-                      <h2 className="text-3xl font-bold text-gray-700 mb-6">Resumo Geral do Inventário</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                          <div className="p-6 rounded-lg border border-gray-200 bg-gray-50"> 
-                              <canvas id="categorySummary" ref={chartRefs.categorySummary}></canvas>
-                          </div>
-                          <div className="p-6 rounded-lg border border-gray-200 bg-gray-50"> 
-                              <canvas id="unitStatusChart" ref={chartRefs.unitStatusChart}></canvas>
-                          </div>
-                      </div>
-
-                      <div className="p-6 rounded-lg border border-gray-200 bg-gray-50 mt-8"> 
-                          <button
-                              onClick={() => exportToCSV('Resumo_Geral_Completo', items)} 
-                              className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-150 text-lg mb-4 w-full"
-                          >
-                              Exportar Inventário Completo para CSV
-                          </button>
-                          <div className="mb-6">
-                              <h3 className="text-2xl font-semibold text-gray-700 mb-4">Itens por Categoria (Detalhado)</h3>
-                              {sortedCategories.length === 0 ? (
-                                  <p className="text-gray-500">Nenhum item encontrado.</p>
-                              ) : (
-                                  <div className="overflow-x-auto">
-                                      <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                                          <thead>
-                                              <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Descrição</th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Total</th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Novo</th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Bom</th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Regular</th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200">Avariado</th>
-                                              </tr>
-                                          </thead>
-                                          <tbody className="text-gray-700 text-sm font-light">
-                                              {sortedCategories.map(desc => (
-                                                  <tr key={desc} className="border-b border-gray-200 hover:bg-gray-50">
-                                                      <td className="py-3 px-6 text-left whitespace-nowrap">{desc}</td>
-                                                      <td className="py-3 px-6 text-left">{itemsByCategoryDetailed[desc].Total}</td>
-                                                      <td className="py-3 px-6 text-left">{itemsByCategoryDetailed[desc].Novo}</td>
-                                                      <td className="py-3 px-6 text-left">{itemsByCategoryDetailed[desc].Bom}</td>
-                                                      <td className="py-3 px-6 text-left">{itemsByCategoryDetailed[desc].Regular}</td>
-                                                      <td className="py-3 px-6 text-left">{itemsByCategoryDetailed[desc].Avariado}</td>
-                                                  </tr>
-                                              ))}
-                                          </tbody>
-                                      </table>
-                                  </div>
-                              )}
-                          </div>
-
-                          {['Novo', 'Bom', 'Regular', 'Avariado'].map(stateCategory => (
-                              <div key={stateCategory} className="mt-6 p-6 rounded-lg border border-gray-200 bg-gray-50"> 
-                                  <h3 className="text-2xl font-semibold text-gray-700 mb-4">{`Itens em Estado: ${stateCategory}`}</h3>
-                                  {getSortedItems(getFilteredItems('state', stateCategory)).length === 0 ? (
-                                      <p className="text-gray-500">Nenhum item encontrado.</p>
-                                  ) : (
-                                      <div className="overflow-x-auto">
-                                          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                                              <thead>
-                                                  <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('description')}>
-                                                        Descrição {sortConfig.key === 'description' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('unit_condition')}>
-                                                        Unidade/Condição {sortConfig.key === 'unit_condition' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('quantity')}>
-                                                        Qtd. {sortConfig.key === 'quantity' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('state')}>
-                                                        Estado {sortConfig.key === 'state' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('donation')}>
-                                                        Doação {sortConfig.key === 'donation' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                  </tr>
-                                              </thead>
-                                              <tbody className="text-gray-700 text-sm font-light">
-                                                  {getSortedItems(getFilteredItems('state', stateCategory)).map(item => (
-                                                      <tr
-                                                        key={item.id}
-                                                        className={`border-b border-gray-200 hover:bg-gray-50 ${item.state === 'Regular' ? 'bg-yellow-50' : item.state === 'Avariado' ? 'bg-red-50' : ''}`}
-                                                      >
-                                                        <td className="py-3 px-6 text-left whitespace-nowrap">{item.description}</td>
-                                                        <td className="py-3 px-6 text-left">{item.unit_condition}</td>
-                                                        <td className="py-3 px-6 text-left">{item.quantity}</td>
-                                                        <td className="py-3 px-6 text-left">{item.state}</td>
-                                                        <td className="py-3 px-6 text-left">{item.donation}</td>
-                                                      </tr>
-                                                  ))}
-                                              </tbody>
-                                          </table>
-                                      </div>
-                                  )}
-                              </div>
-                          ))}
-                          <div className="mt-6 p-6 rounded-lg border border-gray-200 bg-gray-50"> 
-                              <h3 className="text-2xl font-semibold text-gray-700 mb-4">DOAÇÃO DO ESTADO MA</h3> 
-                              {getSortedItems(getFilteredItems('donation', 'Sim')).length === 0 ? (
-                                  <p className="text-gray-500">Nenhum item de doação encontrado.</p>
-                              ) : (
-                                  <div className="overflow-x-auto">
-                                      <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                                          <thead>
-                                              <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('description')}>
-                                                    Descrição {sortConfig.key === 'description' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                  </th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('unit_condition')}>
-                                                    Unidade/Condição {sortConfig.key === 'unit_condition' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                  </th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('quantity')}>
-                                                    Qtd. {sortConfig.key === 'quantity' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                  </th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('state')}>
-                                                    Estado {sortConfig.key === 'state' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                  </th>
-                                                  <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('donation')}>
-                                                    Doação {sortConfig.key === 'donation' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                  </th>
-                                              </tr>
-                                          </thead>
-                                          <tbody className="text-gray-700 text-sm font-light">
-                                              {getSortedItems(getFilteredItems('donation', 'Sim')).map(item => (
-                                                  <tr
-                                                    key={item.id}
-                                                    className={`border-b border-gray-200 hover:bg-gray-50 bg-green-50`} 
-                                                  >
-                                                    <td className="py-3 px-6 text-left whitespace-nowrap">{item.description}</td>
-                                                    <td className="py-3 px-6 text-left">{item.unit_condition}</td>
-                                                    <td className="py-3 px-6 text-left">{item.quantity}</td>
-                                                    <td className="py-3 px-6 text-left">{item.state}</td>
-                                                    <td className="py-3 px-6 text-left">{item.donation}</td>
-                                                  </tr>
-                                              ))}
-                                          </tbody>
-                                      </table>
-                                  </div>
-                              )}
-                          </div>
-                      </div>
-                  </div>
-              ) : (
-                  // Conteúdo para as abas de unidades individuais
-                  <> 
-                      {/* Gráfico de Pizza (apenas para unidades, acima das unidades detalhadas) */}
-                      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
-                          <div className="p-6 rounded-lg border border-gray-200 bg-gray-50 max-w-xs md:max-w-sm mx-auto"> 
-                              <canvas id="unitPie" ref={chartRefs.unitPie}></canvas>
-                          </div>
-                      </div>
-
-                      {/* Seções por Unidade */}
-                      {['Bacanga', 'Centro', 'Sol e Mar', 'Cidade Operária'].map(unit => (
-                          <div key={unit} className={`mb-8 ${activeTab !== unit ? 'hidden' : ''}`}> 
-                              <h2 className="text-3xl font-bold text-gray-700 mb-6">{`CREAS ${unit}`}</h2>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                  {/* Caixa do Gráfico e Relatório */}
-                                  <div className="p-6 rounded-lg border border-gray-200 bg-gray-50 flex flex-col"> 
-                                      <canvas id={normalizeUnitName(unit)} 
-                                              ref={chartRefs[normalizeUnitName(unit)]}>
-                                      </canvas>
-                                      {/* Área para Relatório Descritivo da Unidade */}
-                                      <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200 text-base text-gray-800 text-justify">
-                                          <p dangerouslySetInnerHTML={{ __html: generateUnitReport(unit) }}></p>
-                                      </div>
-                                  </div>
-                                  {/* Caixa da Tabela de Itens */}
-                                  <div className="p-6 rounded-lg border border-gray-200 bg-gray-50"> 
-                                      <button
-                                        onClick={() => exportToCSV(unit, getFilteredItems('unit', unit))}
-                                        className="bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-150 text-lg mb-4 w-full"
-                                      >
-                                        Exportar para CSV
-                                      </button>
-                                      {getSortedItems(getFilteredItems('unit', unit)).length === 0 ? (
-                                        <p className="text-gray-500">Nenhum item encontrado.</p>
-                                      ) : (
-                                        <div className="overflow-x-auto">
-                                          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                                              <thead>
-                                                  <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('description')}>
-                                                        Descrição {sortConfig.key === 'description' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('unit_condition')}>
-                                                        Unidade/Condição {sortConfig.key === 'unit_condition' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('quantity')}>
-                                                        Qtd. {sortConfig.key === 'quantity' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('state')}>
-                                                        Estado {sortConfig.key === 'state' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                      <th className="py-3 px-6 text-left border-b border-gray-200 cursor-pointer" onClick={() => handleSort('donation')}>
-                                                        Doação {sortConfig.key === 'donation' && (sortConfig.direction === 'ascending' ? '↑' : '↓')}
-                                                      </th>
-                                                  </tr>
-                                              </thead>
-                                              <tbody className="text-gray-700 text-sm font-light">
-                                                  {getSortedItems(getFilteredItems('unit', unit)).map(item => (
-                                                      <tr
-                                                        key={item.id}
-                                                        className={`border-b border-gray-200 hover:bg-gray-50 ${item.state === 'Regular' ? 'bg-yellow-50' : item.state === 'Avariado' ? 'bg-red-50' : ''}`}
-                                                      >
-                                                        <td className="py-3 px-6 text-left whitespace-nowrap">{item.description}</td>
-                                                        <td className="py-3 px-6 text-left">{item.unit_condition}</td>
-                                                        <td className="py-3 px-6 text-left">{item.quantity}</td>
-                                                        <td className="py-3 px-6 text-left">{item.state}</td>
-                                                        <td className="border-r border-gray-200 py-3 px-6 text-left">{item.donation}</td>
-                                                      </tr>
-                                                  ))}
-                                              </tbody>
-                                            </table>
-                                          </div>
-                                      )}
-                                  </div>
-                              </div>
-                          </div>
-                      ))}
-                  </>
-              )}
-            </div> 
-          </div> 
+              </tbody>
+            </table>
+          </div>
         </div>
       );
     }
 
-    if (window.ReactDOM) {
-      ReactDOM.render(<InventoryApp />, document.getElementById('root'));
-    } else {
-      console.error('ReactDOM não carregado.');
-      document.getElementById('root').innerHTML = '<p class="text-red-500 text-center">Erro ao carregar o painel. Verifique sua conexão com a internet.</p>';
-    }
+    // Monta a aplicação na div #root
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
