@@ -694,7 +694,7 @@
             return <VisaoResumo titulo={tituloDaVisao} dados={dadosExibidos} onVoltarClick={handleVoltar} />;
           case 'boasVindas':
           default:
-            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar.</p></div>;
+            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner"><p className="text-2xl text-gray-600">Selecione uma unidade para começar.</p></div>;
         }
       };
 
@@ -715,7 +715,7 @@
 
             <div className="p-4 bg-gray-50 rounded-lg border mb-8 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-grow w-full md:w-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Selecione</label>
                     <select onChange={e => {setServicoSelecionado(e.target.value); setUnidadeSelecionada(''); setVisaoAtiva('boasVindas');}} value={servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base">
                         <option value="">Selecione...</option>
                         <option value="creas">CREAS</option>
