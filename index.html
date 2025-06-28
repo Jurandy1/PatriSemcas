@@ -190,7 +190,15 @@
         const itensComAtencao = dados.filter(item => item.state === 'Regular' || item.state === 'Avariado');
         const contagemPorUnidade = itensComAtencao.reduce((acc, item) => {
             const nomeUnidade = item.unit_condition;
-            const prefixo = item.id.startsWith('cre_') ? 'CREAS' : 'Conselho Tutelar';
+            let prefixo = 'Serviço'; // Prefixo padrão
+            if (item.id.startsWith('cre_')) {
+                prefixo = 'CREAS';
+            } else if (item.id.startsWith('ct_')) {
+                prefixo = 'Conselho Tutelar';
+            } else if (item.id.startsWith('ext_')) {
+                prefixo = 'Unidade Externa';
+            }
+            
             const nomeCompleto = `${prefixo} ${nomeUnidade}`;
             
             if (acc[nomeCompleto]) {
@@ -258,7 +266,7 @@
       const [filtroTexto, setFiltroTexto] = useState('');
 
       // ==================================================================
-      // DADOS INTEGRADOS (sem alterações, omitido para brevidade)
+      // DADOS INTEGRADOS 
       // ==================================================================
       const creasData = [
           { "id": "cre_1", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
@@ -687,7 +695,26 @@
         {"id":"ct_289","description":"(SEM MARCA) AR CONDICIONADO 18 MIL BTUS","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não"}
       ];
 
-      const allItems = [...creasData, ...conselhoData];
+      // NOVOS DADOS
+      const externaData = [
+        {"id":"ext_1","description":"Armário em Aço","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_2","description":"Armário em Aço","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Sim"},
+        {"id":"ext_3","description":"Frigobar","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_4","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Novo","donation":"Não"},
+        {"id":"ext_5","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_6","description":"Mesa para Escritório","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_7","description":"Cadeira Palito","unit_condition":"Núcleo Intersetorial","quantity":5,"state":"Bom","donation":"Não"},
+        {"id":"ext_8","description":"Cadeira Giratória Azul","unit_condition":"Núcleo Intersetorial","quantity":2,"state":"Bom","donation":"Não"},
+        {"id":"ext_9","description":"Impressora Brother HL1202","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_10","description":"Estabilizador Microline 2","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_11","description":"Mesa Redonda Cinza","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
+        {"id":"ext_12","description":"Roteador Multilaser RE046","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"}
+      ];
+
+      const casaBairroData = []; // Pré-configurada e vazia, como solicitado.
+
+
+      const allItems = [...creasData, ...conselhoData, ...externaData];
       const totalAtencao = allItems.filter(item => item.state === 'Regular' || item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
       const totalDoacao = allItems.filter(item => item.donation === 'Sim').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
       const totalItems = allItems.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
@@ -695,7 +722,9 @@
       
       const allDataSources = {
         creas: creasData,
-        conselho: conselhoData
+        conselho: conselhoData,
+        externa: externaData,
+        casa_bairro: casaBairroData
       };
       
       const unidadesPorServico = {
@@ -716,6 +745,10 @@
             { id: 'São Francisco / Cohama', nome: 'CT São Francisco / Cohama' },
             { id: 'Vila Luizão / Turu', nome: 'CT Vila Luizão / Turu' },
             { id: 'Zona Rural', nome: 'CT Zona Rural' },
+        ],
+        externa: [
+            { id: 'Núcleo Intersetorial', nome: 'Núcleo Intersetorial de Atendimento Socioeducativo em Meio Aberto' },
+            { id: 'Casa do Bairro', nome: 'Casa do Bairro' }
         ]
       };
 
@@ -741,8 +774,19 @@
         setFiltroTexto('');
 
         if (novaUnidade) {
-            const allItemsForService = allDataSources[servicoSelecionado];
-            const itensDaUnidade = allItemsForService.filter(item => item.unit_condition === novaUnidade);
+            let itensDaUnidade = [];
+            if (servicoSelecionado === 'externa') {
+                 // Lógica especial para as unidades externas
+                 if (novaUnidade === 'Núcleo Intersetorial') {
+                     itensDaUnidade = allDataSources.externa;
+                 } else if (novaUnidade === 'Casa do Bairro') {
+                     itensDaUnidade = allDataSources.casa_bairro;
+                 }
+            } else {
+                const allItemsForService = allDataSources[servicoSelecionado];
+                itensDaUnidade = allItemsForService.filter(item => item.unit_condition === novaUnidade);
+            }
+
             setDadosOriginais(itensDaUnidade);
             setVisaoAtiva('unidade');
             const unidadeInfo = unidadesPorServico[servicoSelecionado].find(u => u.id === novaUnidade);
@@ -781,7 +825,7 @@
             return <VisaoResumo titulo={tituloDaVisao} dados={dadosParaExibicao} onVoltarClick={handleVoltar} filtro={filtroTexto} onFiltroChange={e => setFiltroTexto(e.target.value)} />;
           case 'boasVindas':
           default:
-            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione uma unidade para começar, ou veja o resumo geral.</p></div>;
+            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar, ou veja o resumo geral.</p></div>;
         }
       };
 
@@ -804,11 +848,12 @@
 
             <div className="p-4 bg-gray-50 rounded-lg border mb-8 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-grow w-full md:w-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Selecione a sigla</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
                     <select onChange={handleServicoChange} value={servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base">
                         <option value="">Selecione...</option>
                         <option value="creas">CREAS</option>
                         <option value="conselho">Conselho Tutelar</option>
+                        <option value="externa">Unidade Externa</option>
                     </select>
                 </div>
                 <div className="flex-grow w-full md:w-auto">
