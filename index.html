@@ -53,15 +53,15 @@
                     <ul className="space-y-3">
                         {dados.map((unidade, index) => (
                             <li key={unidade.nome} className="flex justify-between items-center p-2 rounded-md transition-colors hover:bg-gray-50">
-                                <span className="flex items-center">
-                                    <span className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mr-3 ${
+                                <span className="flex items-center min-w-0">
+                                    <span className={`text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mr-3 flex-shrink-0 ${
                                         index === 0 ? 'bg-red-500 text-white' : 
                                         index === 1 ? 'bg-yellow-500 text-white' : 
                                         index === 2 ? 'bg-orange-400 text-white' : 'bg-gray-200 text-gray-700'
                                     }`}>{index + 1}</span>
-                                    <span className="text-gray-800 text-sm md:text-base">{unidade.nome}</span>
+                                    <span className="text-gray-800 text-sm md:text-base truncate" title={unidade.nome}>{unidade.nome}</span>
                                 </span>
-                                <span className="font-bold text-red-600">{unidade.quantidade} itens</span>
+                                <span className="font-bold text-red-600 flex-shrink-0 ml-2">{unidade.quantidade} itens</span>
                             </li>
                         ))}
                     </ul>
@@ -97,7 +97,14 @@
                         <tbody className="text-gray-700">
                             {items.map((item, index) => (
                                 <tr key={item.key || index} className="border-t hover:bg-gray-50">
-                                    <td className="py-3 px-4">{item.description}</td>
+                                    <td className="py-3 px-4">
+                                        {item.description}
+                                        {item.observation && (
+                                            <span className="block text-xs text-gray-500 italic mt-1">
+                                                Obs: {item.observation}
+                                            </span>
+                                        )}
+                                    </td>
                                     <td className="py-3 px-4">{item.unit_condition}</td>
                                     <td className="py-3 px-4 text-center font-bold">{item.quantity}</td>
                                     <td className="py-3 px-4"><span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -190,7 +197,7 @@
         const itensComAtencao = dados.filter(item => item.state === 'Regular' || item.state === 'Avariado');
         const contagemPorUnidade = itensComAtencao.reduce((acc, item) => {
             const nomeUnidade = item.unit_condition;
-            let prefixo = 'Serviço'; // Prefixo padrão
+            let prefixo = ''; 
             if (item.id.startsWith('cre_')) {
                 prefixo = 'CREAS';
             } else if (item.id.startsWith('ct_')) {
@@ -199,7 +206,7 @@
                 prefixo = 'Unidade Externa';
             }
             
-            const nomeCompleto = `${prefixo} ${nomeUnidade}`;
+            const nomeCompleto = prefixo ? `${prefixo} ${nomeUnidade}` : nomeUnidade;
             
             if (acc[nomeCompleto]) {
                 acc[nomeCompleto].quantidade += parseInt(item.quantity, 10);
@@ -266,7 +273,7 @@
       const [filtroTexto, setFiltroTexto] = useState('');
 
       // ==================================================================
-      // DADOS INTEGRADOS 
+      // DADOS INTEGRADOS - Versão completa
       // ==================================================================
       const creasData = [
           { "id": "cre_1", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não" },
@@ -527,7 +534,7 @@
         {"id":"ct_121","description":"Longarina Preta 3 Lugares","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não"},
         {"id":"ct_122","description":"Mesa para Escritório sem Gavetas","unit_condition":"Centro / Alemanha","quantity":3,"state":"Regular","donation":"Não"},
         {"id":"ct_123","description":"Cadeira de Plástico","unit_condition":"Centro / Alemanha","quantity":13,"state":"Bom","donation":"Não"},
-        {"id":"ct_124","description":"Televisão HQ 43\"","unit_condition":"Centro / Alemanha","quantity":1,"state":"Avariado","donation":"Não"},
+        {"id":"ct_124","description":"Televisão HQ 43\"","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não", "observation": "Com defeito"},
         {"id":"ct_125","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Regular","donation":"Sim"},
         {"id":"ct_126","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Bom","donation":"Não"},
         {"id":"ct_127","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Novo","donation":"Não"},
@@ -547,7 +554,7 @@
         {"id":"ct_141","description":"Ar-Condicionado Electrolux 12.000 BTU","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não"},
         {"id":"ct_142","description":"Mesa para Escritório com 3 Gavetas","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não"},
         {"id":"ct_143","description":"Mesa de Madeira Tipo Refeitório","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não"},
-        {"id":"ct_144","description":"Geladeira Esmaltec","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não"},
+        {"id":"ct_144","description":"Geladeira Esmaltec","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não", "observation": "Nova, porém com defeito."},
         {"id":"ct_145","description":"Fogão Industrial com Forno","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não"},
         {"id":"ct_146","description":"Longarina 5 Lugares","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":3,"state":"Novo","donation":"Não"},
         {"id":"ct_147","description":"Mesa em L","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":3,"state":"Novo","donation":"Não"},
@@ -577,7 +584,7 @@
         {"id":"ct_171","description":"Cadeira Presidencial","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não"},
         {"id":"ct_172","description":"Longarina 3 Lugares Azul","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não"},
         {"id":"ct_173","description":"Longarina 3 Lugares Preta","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não"},
-        {"id":"ct_174","description":"Geladeira Esmaltec","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não"},
+        {"id":"ct_174","description":"Geladeira Esmaltec","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não", "observation": "Nova, porém com defeito."},
         {"id":"ct_175","description":"Bebedouro Esmaltec","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não"},
         {"id":"ct_176","description":"Mesa para Escritório","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Regular","donation":"Não"},
         {"id":"ct_177","description":"Fogão 4 Bocas","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não"},
@@ -618,7 +625,7 @@
         {"id":"ct_212","description":"Bebedouro Esmaltec","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não"},
         {"id":"ct_213","description":"Ar-Condicionado Agratto 12.000 BTU","unit_condition":"Coroadinho / João Paulo","quantity":6,"state":"Novo","donation":"Não"},
         {"id":"ct_214","description":"Cadeira Office Preta","unit_condition":"Coroadinho / João Paulo","quantity":3,"state":"Novo","donation":"Não"},
-        {"id":"ct_215","description":"Cadeira Office Preta","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Avariado","donation":"Não"},
+        {"id":"ct_215","description":"Cadeira Office Preta","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não", "observation": "Danificada"},
         {"id":"ct_216","description":"Armário em Aço","unit_condition":"Coroadinho / João Paulo","quantity":5,"state":"Novo","donation":"Não"},
         {"id":"ct_217","description":"Cadeira em Polímero Preta","unit_condition":"Coroadinho / João Paulo","quantity":7,"state":"Novo","donation":"Não"},
         {"id":"ct_218","description":"Computador Dell","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não"},
@@ -695,7 +702,6 @@
         {"id":"ct_289","description":"(SEM MARCA) AR CONDICIONADO 18 MIL BTUS","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não"}
       ];
 
-      // NOVOS DADOS
       const externaData = [
         {"id":"ext_1","description":"Armário em Aço","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"},
         {"id":"ext_2","description":"Armário em Aço","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Sim"},
@@ -711,8 +717,7 @@
         {"id":"ext_12","description":"Roteador Multilaser RE046","unit_condition":"Núcleo Intersetorial","quantity":1,"state":"Bom","donation":"Não"}
       ];
 
-      const casaBairroData = []; // Pré-configurada e vazia, como solicitado.
-
+      const casaBairroData = []; // Pré-configurada e vazia
 
       const allItems = [...creasData, ...conselhoData, ...externaData];
       const totalAtencao = allItems.filter(item => item.state === 'Regular' || item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
@@ -724,7 +729,8 @@
         creas: creasData,
         conselho: conselhoData,
         externa: externaData,
-        casa_bairro: casaBairroData
+        "Núcleo Intersetorial": externaData.filter(i => i.unit_condition === "Núcleo Intersetorial"),
+        "Casa do Bairro": casaBairroData
       };
       
       const unidadesPorServico = {
@@ -769,27 +775,17 @@
       };
       
       const handleUnidadeChange = (e) => {
-        const novaUnidade = e.target.value;
-        setUnidadeSelecionada(novaUnidade);
+        const novaUnidadeId = e.target.value;
+        setUnidadeSelecionada(novaUnidadeId);
         setFiltroTexto('');
 
-        if (novaUnidade) {
-            let itensDaUnidade = [];
-            if (servicoSelecionado === 'externa') {
-                 // Lógica especial para as unidades externas
-                 if (novaUnidade === 'Núcleo Intersetorial') {
-                     itensDaUnidade = allDataSources.externa;
-                 } else if (novaUnidade === 'Casa do Bairro') {
-                     itensDaUnidade = allDataSources.casa_bairro;
-                 }
-            } else {
-                const allItemsForService = allDataSources[servicoSelecionado];
-                itensDaUnidade = allItemsForService.filter(item => item.unit_condition === novaUnidade);
-            }
+        if (novaUnidadeId) {
+            let itensDaUnidade = allDataSources[novaUnidadeId] || 
+                                 allDataSources[servicoSelecionado]?.filter(item => item.unit_condition === novaUnidadeId);
 
             setDadosOriginais(itensDaUnidade);
             setVisaoAtiva('unidade');
-            const unidadeInfo = unidadesPorServico[servicoSelecionado].find(u => u.id === novaUnidade);
+            const unidadeInfo = unidadesPorServico[servicoSelecionado].find(u => u.id === novaUnidadeId);
             setTituloDaVisao(`Inventário de ${unidadeInfo.nome}`);
         } else {
             setVisaoAtiva('boasVindas');
@@ -825,7 +821,7 @@
             return <VisaoResumo titulo={tituloDaVisao} dados={dadosParaExibicao} onVoltarClick={handleVoltar} filtro={filtroTexto} onFiltroChange={e => setFiltroTexto(e.target.value)} />;
           case 'boasVindas':
           default:
-            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione um serviço e uma unidade para começar, ou veja o resumo geral.</p></div>;
+            return <div className="text-center p-20 bg-gray-50 rounded-lg shadow-inner border"><p className="text-2xl text-gray-600">Selecione um tipo de unidade e uma unidade para começar, ou veja o resumo geral.</p></div>;
         }
       };
 
@@ -848,7 +844,7 @@
 
             <div className="p-4 bg-gray-50 rounded-lg border mb-8 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex-grow w-full md:w-auto">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Serviço</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Unidade</label>
                     <select onChange={handleServicoChange} value={servicoSelecionado} className="w-full p-3 border border-gray-300 rounded-lg text-base">
                         <option value="">Selecione...</option>
                         <option value="creas">CREAS</option>
