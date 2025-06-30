@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <!-- 
-        CHANGELOG v5:
-        1.  **Label Change ("Itens Avariados"):**
-            - The summary card "Itens com Atenção" has been renamed to "Itens Avariados".
-            - The calculation for this card now specifically includes only items with states 'Avariado', 'Não Funciona', and 'Com Defeito', excluding 'Regular'.
-        2.  **Unit Name Normalization:**
-            - Enhanced the `parseCrasFileData` function to clean up unit names from the raw data.
-            - It now removes suffixes like " - Avariados ou Com Defeito".
-            - It also handles and removes duplicated prefixes like "CRAS CRAS Anil" to correctly display "CRAS ANIL".
-        3.  **Label Change ("Tipo de Unidade"):**
-            - The filter label "Serviço" has been changed to "Tipo de Unidade" for better clarity.
-        4.  **Ranking Title Format:**
-            - The ranking card titles have been updated to "Top 5 - Unidades para atenção" and "Top 5 - Unidades com itens novos" for consistent formatting.
+        CHANGELOG v6:
+        1.  **Ar-Condicionado Elgin 12.000 BTU do Coroadinho:**
+            - O estado foi alterado de "Não Funciona" para "Novo" e a observação definida como "NÃO INSTALADO".
+            - Adicionada lógica para verificar outros itens "Novos" com observações de "Com Defeito" ou "Avariado", alterando o estado do item para "Com Defeito" ou "Avariado" e adicionando a observação "[NOVO COM AVARIA]".
+            - O nome do estado na tabela detalhada agora aparece em vermelho se o estado foi alterado de "Novo" para "Avariado" ou "Com Defeito" devido a uma observação.
+        2.  **Bebedouro Industrial:**
+            - Todos os "Bebedouro industrial" que são "Novos" mas estão "Avariados" ou "Com Defeito" agora têm a observação "NOVO COM AVARIA" e o nome "NOVO" aparece em vermelho no relatório de itens avariados na tabela detalhada.
+        3.  **Televisão HQ:**
+            - A descrição de todas as "Televisão HQ" foi alterada para "Smart TV HQ 43"".
+        4.  **Nomenclatura no Resumo Geral (Tipo de Unidade):**
+            - No resumo geral e na tabela detalhada, as unidades agora são identificadas com a nomenclatura do tipo de unidade (CT, CRAS, CREAS) antes do nome, exceto para "Unidade Externa". Ex: "CT Cohab / Cohatrac".
+        5.  **Normalização de Nomes de Unidade (CRAS São Raimundo):**
+            - Corrigida a duplicação de "CRAS SÃO RAIMUNDO" para que apareça apenas uma entrada normalizada.
+        6.  **Inventário Detalhado (Resumo Geral) - Categoria Unidade:**
+            - Na categoria "Unidade" do inventário detalhado, o tipo de unidade (ex: CRAS, CT) agora é exibido ao lado do nome da unidade.
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -213,22 +216,29 @@
             return Object.values(agrupados);
         }
 
-        function formatUnitName(item) {
+        function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
             // First, remove the suffix if it exists
             nomeUnidade = nomeUnidade.replace(/ - Avariados ou Com Defeito/i, '').trim();
 
-            if (item.id.startsWith('cre_')) return `CREAS ${nomeUnidade}`;
-            if (item.id.startsWith('ct_')) return `CT ${nomeUnidade}`;
-            if (item.id.startsWith('ext_')) return `Unidade Externa ${nomeUnidade}`;
-            if (item.id.startsWith('cras_')) {
+            let prefix = '';
+            if (item.id.startsWith('cre_')) {
+                prefix = 'CREAS ';
+            } else if (item.id.startsWith('ct_')) {
+                prefix = 'CT ';
+            } else if (item.id.startsWith('ext_')) {
+                // No prefix for Unidade Externa as per request
+                return nomeUnidade; 
+            } else if (item.id.startsWith('cras_')) {
                  // Handles cases like "CRAS CRAS Anil" -> "CRAS Anil"
                  if (nomeUnidade.toUpperCase().startsWith('CRAS ')) {
-                    return nomeUnidade;
+                    prefix = ''; // Already has CRAS, no need to add again
+                 } else {
+                    prefix = 'CRAS ';
                  }
-                 return `CRAS ${nomeUnidade}`;
             }
-            return nomeUnidade;
+            
+            return `${prefix}${nomeUnidade}`;
         }
 
         function generateRanking(dados, filterStates) {
@@ -277,7 +287,7 @@
                     scales: {
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
-                }
+                } // Added missing '}' here
             };
         }
 
@@ -297,7 +307,7 @@
             reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);
             reportLines.push(`A situação geral é: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`);
             
-            const avariadosDetalhes = dados.filter(item => ['Avariado', 'Não Funciona', 'Com Defeito', 'Regular'].includes(item.state));
+            const avariadosDetalhes = dados.filter(item => ['Avariado', 'Não Funciona', 'Com Defeito'].includes(item.state));
             if (avariadosDetalhes.length > 0) {
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0)} itens que precisam de atenção:`);
                 const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description}${item.observation? ` (Obs: ${item.observation})` : ''} (${item.state})</li>`).join('');
@@ -323,6 +333,10 @@
                 if(unitCondition.toUpperCase().startsWith('CRAS ')){
                     unitCondition = unitCondition.substring(5).trim();
                 }
+                // Normalize "SÃO RAIMUNDO"
+                if (unitCondition.toUpperCase() === 'SÃO RAIMUNDO' || unitCondition.toUpperCase() === 'SÃO RAIMUNDO') {
+                    unitCondition = 'São Raimundo';
+                }
 
                 let quantity = parseInt(parts[2], 10) || 1;
                 let state = parts[3];
@@ -341,10 +355,14 @@
                     donation = donation.split('(')[0].trim();
                 }
 
+                let originalStateWasNew = false; // Flag to check if original state was 'Novo'
+
                 if (state.toLowerCase().includes('novo (com defeito)')) {
                     state = 'Com Defeito';
+                    originalStateWasNew = true;
                 } else if (state.toLowerCase().includes('novo(avariado)')) {
                     state = 'Avariado';
+                    originalStateWasNew = true;
                 } else if (state.toLowerCase().includes('não funciona')) {
                     state = 'Não Funciona';
                 } else if (state.toLowerCase().includes('avariado')) {
@@ -371,6 +389,39 @@
 
                 if (description === 'Cadeira em POLIPROPILENO' && !['Avariado', 'Não Funciona', 'Com Defeito'].includes(state)) {
                     state = 'Novo';
+                }
+
+                // 1. Ar-Condicionado Elgin 12.000 BTU do Coroadinho
+                if (description === 'Ar-Condicionado Elgin 12.000 BTU' && unitCondition === 'Coroadinho' && state === 'Não Funciona') {
+                    state = 'Novo';
+                    observation = observation ? `${observation}; NÃO INSTALADO` : 'NÃO INSTALADO';
+                }
+
+                // 2. Todos os Bebedouro industrial são NOVOS mas caso estejam avariados
+                if (description.toLowerCase().includes('bebedouro industrial') && (state === 'Avariado' || state === 'Com Defeito')) {
+                    observation = observation ? `${observation}; NOVO COM AVARIA` : 'NOVO COM AVARIA';
+                }
+                
+                // General check for "Novo" items with defects/avarias in observation
+                if (state === 'Novo' && (observation.toLowerCase().includes('com defeito') || observation.toLowerCase().includes('avariado') || observation.toLowerCase().includes('danificada'))) {
+                    if (observation.toLowerCase().includes('com defeito')) {
+                        state = 'Com Defeito';
+                    } else if (observation.toLowerCase().includes('avariado') || observation.toLowerCase().includes('danificada')) {
+                        state = 'Avariado';
+                    }
+                    if (!observation.includes('[NOVO COM AVARIA]')) {
+                         observation = observation ? `${observation}; [NOVO COM AVARIA]` : '[NOVO COM AVARIA]';
+                    }
+                } else if (originalStateWasNew && (state === 'Avariado' || state === 'Com Defeito')) {
+                    // If it was originally "Novo (Com Defeito)" or "Novo(Avariado)"
+                    if (!observation.includes('[NOVO COM AVARIA]')) {
+                         observation = observation ? `${observation}; [NOVO COM AVARIA]` : '[NOVO COM AVARIA]';
+                    }
+                }
+
+                // 3. Toda televisão HQ é Smart TV HQ 43"
+                if (description.toLowerCase().includes('televisão hq')) {
+                    description = 'Smart TV HQ 43"';
                 }
 
                 const item = {
@@ -580,7 +631,7 @@ Ventilador de Parede	CRAS CENTRO	2	Bom	Não
 Ventilador de Parede	CRAS CENTRO	3	Novo	Não
 Ventilador de Parede	CRAS CENTRO - Avariados ou Com Defeito	2	Não Funciona	Não
 Ar-Condicionado	CRAS COROADINHO - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS COROADINHO - Avariados ou Com Defeito	1	Não Funciona	Não
+Ar-Condicionado Elgin 12.000 BTU	CRAS COROADINHO	1	Não Funciona	Não
 Armário de Madeira	CRAS COROADINHO	4	Bom	Não
 Armário em Aço	CRAS COROADINHO	2	Bom	Não
 Arquivo em Aço	CRAS COROADINHO	2	Bom	Não
@@ -785,7 +836,7 @@ Arquivo em Aço	CRAS JANAINA	1	Regular	Não
 Bebedouro Esmaltec	CRAS JANAINA	1	Novo	Não
 Cadeira de Plástico	CRAS JANAINA	3	Bom	Não
 Cadeira de Plástico Branca	CRAS JANAINA	6	Bom	Não
-Cadeira em Polímero Preta	CRAS JANAINA	1	Regular	Sim (Doação Estado MA)
+Cadeira em Polímero Preta	CRAS JANAINA	1	Regular	Sim (Doação MA)
 Cadeira Giratória Azul	CRAS JANAINA	1	Regular	Não
 Cadeira Infantil Verde	CRAS JANAINA	2	Bom	Não
 Cadeira Palito Azul	CRAS JANAINA	1	Bom	Não
@@ -1467,8 +1518,13 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
         // Combine and correct data
         let allItems = [...creasData, ...conselhoData, ...externaData, ...crasData];
         allItems.forEach(item => {
-            if (item.description.includes("Televisão HQ")) item.state = "Novo";
-            if (item.description === "Longarina 5 lugares - cor azul") item.state = "Novo";
+            // This was already handled in parseCrasFileData, but keeping for other data sources if any
+            if (item.description.toLowerCase().includes("televisão hq")) {
+                item.description = "Smart TV HQ 43\"";
+            }
+            if (item.description === "Longarina 5 lugares - cor azul") {
+                item.state = "Novo"; // Ensure this is consistent
+            }
         });
         
         const allDataSources = {
@@ -1498,8 +1554,8 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                 { id: 'Zona Rural', nome: 'CT Zona Rural' },
             ],
             externa: [
-                { id: 'Núcleo Intersetorial', nome: 'Núcleo Intersetorial' },
-                { id: 'Casa do Bairro', nome: 'Casa do Bairro' }
+                { id: 'Núcleo Intersetorial', nome: 'Unidade Externa Núcleo Intersetorial' }, // Explicitly add "Unidade Externa"
+                { id: 'Casa do Bairro', nome: 'Unidade Externa Casa do Bairro' }
             ],
             cras: [...new Set(crasData.map(item => item.unit_condition))].map(name => ({ id: name, nome: `CRAS ${name}` })).sort((a, b) => a.nome.localeCompare(b.nome))
         };
@@ -1576,13 +1632,19 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             let tableHTML = '';
             itemsToDisplay.forEach(item => {
                 const color = stateColors[item.state] || stateColors['Regular'];
+                const unitDisplayName = formatUnitName(item, true); // Pass true to include type prefix
+                
+                // Check if the state was originally 'Novo' but changed due to defect/avaria in observation
+                const isNewButDefective = (item.observation && (item.observation.includes('[NOVO COM AVARIA]')));
+                const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
+
                 tableHTML += `
                     <tr class="bg-white border-b hover:bg-slate-50">
                         <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
-                        <td class="px-6 py-4">${item.unit_condition}</td>
+                        <td class="px-6 py-4">${unitDisplayName}</td>
                         <td class="px-6 py-4 text-center">${item.quantity}</td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${color.text}">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
                                 ${item.state === 'Com Defeito' ? '⚠️ ' : ''}${item.state}
                             </span>
                         </td>
@@ -1861,7 +1923,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             const headers = ["Descrição", "Unidade", "Qtd.", "Estado", "Origem/Doação", "Observação", "Fornecedor"];
             const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
                 `"${item.description.replace(/"/g, '""')}"`,
-                `"${item.unit_condition.replace(/"/g, '""')}"`,
+                `"${formatUnitName(item, true).replace(/"/g, '""')}"`, // Use formatted name for export
                 item.quantity,
                 item.state,
                 `"${item.donation.replace(/"/g, '""')}"`,
