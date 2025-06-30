@@ -5,21 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <!-- 
-        CHANGELOG v6:
-        1.  **Ar-Condicionado Elgin 12.000 BTU do Coroadinho:**
-            - O estado foi alterado de "Não Funciona" para "Novo" e a observação definida como "NÃO INSTALADO".
-            - Adicionada lógica para verificar outros itens "Novos" com observações de "Com Defeito" ou "Avariado", alterando o estado do item para "Com Defeito" ou "Avariado" e adicionando a observação "[NOVO COM AVARIA]".
-            - O nome do estado na tabela detalhada agora aparece em vermelho se o estado foi alterado de "Novo" para "Avariado" ou "Com Defeito" devido a uma observação.
-        2.  **Bebedouro Industrial:**
-            - Todos os "Bebedouro industrial" que são "Novos" mas estão "Avariados" ou "Com Defeito" agora têm a observação "NOVO COM AVARIA" e o nome "NOVO" aparece em vermelho no relatório de itens avariados na tabela detalhada.
-        3.  **Televisão HQ:**
-            - A descrição de todas as "Televisão HQ" foi alterada para "Smart TV HQ 43"".
-        4.  **Nomenclatura no Resumo Geral (Tipo de Unidade):**
-            - No resumo geral e na tabela detalhada, as unidades agora são identificadas com a nomenclatura do tipo de unidade (CT, CRAS, CREAS) antes do nome, exceto para "Unidade Externa". Ex: "CT Cohab / Cohatrac".
-        5.  **Normalização de Nomes de Unidade (CRAS São Raimundo):**
-            - Corrigida a duplicação de "CRAS SÃO RAIMUNDO" para que apareça apenas uma entrada normalizada.
-        6.  **Inventário Detalhado (Resumo Geral) - Categoria Unidade:**
-            - Na categoria "Unidade" do inventário detalhado, o tipo de unidade (ex: CRAS, CT) agora é exibido ao lado do nome da unidade.
+        CHANGELOG v14:
+        - Integração completa com Google Sheets.
+        - Remoção de todos os dados estáticos do código.
+        - Adição de lógica para buscar, processar e exibir dados da planilha em tempo real.
+        - O painel agora é 100% gerenciado pela planilha.
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -114,7 +104,7 @@
                 </div>
                 <div>
                     <label for="filtro-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
-                    <select id="filtro-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="filtro-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled>
                         <option value="">Todas</option>
                     </select>
                 </div>
@@ -135,12 +125,13 @@
         </div>
 
         <section id="summary-section" class="mb-8">
-             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="summary-cards">
+             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6" id="summary-cards">
                 </div>
         </section>
 
         <main id="main-content-area" class="mt-8">
-            </main>
+            <!-- O conteúdo dinâmico (boas-vindas, resumo, tabela) será inserido aqui -->
+        </main>
         
         <footer class="text-center mt-8 text-sm text-gray-500">
             <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
@@ -149,36 +140,78 @@
     </div>
 
     <script type="text/javascript">
-        // Global DOM element references
-        let filtroServicoEl;
-        let filtroUnidadeEl;
-        let filtroEstadoEl;
-        let filtroBuscaEl;
-        let summaryCardsContainerEl;
-        let mainContentAreaEl;
-        let verResumoGeralBtn;
-        let tableBodyEl;
-        let paginationControlsEl;
-        let estadoChartCanvasEl;
-        let rankingListEl;
+        // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
 
-        // Function to update dynamic DOM references after content changes
-        function updateDynamicDOMReferences() {
-            tableBodyEl = document.getElementById('inventory-table-body');
-            paginationControlsEl = document.getElementById('pagination-controls');
-            estadoChartCanvasEl = document.getElementById('estadoChart');
-            rankingListEl = document.getElementById('ranking-atencao');
-        }
+        // URL da sua planilha publicada como CSV
+        const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkajUfj-4POn1JT-FjJb-EAbmC8vNmB0PGKnkErE-9IS9WJmDKx2mZiM-ZfpRDcy4ogI4N-OafCLTy/pub?output=csv';
 
-        // Global state variables
-        let visaoAtiva = 'boasVindas';
+        // Variáveis globais de estado
+        let allItems = []; // Será preenchida com os dados da planilha
         let dadosOriginais = []; 
+        let visaoAtiva = 'boasVindas';
         let tituloDaVisao = 'Bem-vindo!';
         let currentPage = 1;
         const itemsPerPage = 20;
         let estadoChartInstance;
 
-        // Debounce function to delay execution and improve performance on search input
+        // Referências a elementos do DOM (serão preenchidas após o carregamento)
+        let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl;
+        let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
+        let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
+
+        // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (GOOGLE SHEETS) ---
+
+        /**
+         * Converte o texto CSV da planilha para um array de objetos JavaScript.
+         * @param {string} csvText - O conteúdo do arquivo CSV.
+         * @returns {Array<Object>} - Um array de objetos, onde cada objeto representa uma linha.
+         */
+        function parseCsvData(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+            
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                // Lida com vírgulas dentro de campos citados (básico)
+                const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const item = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let value = values[j] ? values[j].trim() : '';
+                    // Remove aspas do início e do fim, se existirem
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    }
+                    item[headers[j]] = value;
+                }
+                data.push(item);
+            }
+            return data;
+        }
+
+        /**
+         * Formata os dados brutos da planilha para a estrutura que o painel espera.
+         * @param {Array<Object>} sheetData - Dados brutos da planilha.
+         * @returns {Array<Object>} - Dados formatados para uso no painel.
+         */
+        function formatSheetData(sheetData) {
+            return sheetData.map((row, index) => ({
+                id: `${(row.Tipo || 'item').toLowerCase()}_${index}`,
+                description: row.Descricao || 'N/A',
+                unit_condition: row.Unidade || 'N/A',
+                quantity: parseInt(row.Quantidade, 10) || 1,
+                state: row.Estado || 'Regular',
+                donation_source: row.Origem_Doacao || 'Não',
+                observation: row.Observacao || '',
+                supplier: row.Fornecedor || '',
+                originalStateWasNew: row.Estado === 'Novo'
+            }));
+        }
+
+        // --- FUNÇÕES AUXILIARES E DE LÓGICA DO PAINEL ---
+
+        // Debounce para otimizar a performance do campo de busca
         function debounce(func, delay) {
             let timeout;
             return function(...args) {
@@ -187,7 +220,8 @@
                 timeout = setTimeout(() => func.apply(context, args), delay);
             };
         }
-
+        
+        // Cores para os estados dos itens
         const stateColors = {
             'Novo':             { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
             'Bom':              { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
@@ -197,7 +231,7 @@
             'Com Defeito':      { bg: 'bg-orange-100', text: 'text-orange-800', hex: '#f97316' }
         };
 
-        // --- DATA PROCESSING HELPER FUNCTIONS ---
+        // Agrupa itens idênticos para exibição na tabela
         function agruparItens(items) {
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
@@ -216,47 +250,41 @@
             return Object.values(agrupados);
         }
 
+        // Formata o nome da unidade para exibição
         function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
-            // First, remove the suffix if it exists
-            nomeUnidade = nomeUnidade.replace(/ - Avariados ou Com Defeito/i, '').trim();
-
             let prefix = '';
-            if (item.id.startsWith('cre_')) {
+            if (item.id.startsWith('creas_')) {
                 prefix = 'CREAS ';
             } else if (item.id.startsWith('ct_')) {
                 prefix = 'CT ';
             } else if (item.id.startsWith('ext_')) {
-                // No prefix for Unidade Externa as per request
                 return nomeUnidade; 
             } else if (item.id.startsWith('cras_')) {
-                 // Handles cases like "CRAS CRAS Anil" -> "CRAS Anil"
                  if (nomeUnidade.toUpperCase().startsWith('CRAS ')) {
-                    prefix = ''; // Already has CRAS, no need to add again
+                    prefix = '';
                  } else {
                     prefix = 'CRAS ';
                  }
             }
-            
             return `${prefix}${nomeUnidade}`;
         }
 
+        // Gera o ranking de unidades
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
-            
             const filteredItems = dados.filter(item => filterStates.includes(item.state));
-            
             const unitCounts = filteredItems.reduce((acc, item) => {
                 const displayName = formatUnitName(item);
                 acc[displayName] = (acc[displayName] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {});
-
             const ranking = Object.entries(unitCounts).map(([nome, quantidade]) => ({ nome, quantidade }));
             ranking.sort((a, b) => b.quantidade - a.quantidade);
             return ranking.slice(0, 5);
         }
-
+        
+        // Gera a configuração para o gráfico de estados
         function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
             if (!dados || dados.length === 0) return null;
             const stateCounts = dados.reduce((acc, item) => {
@@ -287,10 +315,11 @@
                     scales: {
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
-                } // Added missing '}' here
+                }
             };
         }
-
+        
+        // Gera o relatório descritivo para uma unidade
         function GerarRelatorioUnidade(dados) {
             if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
             const stateCounts = dados.reduce((acc, item) => {
@@ -318,1255 +347,15 @@
             return reportLines.join('<br>');
         }
 
-        const parseCrasFileData = (txtContent) => {
-            const lines = txtContent.trim().split('\n');
-            const data = [];
-            let idCounter = 1;
+        // --- FUNÇÕES DE RENDERIZAÇÃO (EXIBIÇÃO NA TELA) ---
 
-            for (let i = 0; i < lines.length; i++) {
-                const parts = lines[i].split('\t').map(p => p.trim());
-                if (parts.length < 5) continue;
-
-                let description = parts[0];
-                let unitCondition = parts[1].replace(/ - Avariados ou Com Defeito/i, '').trim(); // Clean unit name
-                // Handles cases like "CRAS CRAS Anil"
-                if(unitCondition.toUpperCase().startsWith('CRAS ')){
-                    unitCondition = unitCondition.substring(5).trim();
-                }
-                // Normalize "SÃO RAIMUNDO"
-                if (unitCondition.toUpperCase() === 'SÃO RAIMUNDO' || unitCondition.toUpperCase() === 'SÃO RAIMUNDO') {
-                    unitCondition = 'São Raimundo';
-                }
-
-                let quantity = parseInt(parts[2], 10) || 1;
-                let state = parts[3];
-                let donation = parts[4];
-                let observation = ''; 
-
-                const stateObsMatch = state.match(/\((.*?)\)/);
-                if (stateObsMatch && stateObsMatch[1]) {
-                    observation = stateObsMatch[1];
-                    state = state.split('(')[0].trim();
-                }
-
-                const donationObsMatch = donation.match(/\((.*?)\)/);
-                if (donationObsMatch && donationObsMatch[1]) {
-                    observation = observation? `${observation}; ${donationObsMatch[1]}` : donationObsMatch[1];
-                    donation = donation.split('(')[0].trim();
-                }
-
-                let originalStateWasNew = false; // Flag to check if original state was 'Novo'
-
-                if (state.toLowerCase().includes('novo (com defeito)')) {
-                    state = 'Com Defeito';
-                    originalStateWasNew = true;
-                } else if (state.toLowerCase().includes('novo(avariado)')) {
-                    state = 'Avariado';
-                    originalStateWasNew = true;
-                } else if (state.toLowerCase().includes('não funciona')) {
-                    state = 'Não Funciona';
-                } else if (state.toLowerCase().includes('avariado')) {
-                    state = 'Avariado';
-                } else if (state.toLowerCase().includes('com defeito')) {
-                    state = 'Com Defeito';
-                } else if (state.toLowerCase().includes('regular')) {
-                    state = 'Regular';
-                } else if (state.toLowerCase().includes('bom')) {
-                    state = 'Bom';
-                } else if (state.toLowerCase().includes('novo')) {
-                    state = 'Novo';
-                }
-
-                donation = (donation.toLowerCase() === 'sim')? 'Sim' : 'Não';
-                
-                const longarinaMatch = description.match(/Longarina (?:5|cinco) lugares?/i);
-                if (longarinaMatch) {
-                    description = 'Longarina 5 lugares - cor azul';
-                }
-                if (description.includes('Poltronas')) {
-                    description = 'Cadeira em POLIPROPILENO';
-                }
-
-                if (description === 'Cadeira em POLIPROPILENO' && !['Avariado', 'Não Funciona', 'Com Defeito'].includes(state)) {
-                    state = 'Novo';
-                }
-
-                // 1. Ar-Condicionado Elgin 12.000 BTU do Coroadinho
-                if (description === 'Ar-Condicionado Elgin 12.000 BTU' && unitCondition === 'Coroadinho' && state === 'Não Funciona') {
-                    state = 'Novo';
-                    observation = observation ? `${observation}; NÃO INSTALADO` : 'NÃO INSTALADO';
-                }
-
-                // 2. Todos os Bebedouro industrial são NOVOS mas caso estejam avariados
-                if (description.toLowerCase().includes('bebedouro industrial') && (state === 'Avariado' || state === 'Com Defeito')) {
-                    observation = observation ? `${observation}; NOVO COM AVARIA` : 'NOVO COM AVARIA';
-                }
-                
-                // General check for "Novo" items with defects/avarias in observation
-                if (state === 'Novo' && (observation.toLowerCase().includes('com defeito') || observation.toLowerCase().includes('avariado') || observation.toLowerCase().includes('danificada'))) {
-                    if (observation.toLowerCase().includes('com defeito')) {
-                        state = 'Com Defeito';
-                    } else if (observation.toLowerCase().includes('avariado') || observation.toLowerCase().includes('danificada')) {
-                        state = 'Avariado';
-                    }
-                    if (!observation.includes('[NOVO COM AVARIA]')) {
-                         observation = observation ? `${observation}; [NOVO COM AVARIA]` : '[NOVO COM AVARIA]';
-                    }
-                } else if (originalStateWasNew && (state === 'Avariado' || state === 'Com Defeito')) {
-                    // If it was originally "Novo (Com Defeito)" or "Novo(Avariado)"
-                    if (!observation.includes('[NOVO COM AVARIA]')) {
-                         observation = observation ? `${observation}; [NOVO COM AVARIA]` : '[NOVO COM AVARIA]';
-                    }
-                }
-
-                // 3. Toda televisão HQ é Smart TV HQ 43"
-                if (description.toLowerCase().includes('televisão hq')) {
-                    description = 'Smart TV HQ 43"';
-                }
-
-                const item = {
-                    id: `cras_${unitCondition.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${idCounter++}`,
-                    description: description,
-                    unit_condition: unitCondition,
-                    quantity: quantity,
-                    state: state,
-                    donation: donation,
-                    observation: observation,
-                    supplier: '' 
-                };
-
-                data.push(item);
-            }
-            return data;
-        };
-        
-        // --- INVENTORY DATA ---
-        const allCrasRawData = `
-Ar-Condicionado HQ 9.000 BTU	CRAS ANIL	2	Novo	Não
-Armário em Aço	CRAS ANIL	3	Bom	Não
-Armário em Aço	CRAS ANIL	1	Regular	Não
-Arquivo em Aço	CRAS ANIL	3	Bom	Não
-Bebedouro Industrial	CRAS ANIL - Avariados ou Com Defeito	1	Novo (Com Defeito)	Não
-Cadeira de Plástico Branca	CRAS ANIL	10	Bom	Não
-Cadeira de Plástico Verde	CRAS ANIL	14	Bom	Não
-Cadeira em Polímero Azul	CRAS ANIL	9	Novo	Não
-Cadeira Infantil Rosa	CRAS ANIL	3	Bom	Não
-Cadeira Infantil Azul e Roxo	CRAS ANIL	2	Bom	Não
-Cadeira Palito Azul	CRAS ANIL	1	Bom	Não
-Cadeira Tipo Diretor	CRAS ANIL	1	Novo	Não
-Cadeira Giratória Azul	CRAS ANIL	1	Regular	Não
-Cadeira Giratória Preta	CRAS ANIL	1	Regular	Não
-Cadeira de Escritório Preta	CRAS ANIL	1	Bom	Sim
-Estante em Aço	CRAS ANIL	4	Bom	Não
-Estante em Aço	CRAS ANIL	2	Regular	Não
-Fogão 4 Bocas	CRAS ANIL	1	Novo	Não
-Geladeira Esmaltec	CRAS ANIL	1	Novo	Não
-Longarina 3 Lugares	CRAS ANIL	1	Bom	Não
-Longarina Azul 5 Lugares	CRAS ANIL	3	Novo	Não
-Mesa de Escritório	CRAS ANIL	5	Novo	Não
-Mesa de Escritório	CRAS ANIL	1	Bom	Não
-Mesa de Escritório	CRAS ANIL	2	Bom	Sim
-Mesa para Digitador	CRAS ANIL	1	Bom	Não
-Mesa em L	CRAS ANIL	1	Novo	Não
-Mesa de Plástico	CRAS ANIL	1	Bom	Não
-Mesa de Plástico Branca	CRAS ANIL	4	Bom	Não
-Mesa em MDF	CRAS ANIL - Avariados ou Com Defeito	1	Avariado	Não
-Ponto Eletrônico	CRAS ANIL	1	Bom	Não
-Televisão HQ	CRAS ANIL	1	Novo	Não
-Ventilador de Parede	CRAS ANIL	3	Novo	Não
-Ventilador de Parede	CRAS ANIL - Avariados ou Com Defeito	1	Avariado	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS ANJO DA GUARDA	1	Novo	Não
-Ar-Condicionado 12.000 BTU	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado Midea 12.000 BTU	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Não Funciona	Não
-Armário em Aço	CRAS ANJO DA GUARDA	3	Bom	Não
-Armário em Aço	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Avariado	Não
-Arquivo em Aço	CRAS ANJO DA GUARDA	1	Bom	Não
-Arquivo em Aço	CRAS ANJO DA GUARDA	1	Regular	Não
-Bebedouro Industrial	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Não Funciona	Não
-Cadeira de Plástico	CRAS ANJO DA GUARDA	1	Bom	Não
-Cadeira de Plástico Azul	CRAS ANJO DA GUARDA	3	Bom	Não
-Cadeira de Plástico Branca	CRAS ANJO DA GUARDA	18	Bom	Não
-Cadeira em Polímero Preta	CRAS ANJO DA GUARDA	1	Bom	Sim
-Cadeira Palito Azul	CRAS ANJO DA GUARDA	3	Bom	Não
-Cadeira Palito Azul	CRAS ANJO DA GUARDA	1	Regular	Não
-Cadeira Palito Azul	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Palito Cinza	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Palito Preta	CRAS ANJO DA GUARDA	2	Bom	Não
-Cadeira Palito Preta	CRAS ANJO DA GUARDA	2	Regular	Não
-Cadeira de Escritório Azul	CRAS ANJO DA GUARDA	1	Bom	Não
-Cadeira de Escritório Azul	CRAS ANJO DA GUARDA	1	Regular	Não
-Cadeira de Escritório Azul	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Tipo Diretor Preta	CRAS ANJO DA GUARDA	1	Bom	Não
-Computador Positivo	CRAS ANJO DA GUARDA - Avariados ou Com Defeito	1	Não Funciona	Não
-Estabilizador TS Shara	CRAS ANJO DA GUARDA	2	Novo	Não
-Estabilizador	CRAS ANJO DA GUARDA	1	Bom	Não
-Estante em Aço	CRAS ANJO DA GUARDA	2	Bom	Não
-Fogão 4 Bocas	CRAS ANJO DA GUARDA	1	Novo	Não
-Geladeira Esmaltec	CRAS ANJO DA GUARDA	1	Novo	Não
-Longarina 3 Lugares Azul	CRAS ANJO DA GUARDA	5	Bom	Não
-Mesa de Escritório	CRAS ANJO DA GUARDA	2	Bom	Não
-Mesa de Escritório	CRAS ANJO DA GUARDA	2	Regular	Não
-Mesa de Escritório	CRAS ANJO DA GUARDA	1	Regular	Sim
-Mesa para Digitador	CRAS ANJO DA GUARDA	3	Bom	Não
-Mesa de Plástico Branca	CRAS ANJO DA GUARDA	1	Bom	Não
-Mesa de Plástico Infantil Amarela	CRAS ANJO DA GUARDA	1	Bom	Não
-Mesa Redonda Cinza	CRAS ANJO DA GUARDA	1	Regular	Não
-Ponto Eletrônico	CRAS ANJO DA GUARDA	1	Bom	Não
-Televisão HQ	CRAS ANJO DA GUARDA	1	Novo	Não
-Totem	CRAS ANJO DA GUARDA	1	Bom	Não
-Ventilador de Coluna	CRAS ANJO DA GUARDA	1	Bom	Não
-Ventilador de Parede Amarelo	CRAS ANJO DA GUARDA	1	Novo	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS BACANGA	1	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS BACANGA	1	Novo	Não
-Armário em Aço	CRAS BACANGA	2	Bom	Não
-Armário em Aço	CRAS BACANGA	2	Regular	Não
-Arquivo em Aço	CRAS BACANGA	1	Bom	Não
-Arquivo em Aço	CRAS BACANGA	1	Regular	Não
-Bebedouro Industrial	CRAS BACANGA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Plástico	CRAS BACANGA	8	Bom	Não
-Cadeira de Plástico Branca	CRAS BACANGA	12	Bom	Não
-Cadeira Palito Azul	CRAS BACANGA	1	Bom	Não
-Cadeira Giratória Azul	CRAS BACANGA	1	Bom	Não
-Cadeira Tipo Diretor	CRAS BACANGA	1	Bom	Não
-Cadeira de Escritório Azul	CRAS BACANGA	1	Bom	Não
-Computador JAB	CRAS BACANGA	2	Bom	Não
-Computador Positivo	CRAS BACANGA	1	Bom	Sim (Doação Estado MA)
-CPU Dell	CRAS BACANGA	1	Bom	Não
-Estabilizador	CRAS BACANGA	1	Novo	Não
-Estante em Aço	CRAS BACANGA	2	Bom	Não
-Estante em Aço	CRAS BACANGA	1	Regular	Não
-Fogão 4 Bocas	CRAS BACANGA	1	Novo	Não
-Freezer Consul 420L	CRAS BACANGA	1	Bom	Não
-Geladeira Esmaltec	CRAS BACANGA	1	Novo	Não
-Impressora Brother HL1202	CRAS BACANGA	1	Bom	Não
-Longarina 5 lugares	CRAS BACANGA	5	novo	Não
-Mesa de Escritório	CRAS BACANGA	2	Bom	Não
-Mesa de Escritório	CRAS BACANGA	3	Regular	Não
-Mesa de Escritório	CRAS BACANGA - Avariados ou Com Defeito	1	Avariado	Não
-Mesa para Digitador	CRAS BACANGA	2	Bom	Não
-Mesa de Plástico	CRAS BACANGA	1	Bom	Não
-Mesa de Plástico Azul Infantil	CRAS BACANGA	1	Bom	Não
-Mesa de Plástico Branca	CRAS BACANGA	3	Bom	Não
-Mesa para Impressora	CRAS BACANGA - Avariados ou Com Defeito	1	Avariado	Sim (Doação CAEMA)
-Modem TP-Link	CRAS BACANGA	1	Bom	Sim (Doação Vale)
-Ponto Eletrônico	CRAS BACANGA	1	Bom	Não
-Rack	CRAS BACANGA	1	Novo	Não
-Switch	CRAS BACANGA	1	Novo	Não
-Televisão HQ	CRAS BACANGA	1	Novo	Não
-Ventilador de Parede	CRAS BACANGA	2	Novo	Não
-Ventilador de Parede	CRAS BACANGA	1	Bom	Não
-Ventilador de Parede Amarelo	CRAS BACANGA	1	Bom	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS BEQUIMÃO	1	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS BEQUIMÃO	1	Novo	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS BEQUIMÃO	2	Novo	Não
-Armário em Aço	CRAS BEQUIMÃO	4	Bom	Sim (Doação Estado MA)
-Armário em Aço	CRAS BEQUIMÃO - Avariados ou Com Defeito	2	Avariado	Sim (Doação Estado MA)
-Bebedouro de Coluna	CRAS BEQUIMÃO	1	Novo	Não
-Cadeira de Escritório Preta	CRAS BEQUIMÃO	1	Novo	Sim (Permuta)
-Cadeira de Escritório Preta	CRAS BEQUIMÃO	6	Novo	Sim (Permuta)
-Cadeira em Polímero Azul	CRAS BEQUIMÃO	2	Novo	Não
-Cadeira em Polímero Azul	CRAS BEQUIMÃO	15	Bom	Sim (Doação Estado MA)
-Cadeira de Plástico Branca	CRAS BEQUIMÃO	13	Bom	Não
-Cadeira de Plástico Branca	CRAS BEQUIMÃO	1	Novo	Não
-Cadeira Presidente	CRAS BEQUIMÃO	1	Novo	Não
-Computador HP	CRAS BEQUIMÃO	1	Bom	No
-Computador JAB	CRAS BEQUIMÃO	1	Bom	No
-Computador Positivo	CRAS BEQUIMÃO	2	Bom	Não
-Estante em Aço	CRAS BEQUIMÃO	1	Bom	Não
-Fogão	CRAS BEQUIMÃO	1	Novo	Não
-Geladeira Esmaltec	CRAS BEQUIMÃO	1	Novo	Não
-Longarina 5 lugares	CRAS BEQUIMÃO	4	Novo	Não
-Mesa de Escritório	CRAS BEQUIMÃO	1	Bom	Não
-Mesa de Escritório	CRAS BEQUIMÃO	2	Novo	Não
-Mesa de Escritório com Gaveteiro	CRAS BEQUIMÃO	4	Novo	Não
-Mesa em L	CRAS BEQUIMÃO	2	Novo	No
-Mesa de Plástico	CRAS BEQUIMÃO	2	Bom	Não
-Mesa para Reunião	CRAS BEQUIMÃO	1	Regular	Sim (Doação Estado MA)
-Modem TP-Link	CRAS BEQUIMÃO	1	Novo	Não
-Switch D-Link 24 Portas	CRAS BEQUIMÃO	1	Bom	Não
-Televisão HQ	CRAS BEQUIMÃO	1	Novo	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS CENTRO	2	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS CENTRO	2	Novo	Não
-Ar-Condicionado Gree 12.000 BTU	CRAS CENTRO	1	Novo	Não
-Armário em Aço	CRAS CENTRO	3	Regular	Não
-Armário em Aço	CRAS CENTRO - Avariados ou Com Defeito	2	Avariado	Não
-Armário em MDF	CRAS CENTRO	1	Bom	Não
-Bebedouro Industrial	CRAS CENTRO - Avariados ou Com Defeito	1	Não Funciona	Não
-Cadeira de Escritório Azul	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Escritório Preta	CRAS CENTRO	3	Regular	Não
-Cadeira de Escritório Preta	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Giratória	CRAS CENTRO - Avariados ou Com Defeito	3	Avariado	Não
-Cadeira Palito	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	No
-Cadeira Palito Azul	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Palito Cinza	CRAS CENTRO	1	Regular	Não
-Cadeira Palito Cinza	CRAS CENTRO - Avariados ou Com Defeito	3	Avariado	Não
-Cadeira Palito Preta	CRAS CENTRO	1	Bom	Não
-Cadeira de Plástico	CRAS CENTRO	20	Bom	Não
-Cadeira de Plástico Branca	CRAS CENTRO	2	Bom	Não
-Cadeira de Plástico com Braço	CRAS CENTRO	3	Bom	Não
-Cadeira Presidente	CRAS CENTRO	1	Novo	Não
-Cômoda	CRAS CENTRO	1	Bom	Sim (Doação Estado MA)
-Estante em Aço	CRAS CENTRO	3	Bom	Não
-Estante em Aço	CRAS CENTRO	1	Regular	Não
-Fogão Industrial com Forno	CRAS CENTRO	1	Novo	Não
-Geladeira Consul CRD37	CRAS CENTRO	1	Regular	Não
-Geladeira Esmaltec	CRAS CENTRO	1	Novo	Não
-Longarina 3 Lugares Azul	CRAS CENTRO	3	Bom	Não
-Longarina 5 lugares	CRAS CENTRO	8	Novo	Não
-Mesa de Apoio	CRAS CENTRO	1	Regular	Não
-Mesa de Escritório	CRAS CENTRO	1	Regular	Não
-Mesa de Escritório	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Mesa de Escritório em MDF	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Mesa de Escritório em Madeira	CRAS CENTRO	1	Regular	Sim (Doação Estado MA)
-Mesa de Escritório	CRAS CENTRO	3	Novo	Não
-Mesa de Plástico	CRAS CENTRO	2	Bom	Não
-Mesa em L	CRAS CENTRO	1	Novo	Não
-Mesa em L	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Mesa Redonda	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Rack de Computador	CRAS CENTRO - Avariados ou Com Defeito	1	Avariado	Não
-Switch	CRAS CENTRO	1	Novo	Não
-Rack	CRAS CENTRO	1	novo	Não
-Televisão HQ	CRAS CENTRO	1	Novo	Não
-Ventilador de Parede	CRAS CENTRO	2	Bom	Não
-Ventilador de Parede	CRAS CENTRO	3	Novo	Não
-Ventilador de Parede	CRAS CENTRO - Avariados ou Com Defeito	2	Não Funciona	Não
-Ar-Condicionado	CRAS COROADINHO - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS COROADINHO	1	Não Funciona	Não
-Armário de Madeira	CRAS COROADINHO	4	Bom	Não
-Armário em Aço	CRAS COROADINHO	2	Bom	Não
-Arquivo em Aço	CRAS COROADINHO	2	Bom	Não
-Bebedouro de Coluna	CRAS COROADINHO	1	Novo	Não
-Cadeira de Plástico	CRAS COROADINHO	2	Bom	Não
-Cadeira de Plástico Branca	CRAS COROADINHO	2	Bom	Não
-Cadeira de Plástico com Braço	CRAS COROADINHO	9	Bom	Não
-Cadeira de Plástico Verde	CRAS COROADINHO	7	Bom	Não
-Cadeira Giratória Azul	CRAS COROADINHO	3	Bom	Não
-Cadeira Palito Azul	CRAS COROADINHO	1	Bom	Não
-Caixa de Som	CRAS COROADINHO	1	Bom	Não
-Computador Alucom	CRAS COROADINHO	1	Bom	No
-Computador HP	CRAS COROADINHO	1	Bom	No
-Fogão 4 Bocas	CRAS COROADINHO	1	Novo	Não
-Freezer Consul 420L	CRAS COROADINHO	1	Bom	Não
-Geladeira Esmaltec	CRAS COROADINHO	1	Novo	Não
-Longarina 3 Lugares Azul	CRAS COROADINHO	2	Bom	Não
-Longarina 3 Lugares Preta	CRAS COROADINHO	2	Bom	Sim (Doação Estado MA)
-Mesa de Escritório com Gaveteiro	CRAS COROADINHO	4	Bom	Não
-Mesa de Plástico Branca	CRAS COROADINHO	5	Bom	Não
-Mesa para Digitador	CRAS COROADINHO	2	Bom	Não
-Mesa para Refeição	CRAS COROADINHO	1	Bom	Não
-Mesa em L	CRAS COROADINHO - Avariados ou Com Defeito	1	Avariado	Não
-Totem	CRAS COROADINHO	1	Bom	Não
-Ventilador de Coluna	CRAS COROADINHO	1	Bom	Não
-Ventilador de Parede	CRAS COROADINHO	2	Bom	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS JOÃO DE DEUS - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS JOÃO DE DEUS	1	Novo	Não
-Armário em Aço	CRAS JOÃO DE DEUS	3	Bom	Não
-Armário em Aço	CRAS JOÃO DE DEUS	1	Bom	Sim (Doação Estado MA)
-Armário em Aço	CRAS JOÃO DE DEUS	1	Regular	No
-Armário em Aço	CRAS JOÃO DE DEUS - Avariados ou Com Defeito	2	Avariado	Não
-Balcão de Atendimento em MDF	CRAS JOÃO DE DEUS	1	Bom	Não
-Bebedouro de Coluna	CRAS JOÃO DE DEUS	1	Bom	Não
-Bebedouro Industrial	CRAS JOÃO DE DEUS	1	Novo	Não
-Cadeira de Escritório	CRAS JOÃO DE DEUS - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Escritório Azul	CRAS JOÃO DE DEUS	2	Bom	Não
-Cadeira de Escritório Azul	CRAS JOÃO DE DEUS	1	Regular	Não
-Cadeira de Escritório Preta	CRAS JOÃO DE DEUS	1	Bom	Sim (Doação Estado MA)
-Cadeira de Plástico	CRAS JOÃO DE DEUS	4	Bom	Não
-Cadeira de Plástico Branca	CRAS JOÃO DE DEUS	9	Bom	Não
-Cadeira de Plástico Laranja	CRAS JOÃO DE DEUS	8	Bom	Não
-Cadeira Infantil Azul	CRAS JOÃO DE DEUS	2	Bom	Não
-Cadeira Infantil de Plástico	CRAS JOÃO DE DEUS	1	Bom	Não
-Cadeira Palito Azul	CRAS JOÃO DE DEUS	1	Bom	Não
-Estante em Aço	CRAS JOÃO DE DEUS	3	Bom	Não
-Fogão 4 Bocas	CRAS JOÃO DE DEUS	1	Novo	Não
-Geladeira Esmaltec	CRAS JOÃO DE DEUS	1	Novo	Não
-Longarina 3 Lugares	CRAS JOÃO DE DEUS	3	Bom	Não
-Longarina 3 Lugares Preta	CRAS JOÃO DE DEUS - Avariados ou Com Defeito	1	Avariado	Não
-Longarina 5 lugares	CRAS JOÃO DE DEUS	5	Novo	Não
-Mesa de Escritório Azul	CRAS JOÃO DE DEUS	1	Bom	Sim (Doação CEMAR)
-Mesa de Escritório com Gaveteiro	CRAS JOÃO DE DEUS	3	Bom	Não
-Mesa de Escritório com Gaveteiro	CRAS JOÃO DE DEUS	1	Regular	Sim (Doação CEMAR)
-Mesa de Plástico Branca	CRAS JOÃO DE DEUS	1	Bom	Não
-Mesa para Digitador	CRAS JOÃO DE DEUS	1	Bom	Não
-Mesa para Escritório com Gaveteiro	CRAS JOÃO DE DEUS	1	Regular	Sim (Doação Estado MA)
-Ponto Eletrônico	CRAS JOÃO DE DEUS	1	Bom	Não
-Televisão HQ	CRAS JOÃO DE DEUS	1	Novo	Não
-Totem	CRAS JOÃO DE DEUS	1	Bom	Não
-Ventilador de Parede	CRAS JOÃO DE DEUS	2	Novo	Não
-Ventilador de Parede Amarelo	CRAS JOÃO DE DEUS	1	Novo	Não
-Ar-Condicionado 12.000 BTU	CRAS SÃO FRANCISCO - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS SÃO FRANCISCO - Avariados ou Com Defeito	1	Não Funciona	Sim (Doação Estado MA)
-Ar-Condicionado Elgin 12.000 BTU	CRAS SÃO FRANCISCO	1	Novo	Não
-Armário em Aço	CRAS SÃO FRANCISCO	2	Bom	Não
-Armário em Aço	CRAS SÃO FRANCISCO	2	Regular	Não
-Armário em Aço	CRAS SÃO FRANCISCO - Avariados ou Com Defeito	1	Avariado	Não
-Arquivo em Aço	CRAS SÃO FRANCISCO	1	Regular	Não
-Cadeira de Plástico	CRAS SÃO FRANCISCO	17	Bom	Não
-Cadeira em Polímero Preta	CRAS SÃO FRANCISCO	2	Bom	Sim (Doação Estado MA)
-Cadeira Palito Azul	CRAS SÃO FRANCISCO	3	Bom	Não
-Cadeira Presidente	CRAS SÃO FRANCISCO	1	Bom	Não
-Cadeira Tipo Diretor	CRAS SÃO FRANCISCO	1	Regular	Não
-Estante em Aço	CRAS SÃO FRANCISCO	1	Bom	Não
-Fogão 4 Bocas	CRAS SÃO FRANCISCO	1	Novo	Não
-Geladeira Esmaltec	CRAS SÃO FRANCISCO	1	Novo	Não
-Impressora Brother HL1202	CRAS SÃO FRANCISCO - Avariados ou Com Defeito	1	Não Funciona	Não
-Longarina 3 Lugares	CRAS SÃO FRANCISCO	2	Bom	Não
-Longarina 5 lugares	CRAS SÃO FRANCISCO	5	Novo	Não
-Mesa de Escritório	CRAS SÃO FRANCISCO	1	Regular	Sim (Doação Estado MA)
-Mesa de Escritório	CRAS SÃO FRANCISCO	3	Regular	Não
-Mesa de Escritório	CRAS SÃO FRANCISCO - Avariados ou Com Defeito	1	Avariado	Não
-Mesa de Plástico	CRAS SÃO FRANCISCO	5	Bom	Não
-Mesa para Digitador	CRAS SÃO FRANCISCO	2	Bom	Não
-Mesa Redonda	CRAS SÃO FRANCISCO	1	Bom	Não
-Mesa em L	CRAS SÃO FRANCISCO	1	Novo	Não
-Ponto Eletrônico	CRAS SÃO FRANCISCO	1	Bom	Não
-Televisão HQ	CRAS SÃO FRANCISCO	1	Novo	Não
-Ventilador de Parede	CRAS SÃO FRANCISCO	1	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS TURU	1	Novo	Não
-Ar-Condicionado Elgin 18.000 BTU	CRAS TURU - Avariados ou Com Defeito	1	Não Funciona	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS TURU	1	Bom	Não
-Ar-Condicionado Gree 18.000 BTU	CRAS TURU	1	Bom	Não
-Armário em Aço	CRAS TURU	4	Bom	Não
-Armário em Aço	CRAS TURU	1	Bom	Sim (Doação Estado MA)
-Armário em Aço	CRAS TURU	1	Regular	Não
-Arquivo em MDF Branco	CRAS TURU	2	Bom	Não
-Arquivo em Aço	CRAS TURU	1	Bom	Não
-Balcão de Atendimento em MDF	CRAS TURU	1	Bom	Não
-Bebedouro Industrial	CRAS TURU - Avariados ou Com Defeito	1	Avariado	Não
-Caixa de Som	CRAS TURU	1	Bom	Não
-Cadeira de Escritório	CRAS TURU	1	Bom	Não
-Cadeira de Escritório Azul	CRAS TURU	2	Bom	Sim (Doação SEMMAM)
-Cadeira de Escritório Azul	CRAS TURU - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Plástico Azul	CRAS TURU	8	Bom	Não
-Cadeira de Plástico Branca	CRAS TURU	18	Bom	Não
-Cadeira de Plástico Preta	CRAS TURU	1	Bom	Não
-Cadeira de Plástico Vermelha	CRAS TURU	5	Bom	Não
-Cadeira Diretor Azul	CRAS TURU	1	Bom	Não
-Cadeira em Polímero Preta	CRAS TURU	1	Regular	Sim (Doação Estado MA)
-Cadeira Fixa Preta	CRAS TURU	1	Bom	Não
-Cadeira Fixa Preta	CRAS TURU	3	Regular	Não
-Cadeira Infantil Vermelha	CRAS TURU	1	Bom	Não
-Cadeira Presidente	CRAS TURU	1	Novo	Não
-Computador JAB	CRAS TURU	1	Bom	Não
-Estante em Aço	CRAS TURU	4	Bom	Não
-Fogão 4 Bocas Realce	CRAS TURU	1	Novo	Não
-Geladeira Esmaltec	CRAS TURU	1	Novo	Não
-Impressora Brother HL1202	CRAS TURU	1	Bom	Não
-Liquidificador Mondial Thunder 3	CRAS TURU	1	Bom	Não
-Longarina 3 Lugares Azul	CRAS TURU	5	Regular	Não
-Mesa de Apoio	CRAS TURU	1	Bom	Não
-Mesa de Escritório com Gaveteiro	CRAS TURU	1	Bom	Não
-Mesa de Refeitório em Madeira	CRAS TURU	1	Bom	Não
-Mesa em L Branca	CRAS TURU	1	Bom	No
-Mesa para Digitador	CRAS TURU	4	Bom	Não
-Mesa Redonda Branca	CRAS TURU - Avariados ou Com Defeito	1	Avariado	Não
-Ponto Eletrônico	CRAS TURU	1	Bom	Não
-Televisão HQ	CRAS TURU	1	Novo	Não
-Ventilador de Parede	CRAS TURU	1	Bom	Não
-Ventilador de Parede Amarelo	CRAS TURU	1	Bom	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS VILA NOVA	1	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS VILA NOVA	1	Novo	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS VILA NOVA - Avariados ou Com Defeito	1	Não Funciona	Não
-Armário em Aço	CRAS VILA NOVA	2	Bom	Não
-Armário em Aço	CRAS VILA NOVA - Avariados ou Com Defeito	3	Avariado	Não
-Arquivo em Aço	CRAS VILA NOVA	1	Bom	No
-Arquivo em Aço	CRAS VILA NOVA - Avariados ou Com Defeito	1	Avariado	Não
-Bebedouro Industrial	CRAS VILA NOVA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Escritório Azul	CRAS VILA NOVA	1	Regular	Não
-Cadeira de Escritório Preta	CRAS VILA NOVA	1	Regular	Não
-Cadeira de Plástico	CRAS VILA NOVA	4	Bom	Não
-Cadeira de Plástico Branca	CRAS VILA NOVA	4	Bom	Não
-Cadeira de Plástico Laranja	CRAS VILA NOVA	10	Bom	Não
-Cadeira em Polímero Preta	CRAS VILA NOVA	1	Bom	Sim (Doação Estado MA)
-Cadeira Infantil Cinza	CRAS VILA NOVA	3	Bom	Não
-Cadeira Palito Cinza	CRAS VILA NOVA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Palito Preta	CRAS VILA NOVA	3	Regular	Não
-Cadeira Palito Preta	CRAS VILA NOVA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Tipo Diretor Azul	CRAS VILA NOVA	1	Bom	Não
-Computador JAB	CRAS VILA NOVA	1	Bom	Não
-Computador Positivo	CRAS VILA NOVA	1	Bom	Não
-Estante em Aço	CRAS VILA NOVA	1	Bom	Não
-Fogão 4 Bocas	CRAS VILA NOVA	1	Novo	Não
-Geladeira Esmaltec	CRAS VILA NOVA	1	Novo	Não
-Longarina 3 Lugares	CRAS VILA NOVA - Avariados ou Com Defeito	2	Avariado	Não
-Mesa de Escritório	CRAS VILA NOVA	2	Regular	Não
-Mesa de Escritório	CRAS VILA NOVA - Avariados ou Com Defeito	2	Avariado	Não
-Mesa de Plástico Infantil	CRAS VILA NOVA	1	Bom	Não
-Mesa para Computador	CRAS VILA NOVA - Avariados ou Com Defeito	2	Avariado	Não
-Mesa para Digitador	CRAS VILA NOVA	3	Bom	Não
-Mesa Redonda	CRAS VILA NOVA - Avariados ou Com Defeito	1	Avariado	Não
-Ponto Eletrônico	CRAS VILA NOVA	1	Bom	Não
-Televisão HQ	CRAS VILA NOVA	1	Novo	Não
-Ventilador de Parede	CRAS VILA NOVA	2	Novo	Não
-Ventilador de Parede	CRAS VILA NOVA	1	Bom	Não
-Ventilador de Parede Amarelo	CRAS VILA NOVA	1	Bom	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS SÃO RAIMUNDO	2	Novo	Não
-Ar-Condicionado Elgin 18.000 BTU	CRAS SÃO RAIMUNDO	1	Bom	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS SÃO RAIMUNDO	2	Novo	Não
-Ar-Condicionado TCL 12.000 BTU	CRAS SÃO RAIMUNDO	1	Novo	Não
-Armário em Aço	CRAS SÃO RAIMUNDO	1	Bom	Não
-Armário em Aço	CRAS SÃO RAIMUNDO	5	Bom	Sim (Doação Estado MA)
-Bebedouro Industrial	CRAS SÃO RAIMUNDO	1	Novo	Não
-Cadeira de Escritório Office Preta (P)	CRAS SÃO RAIMUNDO	12	Novo	Não
-Cadeira de Plástico	CRAS SÃO RAIMUNDO	10	Bom	Não
-Cadeira de Plástico Branca	CRAS SÃO RAIMUNDO	10	Bom	Não
-Cadeira Presidente	CRAS SÃO RAIMUNDO	1	Novo	Não
-Computador JAB	CRAS SÃO RAIMUNDO	1	Bom	Não
-Estante em Aço	CRAS SÃO RAIMUNDO	2	Bom	Não
-Fogão 4 Bocas	CRAS SÃO RAIMUNDO	1	Novo	Não
-Geladeira Esmaltec	CRAS SÃO RAIMUNDO	1	Novo	Não
-Impressora Brother HL1202	CRAS SÃO RAIMUNDO	1	Bom	Não
-Longarina 5 lugares	CRAS SÃO RAIMUNDO	6	Novo	Não
-Mesa de Apoio	CRAS SÃO RAIMUNDO	1	Bom	Não
-Mesa de Escritório	CRAS SÃO RAIMUNDO	2	Novo (nota nova 2025?)	Não
-Mesa de Escritório	CRAS SÃO RAIMUNDO	1	Regular	Não
-Mesa de Escritório com Gaveteiro	CRAS SÃO RAIMUNDO	1	Bom	Sim (Doação Estado MA)
-Mesa de Escritório Sem Gaveta	CRAS SÃO RAIMUNDO	4	Novo (nota nova 2025?)	Não
-Mesa de Plástico Branca	CRAS SÃO RAIMUNDO	4	Bom	Não
-Mesa em L	CRAS SÃO RAIMUNDO	1	Novo	Não
-Mesa para Digitador	CRAS SÃO RAIMUNDO	2	Bom	Não
-Mesa para Reunião	CRAS SÃO RAIMUNDO	1	Regular	Sim (Doação Estado MA)
-Televisão HQ	CRAS SÃO RAIMUNDO	1	Novo	Não
-Ventilador de Parede	CRAS SÃO RAIMundo	2	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS JANAINA	2	Novo	Não
-Armário em Aço	CRAS JANAINA	2	Bom	Não
-Armário em Aço	CRAS JANAINA	2	Regular	Não
-Armário em Aço	CRAS JANAINA - Avariados ou Com Defeito	1	Avariado	Sim (Doação Estado MA)
-Arquivo em Aço	CRAS JANAINA	1	Regular	Não
-Bebedouro Esmaltec	CRAS JANAINA	1	Novo	Não
-Cadeira de Plástico	CRAS JANAINA	3	Bom	Não
-Cadeira de Plástico Branca	CRAS JANAINA	6	Bom	Não
-Cadeira em Polímero Preta	CRAS JANAINA	1	Regular	Sim (Doação MA)
-Cadeira Giratória Azul	CRAS JANAINA	1	Regular	Não
-Cadeira Infantil Verde	CRAS JANAINA	2	Bom	Não
-Cadeira Palito Azul	CRAS JANAINA	1	Bom	Não
-Cadeira Presidente	CRAS JANAINA	1	Novo	Não
-Cadeira Tipo Diretor Preta	CRAS JANAINA	1	Bom	Não
-Computador Bluecase	CRAS JANAINA	1	Bom	No
-Computador JAB	CRAS JANAINA	1	Bom	No
-Estante em Aço	CRAS JANAINA	2	Bom	Não
-Estante em Aço	CRAS JANAINA	1	Regular	Não
-Fogão 4 Bocas	CRAS JANAINA	1	Novo	Não
-Geladeira Esmaltec	CRAS JANAINA	1	Novo	Não
-Impressora Brother HL1202	CRAS JANAINA - Avariados ou Com Defeito	1	Não Funciona	Não
-Longarina 3 Lugares Azul	CRAS JANAINA	4	Bom	Não
-Mesa de Apoio	CRAS JANAINA	1	Bom	Não
-Mesa de Escritório	CRAS JANAINA	4	Regular	Não
-Mesa de Escritório com Gaveteiro	CRAS JANAINA - Avariados ou Com Defeito	1	Avariado	Sim (Doação Estado MA)
-Mesa de Escritório Pequena	CRAS JANAINA - Avariados ou Com Defeito	1	Avariado	Não
-Mesa Infantil de Plástico	CRAS JANAINA	1	Bom	Não
-Mesa para Computador	CRAS JANAINA	1	Regular	Não
-Mesa para Digitador	CRAS JANAINA	3	Bom	Não
-Mesa Redonda	CRAS JANAINA - Avariados ou Com Defeito	1	Avariado	Não
-Ponto Eletrônico	CRAS JANAINA	1	Bom	Não
-Televisão HQ	CRAS JANAINA	1	Novo	Não
-Ventilador de Coluna	CRAS JANAINA - Avariados ou Com Defeito	1	Avariado	Não
-Ventilador de Parede	CRAS JANAINA	3	Novo	Não
-Ar-Condicionado Carrier 9.000 BTU	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Ar-Condicionado Gree 9.000 BTU	CRAS BAIRRO DE FÁTIMA	2	Bom	Não
-Ar-Condicionado Gree 13.000 BTU	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Ar-Condicionado Gree 18.000 BTU	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Armário em Aço	CRAS BAIRRO DE FÁTIMA	2	Bom	Não
-Armário em Aço	CRAS BAIRRO DE FÁTIMA	1	Regular	Não
-Bebedouro Industrial	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	1	Novo (Com Defeito)	Não
-Cadeira de Plástico	CRAS BAIRRO DE FÁTIMA	16	Bom	Não
-Cadeira de Plástico Branca	CRAS BAIRRO DE FÁTIMA	7	Bom	Não
-Cadeira de Plástico Laranja	CRAS BAIRRO DE FÁTIMA	7	Bom	Não
-Cadeira em Polímero Azul	CRAS BAIRRO DE FÁTIMA	7	Novo	Não
-Cadeira em Polímero Preta	CRAS BAIRRO DE FÁTIMA	1	Bom	Sim (Doação Estado MA)
-Cadeira Infantil Plástica	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Presidente	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	1	Novo(Avariado)	Não
-Cadeira Tipo Diretor Preta	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Estante em Aço	CRAS BAIRRO DE FÁTIMA	4	Bom	Não
-Fogão 4 Bocas	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Geladeira Esmaltec	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Longarina 5 lugares	CRAS BAIRRO DE FÁTIMA	5	Novo	Não
-Mesa de Escritório	CRAS BAIRRO DE FÁTIMA	3	Novo	Não
-Mesa de Escritório	CRAS BAIRRO DE FÁTIMA	1	Regular	Não
-Mesa de Escritório	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	1	Avariado	Não
-Mesa de Escritório com Gaveteiro	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Mesa de Escritório com Gaveteiro	CRAS BAIRRO DE FÁTIMA	1	Regular	Não
-Mesa de Plástico	CRAS BAIRRO DE FÁTIMA	3	Bom	Não
-Mesa em L	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Mesa em Madeira	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	1	Avariado	Não
-Mesa Infantil Plástica Rosa	CRAS BAIRRO DE FÁTIMA - Avariados ou Com Defeito	2	Avariado	Não
-Mesa Redonda	CRAS BAIRRO DE FÁTIMA	1	Regular	Não
-Mesa para Digitador	CRAS BAIRRO DE FÁTIMA	1	Bom	Não
-Rack para Computador	CRAS BAIRRO DE FÁTIMA	1	Regular	Não
-Televisão HQ	CRAS BAIRRO DE FÁTIMA	1	Novo	Não
-Ventilador de Parede	CRAS BAIRRO DE FÁTIMA	5	Bom	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS CIDADE OLÍMPICA	1	Novo	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS CIDADE OLÍMPICA	3	Novo	Não
-Armário em Aço	CRAS CIDADE OLÍMPICA	3	Bom	Não
-Armário em Aço	CRAS CIDADE OLÍMPICA	1	Bom	Sim (Doação Estado MA)
-Armário em Aço	CRAS CIDADE OLÍMPICA - Avariados ou Com Defeito	1	Avariado	Não
-Arquivo em Aço	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Bebedouro de Coluna	CRAS CIDADE OLÍMPICA - Avariados ou Com Defeito	1	Avariado	Não
-Bebedouro Industrial	CRAS CIDADE OLÍMPICA	1	Novo	Não
-Cadeira de Plástico	CRAS CIDADE OLÍMPICA	12	Bom	Não
-Cadeira de Plástico Branca	CRAS CIDADE OLÍMPICA	7	Bom	Não
-Cadeira em Polímero Azul	CRAS CIDADE OLÍMPICA	3	Novo	Não
-Cadeira em Polímero Preta	CRAS CIDADE OLÍMPICA	1	Bom	Sim (Doação Estado MA)
-Cadeira Giratória Azul	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Cadeira Palito Azul	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Cadeira Palito Azul	CRAS CIDADE OLÍMPICA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Palito Azul	CRAS CIDADE OLÍMPICA	1	Regular	Não
-Caixa de Som Lenox	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Computador JAB	CRAS CIDADE OLÍMPICA	2	Bom	Não
-Computador Positivo	CRAS CIDADE OLÍMPICA - Avariados ou Com Defeito	1	Não Funciona	Sim (Doação Estado MA)
-Estabilizador SMS	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Estante em Aço	CRAS CIDADE OLÍMPICA	2	Bom	Não
-Fogão 4 Bocas	CRAS CIDADE OLÍMPICA	1	Novo	Não
-Frigobar Electrolux	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Geladeira Esmaltec	CRAS CIDADE OLÍMPICA	1	Novo	Não
-Longarina 3 Lugares Azul	CRAS CIDADE OLÍMPICA	4	Bom	Não
-Longarina 5 lugares Azul	CRAS CIDADE OLÍMPICA	4	Novo	Não
-Mesa de Apoio	CRAS CIDADE OLÍMPICA	2	Bom	Não
-Mesa de Apoio	CRAS CIDADE OLÍMPICA	6	Regular	Não
-Mesa de Escritório	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Mesa de Escritório	CRAS CIDADE OLÍMPICA	1	Regular	Não
-Mesa de Escritório com Gaveteiro	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Mesa de Plástico	CRAS CIDADE OLÍMPICA	6	Bom	Não
-Mesa para Computador	CRAS CIDADE OLÍMPICA	2	Regular	Não
-Mesa para Digitador	CRAS CIDADE OLÍMPICA	2	Bom	Não
-Mesa Redonda	CRAS CIDADE OLÍMPICA	1	Bom	Não
-Totem	CRAS CIDADE OLÍMPICA - Avariados ou Com Defeito	1	Avariado	Não
-Ventilador de Parede	CRAS CIDADE OLÍMPICA	3	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS ESTIVA	2	Novo	Não
-Ar-Condicionado Midea 9.000 BTU	CRAS ESTIVA - Avariados ou Com Defeito	1	Avariado	Não
-Armário em Aço	CRAS ESTIVA	2	Bom	Não
-Armário em Aço	CRAS ESTIVA	1	Bom	Sim (Doação Estado MA)
-Armário em Aço	CRAS ESTIVA	1	Regular	Não
-Cadeira de Escritório Azul	CRAS ESTIVA - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira de Plástico Laranja	CRAS ESTIVA	11	Bom	Não
-Cadeira de Plástico Verde	CRAS ESTIVA	7	Bom	Não
-Cadeira em Polímero Preta	CRAS ESTIVA	2	Bom	Sim (Doação Estado MA)
-Cadeira em Polímero Preta	CRAS ESTIVA	3	Regular	Sim (Doação Estado MA)
-Cadeira Infantil Plástica	CRAS ESTIVA	3	Bom	Não
-Cadeira Tipo Diretor Preta	CRAS ESTIVA	1	Bom	Não
-Computador JAB	CRAS ESTIVA	2	Bom	Não
-Estabilizador SMS	CRAS ESTIVA	1	Bom	Não
-Estante em Aço	CRAS ESTIVA	4	Bom	Não
-Estante em Aço	CRAS ESTIVA	1	Regular	Não
-Fogão 4 Bocas	CRAS ESTIVA	1	Novo	Não
-Geladeira Esmaltec	CRAS ESTIVA	1	Novo	Não
-Impressora Brother HL1202	CRAS ESTIVA	1	Bom	Não
-Longarina 3 Lugares Azul	CRAS ESTIVA	4	Bom	Não
-Mesa de Escritório	CRAS ESTIVA	1	Novo	Não
-Mesa de Escritório	CRAS ESTIVA	2	Regular	Não
-Mesa de Escritório	CRAS ESTIVA	1	Regular	Sim (Doação Estado MA)
-Mesa de Plástico	CRAS ESTIVA	1	Bom	Não
-Mesa de Plástico Branca	CRAS ESTIVA	1	Bom	Não
-Mesa para Computador	CRAS ESTIVA	1	Regular	Não
-Mesa para Digitador	CRAS ESTIVA	2	Bom	Não
-Ponto Eletrônico	CRAS ESTIVA	1	Bom	Não
-Switch Multilaser	CRAS ESTIVA	1	Bom	Não
-Televisão HQ	CRAS ESTIVA	1	Novo	Não
-Ventilador de Parede	CRAS ESTIVA	3	Novo	Não
-Ventilador de Parede	CRAS ESTIVA	1	Regular	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS MARACANÃ	2	Novo	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS MARACANÃ	1	Bom	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS MARACANÃ	1	Novo	Não
-Armário em Aço	CRAS MARACANÃ	2	Bom	Não
-Armário em Aço	CRAS MARACANÃ - Avariados ou Com Defeito	1	Avariado	Não
-Arquivo em Aço	CRAS MARACANÃ	1	Regular	Não
-Bebedouro Industrial	CRAS MARACANÃ - Avariados ou Com Defeito	1	Novo (Com Defeito)	Não
-Cadeira de Plástico	CRAS MARACANÃ	12	Bom	Não
-Cadeira de Plástico Branca	CRAS MARACANÃ	3	Bom	Não
-Cadeira de Plástico Verde	CRAS MARACANÃ	2	Bom	Não
-Cadeira em Polímero Preta	CRAS MARACANÃ	1	Regular	Sim (Doação Estado MA)
-Cadeira Giratória Azul	CRAS MARACANÃ	1	Bom	Não
-Cadeira Palito Azul	CRAS MARACANÃ	4	Regular	Não
-Cadeira Tipo Diretor Preta	CRAS MARACANÃ	1	Bom	Não
-Estabilizador BMI Microline 2	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Estabilizador BMI Protector	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Estante em Aço	CRAS MARACANÃ	4	Bom	Não
-Fogão 4 Bocas	CRAS MARACANÃ	1	Novo	Não
-Frigobar	CRAS MARACANÃ	1	Bom	Não
-Geladeira Esmaltec	CRAS MARACANÃ	1	Novo	Não
-Impressora Brother HL1202	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Longarina 3 Lugares	CRAS MARACANÃ	1	Bom	Não
-Longarina 3 Lugares de Plástico	CRAS MARACANÃ - Avariados ou Com Defeito	1	Avariado	Não
-Longarina 5 lugares	CRAS MARACANÃ	5	Novo	Não
-Mesa de Escritório	CRAS MARACANÃ	2	Novo	Não
-Mesa de Escritório	CRAS MARACANÃ	2	Regular	Não
-Mesa de Escritório com Gaveteiro	CRAS MARACANÃ	1	Bom	Não
-Mesa de Escritório com Gaveteiro	CRAS MARACANÃ	1	Regular	Não
-Mesa de Plástico Branca	CRAS MARACANÃ	2	Bom	Não
-Mesa em L	CRAS MARACANÃ	1	Novo	Não
-Mesa em Madeira	CRAS MARACANÃ	2	Regular	Não
-Mesa Redonda	CRAS MARACANÃ	1	Regular	Não
-Mesa para Digitador	CRAS MARACANÃ	3	Bom	Não
-Monitor AOC	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Monitor BenQ	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Monitor Positivo PSH1910UO	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Monitor TPV TP-V2710XN	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Nobreak APC Back-UPS	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Nobreak SMS	CRAS MARACANÃ - Avariados ou Com Defeito	1	Não Funciona	Não
-Nobreak Stay 700	CRAS MARACANÃ	1	Bom	Sim (Doação Estado MA)
-Ponto Eletrônico	CRAS MARACANÃ	1	Bom	Não
-Televisão HQ	CRAS MARACANÃ	1	Novo	Não
-Totem	CRAS MARACANÃ - Avariados ou Com Defeito	1	Avariado	Não
-Ventilador de Parede	CRAS MARACANÃ	4	Novo	Não
-Ventilador de Parede	CRAS MARACANÃ	1	Bom	Não
-Ventilador de Parede	CRAS MARACANÃ - Avariados ou Com Defeito	1	Avariado	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS LIBERDADE - Avariados ou Com Defeito	2	Avariado	Não
-Ar-Condicionado Elbrus 12.000 BTU	CRAS LIBERDADE - Avariados ou Com Defeito	1	Com Defeito	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS LIBERDADE	1	Novo	Não
-Ar-Condicionado HQ 9.000 BTU	CRAS LIBERDADE	4	Novo	Não
-Armário em Aço	CRAS LIBERDADE	3	Bom	Não
-Armário em Aço	CRAS LIBERDADE	2	Regular	Não
-Arquivo em Aço	CRAS LIBERDADE	1	Regular	Não
-Bebedouro Industrial	CRAS LIBERDADE	1	Novo	Não
-Bebedouro Industrial	CRAS LIBERDADE	1	Bom	Não
-Cadeira de Plástico Branca	CRAS LIBERDADE	16	Bom	Não
-Cadeira em Polipropileno Azul	CRAS LIBERDADE	10	Novo	Não
-Cadeira em Polipropileno Preta	CRAS LIBERDADE	3	Regular	Não
-Cadeira em Polipropileno Preta	CRAS LIBERDADE - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Infantil Plástica Rosa	CRAS LIBERDADE	3	Bom	Não
-Cadeira Palito Preta	CRAS LIBERDADE - Avariados ou Com Defeito	1	Avariado	Não
-Cadeira Presidente	CRAS LIBERDADE	2	Novo	Não
-Cadeira Presidente	CRAS LIBERDADE - Avariados ou Com Defeito	1	Avariado	Não
-Estante em Aço	CRAS LIBERDADE	3	Bom	Não
-Estante em Aço	CRAS LIBERDADE	1	Regular	Não
-Fogão 4 Bocas Realce	CRAS LIBERDADE	1	Novo	Não
-Gaveteiro em Aço	CRAS LIBERDADE	1	Bom	Não
-Gaveteiro em Aço	CRAS LIBERDADE - Avariados ou Com Defeito	1	Avariado	Não
-Geladeira Esmaltec	CRAS LIBERDADE	1	Novo	Não
-Impressora HP	CRAS LIBERDADE	1	Bom	Não
-Longarina 3 Lugares Azul	CRAS LIBERDADE	1	Bom	Não
-Longarina 5 lugares Azul	CRAS LIBERDADE - Avariados ou Com Defeito	5	Avariado	Não
-Mesa de Apoio	CRAS LIBERDADE	1	Bom	Não
-Mesa de Apoio	CRAS LIBERDADE	1	Regular	Não
-Mesa de Escritório	CRAS LIBERDADE	1	Bom	Não
-Mesa de Escritório	CRAS LIBERDADE	3	Regular	Não
-Mesa de Escritório	CRAS LIBERDADE - Avariados ou Com Defeito	2	Avariado	Não
-Mesa para Escritório com 3 Gavetas	CRAS LIBERDADE	3	Novo	Não
-Mesa de Plástico Rosa	CRAS LIBERDADE	1	Bom	Não
-Mesa em L	CRAS LIBERDADE	3	Novo	Não
-Mesa Redonda Branca	CRAS LIBERDADE	1	Bom	Não
-Televisão HQ 43"	CRAS LIBERDADE	1	Novo	Não
-Ventilador de Parede	CRAS LIBERDADE	1	Novo	Não
-Ar-Condicionado Agratto 12.000 BTU	CRAS CIDADE NOVA	2	Novo	Não
-Ar-Condicionado Elgin 12.000 BTU	CRAS CIDADE NOVA	1	Bom	Não
-Armário em Aço	CRAS CIDADE NOVA	3	Bom	Não
-Armário em Aço	CRAS CIDADE NOVA	1	Regular	Não
-Arquivo em Aço	CRAS CIDADE NOVA	1	Bom	Não
-Bebedouro Industrial	CRAS CIDADE NOVA	1	Novo	Não
-Cadeira de Plástico Branca	CRAS CIDADE NOVA	10	Bom	Não
-Cadeira em Polipropileno Azul	CRAS CIDADE NOVA	5	Novo	Não
-Cadeira Infantil Plástica	CRAS CIDADE NOVA	2	Bom	Não
-Cadeira Tipo Diretor Preta	CRAS CIDADE NOVA	1	Bom	Não
-Estante em Aço	CRAS CIDADE NOVA	2	Bom	Não
-Fogão 4 Bocas	CRAS CIDADE NOVA	1	Novo	Não
-Geladeira Esmaltec	CRAS CIDADE NOVA	1	Novo	Não
-Longarina 3 Lugares Azul	CRAS CIDADE NOVA	3	Bom	Não
-Mesa de Escritório	CRAS CIDADE NOVA	2	Novo	Não
-Mesa de Escritório	CRAS CIDADE NOVA	1	Regular	Não
-Mesa para Digitador	CRAS CIDADE NOVA	1	Bom	Não
-Ponto Eletrônico	CRAS CIDADE NOVA	1	Bom	Não
-Televisão HQ	CRAS CIDADE NOVA	1	Novo	Não
-Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
-        const crasDataParsed = parseCrasFileData(allCrasRawData);
-        const creasData = [
-            { "id": "cre_1", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_2", "description": "Ar-Condicionado Elbrus 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_3", "description": "Ar-Condicionado Electrolux 18.000 BTU", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_4", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_5", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_6", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_7", "description": "Ar-Condicionado Elgin 12.000 BTU", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_8", "description": "Ar-Condicionado Consul 12.000 BTU", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_9", "description": "Ar-Condicionado HQ 9.000 BTU", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_10", "description": "Ar-Condicionado HQ 9.000 BTU", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_11", "description": "Ar-Condicionado Philco 18.000 BTU", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_12", "description": "Ar-Condicionado Agratto 12.000 BTU", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_13", "description": "Armário em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_14", "description": "Armário em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_15", "description": "Armário em Aço", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_16", "description": "Armário em Aço", "unit_condition": "Centro", "quantity": 2, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_17", "description": "Armário em Aço", "unit_condition": "Sol e Mar", "quantity": 8, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_18", "description": "Armário em Aço", "unit_condition": "Cidade Operária", "quantity": 7, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_19", "description": "Armário em MDF", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_20", "description": "Armário em MDF", "unit_condition": "Centro", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_21", "description": "Armário em MDF", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_22", "description": "Arquivo em Aço", "unit_condition": "Bacanga", "quantity": 3, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_23", "description": "Arquivo em Aço", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_24", "description": "Arquivo em Aço", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_25", "description": "Arquivo em Aço", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_26", "description": "Bebedouro de Coluna", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_27", "description": "Bebedouro de Coluna Esmaltec", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_28", "description": "Bebedouro de Coluna Esmaltec", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_29", "description": "Cadeira de Plástico", "unit_condition": "Bacanga", "quantity": 24, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_30", "description": "Cadeira de Plástico", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_31", "description": "Cadeira de Plástico", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_32", "description": "Cadeira de Plástico Branca", "unit_condition": "Bacanga", "quantity": 32, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_33", "description": "Cadeira de Plástico Branca", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não", "supplier": ""},
-            { "id": "cre_34", "description": "Cadeira de Plástico Branca", "unit_condition": "Sol e Mar", "quantity": 8, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_35", "description": "Cadeira de Plástico Branca", "unit_condition": "Cidade Operária", "quantity": 8, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_36", "description": "Cadeira de Plástico Verde", "unit_condition": "Bacanga", "quantity": 16, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_37", "description": "Cadeira de Plástico Verde (Atendimento)", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_38", "description": "Cadeira de Plástico Verde (Usuário)", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_39", "description": "Cadeira de Plástico Infantil", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_40", "description": "Cadeira de Plástico Infantil", "unit_condition": "Centro", "quantity": 6, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_41", "description": "Cadeira de Plástico Infantil", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_42", "description": "Cadeira de Plástico Infantil", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_43", "description": "Cadeira Palito", "unit_condition": "Bacanga", "quantity": 3, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_44", "description": "Cadeira Palito", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_45", "description": "Cadeira Palito", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_46", "description": "Cadeira Palito", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_47", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_48", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_49", "description": "Cadeira Palito Preta", "unit_condition": "Centro", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_50", "description": "Cadeira de Palhinha", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_51", "description": "Cadeira em POLIPROPILENO Azul", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_52", "description": "Cadeira em POLIPROPILENO Azul", "unit_condition": "Centro", "quantity": 3, "state": "Regular", "donation": "Sim", "supplier": "" },
-            { "id": "cre_53", "description": "Cadeira em POLIPROPILENO Azul", "unit_condition": "Sol e Mar", "quantity": 38, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_54", "description": "Cadeira em POLIPROPILENO Preta", "unit_condition": "Sol e Mar", "quantity": 15, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_55", "description": "Cadeira Giratória Azul", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_56", "description": "Cadeira Giratória Azul", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_57", "description": "Cadeira Giratória Azul", "unit_condition": "Cidade Operária", "quantity": 6, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_58", "description": "Cadeira Giratória Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_59", "description": "Cadeira Tipo Presidente Preta", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_60", "description": "Cadeira Presidente", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_61", "description": "Cadeira", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_62", "description": "Longarina Preta 3 Lugares", "unit_condition": "Sol e Mar", "quantity": 4, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_63", "description": "Longarina 5 lugares - cor azul", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_64", "description": "Longarina 3 Lugares Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_65", "description": "Longarina 3 Lugares Azul", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_66", "description": "Computador Positivo", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_67", "description": "CPU Positivo Completo", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_68", "description": "Estante em Aço", "unit_condition": "Bacanga", "quantity": 4, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_69", "description": "Estante em Aço", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_70", "description": "Estante em Aço", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_71", "description": "Estante em Aço", "unit_condition": "Cidade Operária", "quantity": 5, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_72", "description": "Fogão 4 Bocas", "unit_condition": "Bacanga", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" }, // CORRIGIDO
-            { "id": "cre_73", "description": "Fogão 4 Bocas", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_74", "description": "Fogão 4 Bocas", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_75", "description": "Fogão 4 Bocas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_76", "description": "Geladeira Esmaltec", "unit_condition": "Bacanga", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" }, 
-            { "id": "cre_77", "description": "Geladeira Esmaltec", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_78", "description": "Geladeira Esmaltec", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_79", "description": "Geladeira Esmaltec", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_80", "description": "Frigobar", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_81", "description": "Impressora OfficeJet Pro 8600", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_82", "description": "Impressora Brother HL1202", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_83", "description": "Mesa para Escritório", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_84", "description": "Mesa para Escritório", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_85", "description": "Mesa para Escritório", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_86", "description": "Mesa para Escritório", "unit_condition": "Sol e Mar", "quantity": 3, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_87", "description": "Mesa para Escritório", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_88", "description": "Mesa para Escritório", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_89", "description": "Mesa para Escritório", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_90", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Bacanga", "quantity": 5, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_91", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_92", "description": "Mesa para Escritório (Atendimento)", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_93", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Bacanga", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_94", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_95", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Centro", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_96", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Sol e Mar", "quantity": 3, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_97", "description": "Mesa para Escritório com 2 Gavetas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_98", "description": "Mesa para Escritório com 2 Gavetas (Atendimento)", "unit_condition": "Centro", "quantity": 2, "state": "Regular", "donation": "Sim", "supplier": "" },
-            { "id": "cre_99", "description": "Mesa para Escritório com 3 Gavetas", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_100", "description": "Mesa para Escritório com 3 Gavetas", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_101", "description": "Mesa para Digitador", "unit_condition": "Cidade Operária", "quantity": 3, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_102", "description": "Mesa de Plástico", "unit_condition": "Centro", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_103", "description": "Mesa de Plástico", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_104", "description": "Mesa de Plástico Branca", "unit_condition": "Bacanga", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_105", "description": "Mesa de Plástico Branca", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_106", "description": "Mesa de Plástico Branca", "unit_condition": "Cidade Operária", "quantity": 2, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_107", "description": "Mesa de Plástico Infantil", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_108", "description": "Mesa de Plástico Infantil", "unit_condition": "Centro", "quantity": 3, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_109", "description": "Mesa de Plástico Infantil", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_110", "description": "Mesa de Plástico Infantil", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_111", "description": "Mesa em L", "unit_condition": "Bacanga", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_112", "description": "Mesa em L", "unit_condition": "Sol e Mar", "quantity": 2, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_113", "description": "Mesa para Computador", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_114", "description": "Mesa Redonda", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_115", "description": "Mesa Redonda", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_116", "description": "Mesa Redonda (Atendimento)", "unit_condition": "Centro", "quantity": 1, "state": "Avariado", "donation": "Não", "supplier": "" },
-            { "id": "cre_117", "description": "Mesa para Reunião", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_118", "description": "Mesa Tipo Reunião", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Regular", "donation": "Não", "supplier": "" },
-            { "id": "cre_119", "description": "Ponto Eletrônico", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_120", "description": "Ponto Eletrônico", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_121", "description": "Televisão HQ", "unit_condition": "Bacanga", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_122", "description": "Televisão HQ", "unit_condition": "Centro", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_123", "description": "Televisão HQ", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_124", "description": "Televisão HQ", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_125", "description": "Totem", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_126", "description": "Ventilador de Coluna", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_127", "description": "Ventilador de Parede", "unit_condition": "Bacanga", "quantity": 1, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_128", "description": "Ventilador de Parede", "unit_condition": "Centro", "quantity": 3, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_129", "description": "Ventilador de Parede", "unit_condition": "Sol e Mar", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_130", "description": "Rack", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_131", "description": "Switch", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" },
-            { "id": "cre_132", "description": "Quadro Branco", "unit_condition": "Cidade Operária", "quantity": 4, "state": "Bom", "donation": "Não", "supplier": "" },
-            { "id": "cre_133", "description": "Nobreak", "unit_condition": "Cidade Operária", "quantity": 1, "state": "Bom", "donation": "Sim", "supplier": "" },
-            { "id": "cre_134", "description": "Bebedouro de coluna Esmaltec", "unit_condition": "Bacanga", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" }
-        ];
-        const conselhoData = [
-            {"id":"ct_1","description":"Longarina 3 Lugares Azul","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_2","description":"Cadeira de Plástico Branca","unit_condition":"Vila Luizão / Turu","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_3","description":"Bebedouro de Coluna","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_4","description":"Televisão HQ","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_5","description":"Cadeira Palito Azul","unit_condition":"Vila Luizão / Turu","quantity":5,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_6","description":"Ventilador de Parede","unit_condition":"Vila Luizão / Turu","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_7","description":"Arquivo em Aço","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_8","description":"Mesa para Computador (Atendimento)","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Regular","donation":"Sim","supplier":""},
-            {"id":"ct_9","description":"Armário em Aço","unit_condition":"Vila Luizão / Turu","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_10","description":"Armário em Aço","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_11","description":"Estante em Aço","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_12","description":"Mesa para Escritório com 2 Gavetas (Atendimento)","unit_condition":"Vila Luizão / Turu","quantity":5,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_13","description":"Cadeira Tipo Diretor Azul","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_14","description":"Ar-Condicionado Consul 12.000 BTU","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_15","description":"CPU Dell Completa","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_16","description":"Estante em Aço Preta","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Sim","supplier":""},
-            {"id":"ct_17","description":"Mesa para Escritório (Atendimento)","unit_condition":"Vila Luizão / Turu","quantity":2,"state":"Regular","donation":"Sim","supplier":""},
-            {"id":"ct_18","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Vila Luizão / Turu","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_19","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_20","description":"Mesa de Apoio","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_21","description":"Cadeira Giratória Azul","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_22","description":"Geladeira Consul","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_23","description":"Fogão Industrial com Forno","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_24","description":"Armário em Aço","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_25","description":"Cadeira Palito","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_26","description":"Cadeira Palito","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_27","description":"Cadeira Tipo Diretor Preta","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_28","description":"Ar-Condicionado 18.000 BTU","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_29","description":"Mesa para Reunião","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_30","description":"Cadeira de Plástico","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ct_31","description":"Impressora HP","unit_condition":"Vila Luizão / Turu","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_32","description":"Mesa para Escritório","unit_condition":"São Francisco / Cohama","quantity":8,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_33","description":"Ar-Condicionado TCL 12.000 BTU","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_34","description":"Bebedouro Karina","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_35","description":"Longarina 3 Lugares Azul","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_36","description":"Cadeira Tipo Diretor Azul","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_37","description":"Televisão HQ 43\"","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_38","description":"Ventilador de Parede","unit_condition":"São Francisco / Cohama","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_39","description":"Ventilador de Parede","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_40","description":"Geladeira","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_41","description":"Armário em Aço","unit_condition":"São Francisco / Cohama","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_42","description":"Fogão Atlas 4 Bocas","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_43","description":"Cadeira de Plástico sem Braço","unit_condition":"São Francisco / Cohama","quantity":5,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_44","description":"Ar-Condicionado Gree 12.000 BTU","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_45","description":"Cadeira para Escritório","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_46","description":"Cadeira Palito Azul","unit_condition":"São Francisco / Cohama","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_47","description":"Cadeira Palito Azul","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_48","description":"Cadeira Infantil Azul","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_49","description":"Mesa Infantil Rosa","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_50","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_51","description":"Cadeira para Escritório Giratória Preta","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_52","description":"Ar-Condicionado Consul 12.000 BTU","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_53","description":"Mesa de Apoio","unit_condition":"São Francisco / Cohama","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_54","description":"Cadeira Tipo Diretor","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_55","description":"Totem","unit_condition":"São Francisco / Cohama","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_56","description":"Cadeira Palito","unit_condition":"São Francisco / Cohama","quantity":4,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_57","description":"Longarina Preta 3 Lugares","unit_condition":"São Cristóvão / São Raimundo","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_58","description":"Cadeira de Escritório Azul","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_59","description":"Mesa para Escritório em MDF","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_60","description":"Ventilador de Parede","unit_condition":"São Cristóvão / São Raimundo","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_61","description":"Bebedouro Coluna Esmaltec","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_62","description":"Televisão HQ","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_63","description":"Mesa para Escritório","unit_condition":"São Cristóvão / São Raimundo","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_64","description":"Cadeira Palito Azul","unit_condition":"São Cristóvão / São Raimundo","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_65","description":"Cadeira Palito Azul","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_66","description":"Armário em Aço","unit_condition":"São Cristóvão / São Raimundo","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_67","description":"Cadeira Tipo Diretor","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_68","description":"Mesa de Apoio","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_69","description":"Cadeira de Plástico","unit_condition":"São Cristóvão / São Raimundo","quantity":23,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_70","description":"Cadeira de Plástico","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_71","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"São Cristóvão / São Raimundo","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_72","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_73","description":"Mesa em MDF","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Bom","donation":"Sim","supplier":""},
-            {"id":"ct_74","description":"Cadeira de Escritório Preta","unit_condition":"São Cristóvão / São Raimundo","quantity":4,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_75","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"São Cristóvão / São Raimundo","quantity":5,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_76","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_77","description":"Estante em Aço","unit_condition":"São Cristóvão / São Raimundo","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_78","description":"Gaveteiro em Aço","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_79","description":"Cadeira de Plástico Branca","unit_condition":"São Cristóvão / São Raimundo","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            { "id": "ct_80", "description": "Fogão 4 Bocas", "unit_condition": "São Cristóvão / São Raimundo", "quantity": 1, "state": "Novo", "donation": "Não", "supplier": "" }, // CORRIGIDO
-            {"id":"ct_81","description":"Geladeira Electrolux","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_82","description":"Geladeira Electrolux","unit_condition":"São Cristóvão / São Raimundo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_83","description":"Longarina","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_84","description":"Longarina 3 Lugares","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_85","description":"Mesa para Escritório","unit_condition":"Cohab / Cohatrac","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_86","description":"Mesa para Escritório","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_87","description":"Mesa para Escritório","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_88","description":"Armário em Aço","unit_condition":"Cohab / Cohatrac","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_89","description":"Armário em Aço","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_90","description":"Ponto Eletrônico","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_91","description":"Ventilador de Coluna","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_92","description":"Cadeira Palito Azul","unit_condition":"Cohab / Cohatrac","quantity":6,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_93","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_94","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_95","description":"Mesa para Computador","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_96","description":"Cadeira Tipo Presidente Azul","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_97","description":"Geladeira Electrolux","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_98","description":"Fogão Industrial com Forno","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_99","description":"Estante em Aço","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_100","description":"Estante em Aço","unit_condition":"Cohab / Cohatrac","quantity":3,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_101","description":"Cadeira Palito","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_102","description":"Cadeira de Plástico","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_103","description":"Cadeira de Plástico Branca","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_104","description":"Televisão HQ","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_105","description":"Gaveteiro em Aço","unit_condition":"Cohab / Cohatrac","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_106","description":"Cadeira de Escritório Azul","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_107","description":"Cadeira Preta Tipo Diretor","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_108","description":"Cadeira Tipo Diretor","unit_condition":"Cohab / Cohatrac","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_109","description":"Mesa com Gaveteiro","unit_condition":"Centro / Alemanha","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_110","description":"Cadeira Fixa Azul em POLIPROPILENO","unit_condition":"Centro / Alemanha","quantity":5,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_111","description":"Ventilador de Parede","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_112","description":"Longarina 5 lugares - cor azul","unit_condition":"Centro / Alemanha","quantity":4,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_113","description":"Estante em Aço","unit_condition":"Centro / Alemanha","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_114","description":"Mesa para Escritório com Gaveteiro","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_115","description":"Cadeira de Plástico Branca com Braço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_116","description":"Cadeira de Plástico Branca sem Braço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_117","description":"Bebedouro de Coluna","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_118","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Centro / Alemanha","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_119","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Sim","supplier":""},
-            {"id":"ct_120","description":"Mesa com 2 Gaveteiros","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_121","description":"Longarina Preta 3 Lugares","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_122","description":"Mesa para Escritório sem Gavetas","unit_condition":"Centro / Alemanha","quantity":3,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_123","description":"Cadeira de Plástico","unit_condition":"Centro / Alemanha","quantity":13,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_124","description":"Televisão HQ 43\"","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo", "observation": "Com defeito","supplier":""},
-            {"id":"ct_125","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Regular","donation":"Sim","supplier":""},
-            {"id":"ct_126","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_127","description":"Mesa para Escritório","unit_condition":"Centro / Alemanha","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_128","description":"Cadeira em POLIPROPILENO Azul","unit_condition":"Centro / Alemanha","quantity":7,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_129","description":"Ar-Condicionado Consul 12.000 BTU","unit_condition":"Centro / Alemanha","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_130","description":"Gaveteiro em Aço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_131","description":"Gaveteiro em Aço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_132","description":"Cadeira de Plástico Branca","unit_condition":"Centro / Alemanha","quantity":2,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_133","description":"Armário em Aço","unit_condition":"Centro / Alemanha","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_134","description":"Armário em Aço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_135","description":"Armário em Aço","unit_condition":"Centro / Alemanha","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_136","description":"Cadeira Giratória para Escritório","unit_condition":"Centro / Alemanha","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_137","description":"Longarina Azul 3 Lugares","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_138","description":"Cadeira Palito Azul","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_139","description":"Cadeira Palito Azul","unit_condition":"Centro / Alemanha","quantity":2,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_140","description":"Cadeira Tipo Diretor","unit_condition":"Centro / Alemanha","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_141","description":"Ar-Condicionado Electrolux 12.000 BTU","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_142","description":"Mesa para Escritório com 3 Gavetas","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_143","description":"Mesa de Madeira Tipo Refeitório","unit_condition":"Centro / Alemanha","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_144","description":"Geladeira Esmaltec","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo", "observation": "Nova, porém com defeito.","supplier":""},
-            {"id":"ct_145","description":"Fogão Industrial com Forno","unit_condition":"Centro / Alemanha","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_146","description":"Longarina 5 lugares - cor azul","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_147","description":"Mesa em L","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_148","description":"Mesa de Plástico Infantil","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_149","description":"Televisão HQ","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_150","description":"Cadeira Giratória Azul (Atendimento)","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_151","description":"Computador Positivo","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_152","description":"Ventilador de Parede","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_153","description":"Estante em Aço","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_154","description":"Mesa para Escritório (Atendimento)","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_155","description":"Armário em Aço","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_156","description":"Cadeira de Plástico Branca","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_157","description":"Armário em Aço","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_158","description":"Armário em Aço","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_159","description":"Ar-Condicionado TCL 12.000 BTU","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_160","description":"Mesa para Escritório (Atendimento)","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_161","description":"Cadeira de Plástico","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":8,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_162","description":"Cadeira Tipo Diretor Azul (Atendimento)","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_163","description":"Cadeira em POLIPROPILENO Azul","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":8,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_164","description":"Ar-Condicionado Consul 12.000 BTU","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_165","description":"Cadeira Diretor","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_166","description":"Dell Computador Completo","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_167","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_168","description":"Mesa para Escritório com Gavetas (Atendimento)","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_169","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_170","description":"Cadeira Palito Azul","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_171","description":"Cadeira Presidencial","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_172","description":"Longarina 3 Lugares Azul","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_173","description":"Longarina 3 Lugares Preta","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_174","description":"Geladeira Esmaltec","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo", "observation": "Nova, porém com defeito.","supplier":""},
-            {"id":"ct_175","description":"Bebedouro Esmaltec","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_176","description":"Mesa para Escritório","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_177","description":"Fogão 4 Bocas","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_178","description":"Arquivo em Aço","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_179","description":"Mesa para Reunião","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_180","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Bacanga / Itaqui-Bacanga","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_181","description":"Mesa de Apoio","unit_condition":"Anil / Bequimão","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_182","description":"Cadeira de Plástico Branca","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_183","description":"Mesa para Escritório","unit_condition":"Anil / Bequimão","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_184","description":"Longarina Azul 3 Lugares","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_185","description":"Armário em Aço","unit_condition":"Anil / Bequimão","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_186","description":"Armário em Aço","unit_condition":"Anil / Bequimão","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_187","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_188","description":"Cadeira Azul Giratória","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_189","description":"Cadeira de Plástico","unit_condition":"Anil / Bequimão","quantity":6,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_190","description":"Cadeira de Plástico","unit_condition":"Anil / Bequimão","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_191","description":"Bebedouro","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_192","description":"Geladeira","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_193","description":"Fogão 4 Bocas","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_194","description":"Ar-Condicionado TCL 12.000 BTU","unit_condition":"Anil / Bequimão","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_195","description":"Estante em Aço","unit_condition":"Anil / Bequimão","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_196","description":"Cadeira de Escritório Giratória Preta","unit_condition":"Anil / Bequimão","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_197","description":"Cadeira de Escritório Giratória Preta","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_198","description":"Ponto Eletrônico","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_199","description":"Rack","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_200","description":"Switch","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_201","description":"Televisão HQ","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_202","description":"Mesa em L","unit_condition":"Anil / Bequimão","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_203","description":"Cadeira Azul Tipo Diretor","unit_condition":"Anil / Bequimão","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_204","description":"Cadeira Palito Azul","unit_condition":"Anil / Bequimão","quantity":5,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_205","description":"Ar-Condicionado Agratto 12.000 BTU","unit_condition":"Anil / Bequimão","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_206","description":"Cadeira Preta de Escritório","unit_condition":"Anil / Bequimão","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_207","description":"Mesa de Apoio","unit_condition":"Anil / Bequimão","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_208","description":"Cadeira Palito Azul","unit_condition":"Anil / Bequimão","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_209","description":"TP-Link","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Sim","supplier":""},
-            {"id":"ct_210","description":"Longarina 5 lugares - cor azul","unit_condition":"Coroadinho / João Paulo","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_211","description":"Mesa em L","unit_condition":"Coroadinho / João Paulo","quantity":5,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_212","description":"Bebedouro Esmaltec","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_213","description":"Ar-Condicionado Agratto 12.000 BTU","unit_condition":"Coroadinho / João Paulo","quantity":6,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_214","description":"Cadeira Office Preta","unit_condition":"Coroadinho / João Paulo","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_215","description":"Cadeira Office Preta","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo", "observation": "Danificada","supplier":""},
-            {"id":"ct_216","description":"Armário em Aço","unit_condition":"Coroadinho / João Paulo","quantity":5,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_217","description":"Cadeira em POLIPROPILENO Preta","unit_condition":"Coroadinho / João Paulo","quantity":7,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_218","description":"Computador Dell","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_219","description":"Estante em Aço","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_220","description":"Switch 8 Portas Preta Multilaser","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_221","description":"Televisão HQ","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_222","description":"Rack","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_223","description":"Switch","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_224","description":"Cadeira Office","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_225","description":"Cadeira de Plástico Branca","unit_condition":"Coroadinho / João Paulo","quantity":5,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_226","description":"Mesa de Madeira","unit_condition":"Coroadinho / João Paulo","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_227","description":"Geladeira Electrolux","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_228","description":"Fogão Industrial com Forno","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_229","description":"Armário em Aço","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_230","description":"Bebedouro de Coluna Libell","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_231","description":"Cadeira Tipo Diretor Azul","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_232","description":"Cadeira Giratória Azul","unit_condition":"Coroadinho / João Paulo","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_233","description":"Longarina 5 lugar Azul","unit_condition":"Coroadinho / João Paulo","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_234","description":"Longarina 3 Lugares Azul","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_235","description":"Mesa para Escritório","unit_condition":"Zona Rural","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_236","description":"Mesa para Escritório","unit_condition":"Zona Rural","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_237","description":"Cadeira Palito Azul","unit_condition":"Zona Rural","quantity":10,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_238","description":"Cadeira Palito Preta","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_239","description":"Televisão HQ","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_240","description":"Armário em Aço","unit_condition":"Zona Rural","quantity":6,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_241","description":"Armário em Aço","unit_condition":"Zona Rural","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_242","description":"Cadeira em POLIPROPILENO Azul","unit_condition":"Zona Rural","quantity":8,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_243","description":"Mesa para Escritório (Atendimento)","unit_condition":"Zona Rural","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_244","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Zona Rural","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_245","description":"Bebedouro de Coluna Esmaltec","unit_condition":"Zona Rural","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_246","description":"Quadro Branco","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_247","description":"Geladeira Esmaltec","unit_condition":"Zona Rural","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_248","description":"Fogão 4 Bocas","unit_condition":"Zona Rural","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_249","description":"Cadeira de Plástico Branca","unit_condition":"Zona Rural","quantity":5,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_250","description":"Mesa para Escritório em Madeira","unit_condition":"Zona Rural","quantity":3,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_251","description":"Estante em Aço","unit_condition":"Zona Rural","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_252","description":"Estante em Aço","unit_condition":"Zona Rural","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_253","description":"Cadeira Giratória Azul","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_254","description":"Mesa para Escritório com 3 Gavetas (Atendimento)","unit_condition":"Zona Rural","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_255","description":"Mesa para Escritório com 3 Gavetas (Atendimento)","unit_condition":"Zona Rural","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_256","description":"Mesa para Escritório com 2 Gavetas (Atendimento)","unit_condition":"Zona Rural","quantity":4,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_257","description":"Cadeira Tipo Diretor Azul","unit_condition":"Zona Rural","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_258","description":"Cadeira Presidente","unit_condition":"Zona Rural","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_259","description":"Ar-Condicionado HQ 9.000 BTU","unit_condition":"Zona Rural","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_260","description":"Ponto Eletrônico","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_261","description":"Longarina 3 Lugares Azul","unit_condition":"Zona Rural","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_262","description":"Bebedouro de Coluna Esmaltec","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_263","description":"Cadeira de Plástico Branca","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":8,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_264","description":"Totem","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_265","description":"Mesa para Escritório com Gaveteiro (Atendimento)","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_266","description":"Cadeira Giratória Preta (Atendimento)","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_267","description":"Ventilador de Parede","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":3,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_268","description":"Televisão HQ","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_269","description":"Mesa para Escritório em Madeira com 3 Gavetas","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_270","description":"Computador Positivo Completo","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_271","description":"Ar-Condicionado Elgin 12.000 BTU","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_272","description":"Arquivo em Aço","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_273","description":"Arquivo em Aço","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_274","description":"Mesa para Escritório (Atendimento)","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_275","description":"Armário em Aço","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":5,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_276","description":"Armário em Aço","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_277","description":"Mesa para Escritório em Madeira (Atendimento)","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_278","description":"Cadeira de Plástico","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":8,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_279","description":"Cadeira Palito Preta (Atendimento)","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_280","description":"Ar-Condicionado Agratto 12.000 BTU","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Novo","donation":"Não","supplier":""},
-            {"id":"ct_281","description":"Mesa para Escritório","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_282","description":"Mesa para Escritório","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_283","description":"Mesa para Escritório","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Regular","donation":"Não","supplier":""},
-            {"id":"ct_284","description":"Cadeira Giratória Azul","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_285","description":"Cadeira Palito Azul","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_286","description":"Cadeira Diretor Azul","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""},
-            {"id":"ct_287","description":"Mesa para Escritório com 2 Gavetas","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_288","description":"Estante em Aço","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":2,"state":"Bom","donation":"Não","supplier":""},
-            {"id":"ct_289","description":"(SEM MARCA) AR CONDICIONADO 18 MIL BTUS","unit_condition":"Cidade Operária / Cidade Olímpica","quantity":1,"state":"Avariado","donation":"Não","supplier":""}
-        ];
-        const externaData = [
-            {"id":"ext_1","description":"Armário em Aço", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_2","description":"Armário em Aço", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Sim","supplier":""},
-            {"id":"ext_3","description":"Frigobar", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_4","description":"Ar-Condicionado HQ 9.000 BTU", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Novo", "donation":"Não","supplier":""},
-            {"id":"ext_5","description":"Mesa para Escritório com 2 Gavetas", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_6","description":"Mesa para Escritório", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_7","description":"Cadeira Palito", "unit_condition":"Núcleo Intersetorial", "quantity":5,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_8","description":"Cadeira Giratória Azul", "unit_condition":"Núcleo Intersetorial", "quantity":2,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_9","description":"Impressora Brother HL1202", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_10","description":"Estabilizador Microline 2", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_11","description":"Mesa Redonda Cinza", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""},
-            {"id":"ext_12","description":"Roteador Multilaser RE046", "unit_condition":"Núcleo Intersetorial", "quantity":1,"state":"Bom", "donation":"Não","supplier":""}
-        ];
-        const crasData = crasDataParsed;
-        const casaBairroData = [];
-
-        // Combine and correct data
-        let allItems = [...creasData, ...conselhoData, ...externaData, ...crasData];
-        allItems.forEach(item => {
-            // This was already handled in parseCrasFileData, but keeping for other data sources if any
-            if (item.description.toLowerCase().includes("televisão hq")) {
-                item.description = "Smart TV HQ 43\"";
-            }
-            if (item.description === "Longarina 5 lugares - cor azul") {
-                item.state = "Novo"; // Ensure this is consistent
-            }
-        });
-        
-        const allDataSources = {
-            creas: creasData,
-            conselho: conselhoData,
-            externa: externaData,
-            cras: crasData
-        };
-          
-        const unidadesPorServico = {
-            creas: [ 
-                { id: 'Bacanga', nome: 'CREAS Bacanga' }, 
-                { id: 'Centro', nome: 'CREAS Centro' },
-                { id: 'Cidade Operária', nome: 'CREAS Cidade Operária' },
-                { id: 'Sol e Mar', nome: 'CREAS Sol e Mar' }
-            ],
-            conselho: [ 
-                { id: 'Anil / Bequimão', nome: 'CT Anil / Bequimão' },
-                { id: 'Bacanga / Itaqui-Bacanga', nome: 'CT Bacanga / Itaqui-Bacanga' },
-                { id: 'Centro / Alemanha', nome: 'CT Centro / Alemanha' },
-                { id: 'Cidade Operária / Cidade Olímpica', nome: 'CT Cidade Operária / Cidade Olímpica' },
-                { id: 'Cohab / Cohatrac', nome: 'CT Cohab / Cohatrac' },
-                { id: 'Coroadinho / João Paulo', nome: 'CT Coroadinho / João Paulo' },
-                { id: 'São Cristóvão / São Raimundo', nome: 'CT São Cristóvão / São Raimundo' },
-                { id: 'São Francisco / Cohama', nome: 'CT São Francisco / Cohama' },
-                { id: 'Vila Luizão / Turu', nome: 'CT Vila Luizão / Turu' },
-                { id: 'Zona Rural', nome: 'CT Zona Rural' },
-            ],
-            externa: [
-                { id: 'Núcleo Intersetorial', nome: 'Unidade Externa Núcleo Intersetorial' }, // Explicitly add "Unidade Externa"
-                { id: 'Casa do Bairro', nome: 'Unidade Externa Casa do Bairro' }
-            ],
-            cras: [...new Set(crasData.map(item => item.unit_condition))].map(name => ({ id: name, nome: `CRAS ${name}` })).sort((a, b) => a.nome.localeCompare(b.nome))
-        };
-
-        // --- RENDER FUNCTIONS ---
         function renderSummaryCards() {
             const filtered = getFilteredItems(allItems);
             const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const attentionItems = filtered.filter(i => ['Avariado', 'Não Funciona', 'Com Defeito'].includes(i.state)).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const newItems = filtered.filter(i => i.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const goodItems = filtered.filter(i => i.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = filtered.filter(i => i.donation_source && i.donation_source.toLowerCase() !== 'não').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             summaryCardsContainerEl.innerHTML = `
                 <div class="card p-5 flex items-center space-x-4">
@@ -1584,6 +373,10 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                 <div class="card p-5 flex items-center space-x-4">
                     <div class="bg-sky-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div>
                     <div><p class="text-slate-500 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800">${goodItems}</p></div>
+                </div>
+                <div class="card p-5 flex items-center space-x-4">
+                    <div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div>
+                    <div><p class="text-slate-500 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800">${totalDonations}</p></div>
                 </div>
             `;
         }
@@ -1624,19 +417,19 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             if (!tableBodyEl) return;
 
             if (itemsToDisplay.length === 0) {
-                tableBodyEl.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
+                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
 
             let tableHTML = '';
             itemsToDisplay.forEach(item => {
+                const isNewButDefective = item.originalStateWasNew && (item.state === 'Avariado' || item.state === 'Com Defeito');
                 const color = stateColors[item.state] || stateColors['Regular'];
-                const unitDisplayName = formatUnitName(item, true); // Pass true to include type prefix
-                
-                // Check if the state was originally 'Novo' but changed due to defect/avaria in observation
-                const isNewButDefective = (item.observation && (item.observation.includes('[NOVO COM AVARIA]')));
+                const unitDisplayName = formatUnitName(item, true);
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
+                const stateDisplayName = isNewButDefective ? `Novo (${item.state})` : item.state;
+
 
                 tableHTML += `
                     <tr class="bg-white border-b hover:bg-slate-50">
@@ -1645,9 +438,10 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                         <td class="px-6 py-4 text-center">${item.quantity}</td>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
-                                ${item.state === 'Com Defeito' ? '⚠️ ' : ''}${item.state}
+                                ${stateDisplayName}
                             </span>
                         </td>
+                        <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
                         <td class="px-6 py-4">
                            ${item.observation ? `
                                 <div class="tooltip">
@@ -1682,6 +476,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             paginationControlsEl.innerHTML = paginationHTML;
         }
 
+        // Retorna itens filtrados com base nos seletores da UI
         function getFilteredItems(sourceData) {
             const servico = filtroServicoEl.value;
             const unidade = filtroUnidadeEl.value;
@@ -1691,10 +486,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             if (!servico && !unidade && !estado && !busca) return sourceData;
 
             return sourceData.filter(item => {
-                const matchServico = !servico || (item.id.startsWith('cras_') && servico === 'cras') ||
-                                                    (item.id.startsWith('cre_') && servico === 'creas') ||
-                                                    (item.id.startsWith('ct_') && servico === 'conselho') ||
-                                                    (item.id.startsWith('ext_') && servico === 'externa');
+                const matchServico = !servico || item.id.startsWith(`${servico}_`);
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 
                 let matchEstado = true;
@@ -1712,22 +504,29 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             });
         }
 
+        // Atualiza os filtros de Unidade e Estado com base nos dados carregados
         function updateFilterOptions() {
             const selectedServico = filtroServicoEl.value;
             
+            // Popula o filtro de Unidades
+            const unidadesDoServico = [...new Set(allItems.filter(item => item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
+            unidadesDoServico.sort((a,b) => a.localeCompare(b));
+
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
             filtroUnidadeEl.disabled = !selectedServico;
 
             if (selectedServico) {
-                const units = unidadesPorServico[selectedServico] || [];
-                units.forEach(u => {
+                unidadesDoServico.forEach(u => {
                     const option = document.createElement('option');
-                    option.value = u.id;
-                    option.textContent = u.nome;
+                    option.value = u;
+                    // Formata nome para exibição (ex: CT Bacanga)
+                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
+                    option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
                     filtroUnidadeEl.appendChild(option);
                 });
             }
 
+            // Popula o filtro de Estados
             const allStates = [...new Set(allItems.map(item => item.state))];
             const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado', 'Não Funciona', 'Com Defeito'].filter(s => allStates.includes(s));
             filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
@@ -1739,6 +538,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             });
         }
         
+        // Função principal que controla qual tela é exibida
         function renderApp() {
             if (estadoChartInstance) {
                 estadoChartInstance.destroy();
@@ -1749,9 +549,9 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
 
             if (visaoAtiva === 'boasVindas') {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> e uma <strong>unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
+                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => item.donation === 'Sim').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const totalDoacoes = currentFilteredData.filter(item => item.donation_source && item.donation_source.toLowerCase() !== 'não').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
 
                 mainContentAreaEl.innerHTML = `
@@ -1779,6 +579,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                                         <th scope="col" class="px-6 py-3">Unidade</th>
                                         <th scope="col" class="px-6 py-3 text-center">Qtd.</th>
                                         <th scope="col" class="px-6 py-3">Estado</th>
+                                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
                                         <th scope="col" class="px-6 py-3">Observação</th>
                                         <th scope="col" class="px-6 py-3">Fornecedor</th>
                                     </tr>
@@ -1821,6 +622,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                                         <th scope="col" class="px-6 py-3">Unidade</th>
                                         <th scope="col" class="px-6 py-3 text-center">Qtd.</th>
                                         <th scope="col" class="px-6 py-3">Estado</th>
+                                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
                                         <th scope="col" class="px-6 py-3">Observação</th>
                                         <th scope="col" class="px-6 py-3">Fornecedor</th>
                                     </tr>
@@ -1841,7 +643,6 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
                 renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
                 updateCharts(filteredAllItems);
                 
-                // Dynamic Ranking Logic
                 if (filtroEstadoEl.value === 'Novo') {
                     const rankingData = generateRanking(filteredAllItems, ['Novo']);
                     renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
@@ -1853,7 +654,7 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             renderSummaryCards();
         }
 
-        // --- EVENT HANDLERS ---
+        // --- HANDLERS DE EVENTOS ---
         function handleFilterChange() {
             currentPage = 1;
             renderApp();
@@ -1873,11 +674,10 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             currentPage = 1;
 
             if (unidadeSelecionada) {
-                const source = allDataSources[servicoSelecionado];
-                dadosOriginais = source ? source.filter(item => item.unit_condition === unidadeSelecionada) : [];
+                dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada);
                 visaoAtiva = 'unidade';
-                const unidadeInfo = unidadesPorServico[servicoSelecionado]?.find(u => u.id === unidadeSelecionada);
-                tituloDaVisao = unidadeInfo ? `Inventário de ${unidadeInfo.nome}` : 'Inventário da Unidade';
+                const unidadeInfo = filtroUnidadeEl.options[filtroUnidadeEl.selectedIndex].text;
+                tituloDaVisao = unidadeInfo ? `Inventário de ${unidadeInfo}` : 'Inventário da Unidade';
             } else {
                 visaoAtiva = 'boasVindas';
                 tituloDaVisao = 'Bem-vindo!';
@@ -1920,13 +720,13 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
         }
 
         function handleExport() {
-            const headers = ["Descrição", "Unidade", "Qtd.", "Estado", "Origem/Doação", "Observação", "Fornecedor"];
+            const headers = ["Descrição", "Unidade", "Qtd.", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
             const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
-                `"${item.description.replace(/"/g, '""')}"`,
-                `"${formatUnitName(item, true).replace(/"/g, '""')}"`, // Use formatted name for export
+                `"${(item.description || '').replace(/"/g, '""')}"`,
+                `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
                 item.quantity,
                 item.state,
-                `"${item.donation.replace(/"/g, '""')}"`,
+                `"${(item.donation_source || '').replace(/"/g, '""')}"`,
                 `"${(item.observation || '').replace(/"/g, '""')}"`,
                 `"${(item.supplier || '').replace(/"/g, '""')}"`
             ]);
@@ -1944,8 +744,19 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             document.body.removeChild(link);
         }
 
+        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+
+        // Atualiza as referências aos elementos do DOM que podem ser recriados
+        function updateDynamicDOMReferences() {
+            tableBodyEl = document.getElementById('inventory-table-body');
+            paginationControlsEl = document.getElementById('pagination-controls');
+            estadoChartCanvasEl = document.getElementById('estadoChart');
+            rankingListEl = document.getElementById('ranking-atencao');
+        }
+
+        // Função que configura os event listeners e inicia a aplicação
         function initApp() {
-            // Get initial DOM element references
+            // Referências estáticas
             filtroServicoEl = document.getElementById('filtro-servico');
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
@@ -1954,27 +765,48 @@ Ventilador de Parede	CRAS CIDADE NOVA	2	Novo	Não`;
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
 
-            // Attach event listeners
+            // Configura os listeners
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
             filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
             
-            // Use event delegation for dynamically created pagination buttons
+            // Listener global para paginação
             document.addEventListener('click', function(event) {
                 if (event.target && event.target.dataset.page) {
                     handlePageChange(event);
                 }
             });
 
-            // Initial setup
             updateFilterOptions();
             renderApp();
         }
 
-        // Run the application once the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', initApp);
+        // Ponto de entrada: espera o DOM carregar, busca os dados e depois inicia o app.
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingEl = document.getElementById('main-content-area');
+            loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do inventário...</p></div>`;
+
+            try {
+                const response = await fetch(googleSheetUrl);
+                if (!response.ok) {
+                    throw new Error(`Falha ao carregar os dados: ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                const parsedData = parseCsvData(csvText);
+                
+                // Atribui os dados formatados à variável global
+                allItems = formatSheetData(parsedData);
+                
+                // Chama a função de inicialização do painel
+                initApp(); 
+
+            } catch (error) {
+                console.error('Erro ao buscar dados do Google Sheets:', error);
+                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o inventário. Verifique o link da planilha ou sua conexão.</p></div>`;
+            }
+        });
     </script>
 </body>
 </html>
