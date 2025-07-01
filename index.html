@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <!-- 
-        CHANGELOG v14:
-        - Integração completa com Google Sheets.
-        - Remoção de todos os dados estáticos do código.
-        - Adição de lógica para buscar, processar e exibir dados da planilha em tempo real.
-        - O painel agora é 100% gerenciado pela planilha.
+        CHANGELOG v15:
+        - Adicionado indicador de "Data da Última Atualização" no cabeçalho.
+        - Implementado novo filtro para "Origem" (Todos, Apenas Doações, Apenas Próprios).
+        - Layout de filtros ajustado para 5 colunas em telas maiores.
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -87,11 +86,12 @@
         <header class="mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Painel de Inventário</h1>
             <p class="text-slate-500 mt-1">Visão consolidada dos ativos nas unidades.</p>
+            <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
             <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mt-4 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
         </header>
 
         <div class="card p-4 md:p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                 <div>
                     <label for="filtro-servico" class="block text-sm font-medium text-slate-600 mb-1">Tipo de Unidade</label>
                     <select id="filtro-servico" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -112,6 +112,14 @@
                     <label for="filtro-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
                     <select id="filtro-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Todos</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 mb-1">Origem</label>
+                    <select id="filtro-doacao" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todas</option>
+                        <option value="sim">Apenas Doações</option>
+                        <option value="nao">Apenas Próprios</option>
                     </select>
                 </div>
                 <div>
@@ -155,7 +163,7 @@
         let estadoChartInstance;
 
         // Referências a elementos do DOM (serão preenchidas após o carregamento)
-        let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl;
+        let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
 
@@ -481,9 +489,10 @@
             const servico = filtroServicoEl.value;
             const unidade = filtroUnidadeEl.value;
             const estado = filtroEstadoEl.value;
+            const doacao = filtroDoacaoEl.value;
             const busca = filtroBuscaEl.value.toLowerCase();
 
-            if (!servico && !unidade && !estado && !busca) return sourceData;
+            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
 
             return sourceData.filter(item => {
                 const matchServico = !servico || item.id.startsWith(`${servico}_`);
@@ -497,10 +506,14 @@
                         matchEstado = item.state === estado;
                     }
                 }
+
+                const matchDoacao = !doacao ||
+                                    (doacao === 'sim' && item.donation_source && item.donation_source.toLowerCase() !== 'não') ||
+                                    (doacao === 'nao' && (!item.donation_source || item.donation_source.toLowerCase() === 'não'));
                 
                 const matchBusca = !busca || item.description.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
                 
-                return matchServico && matchUnidade && matchEstado && matchBusca;
+                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
 
@@ -708,6 +721,7 @@
             filtroUnidadeEl.disabled = true;
             filtroEstadoEl.value = '';
             filtroBuscaEl.value = '';
+            filtroDoacaoEl.value = '';
             renderApp();
         }
 
@@ -761,6 +775,7 @@
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
             filtroBuscaEl = document.getElementById('filtro-busca');
+            filtroDoacaoEl = document.getElementById('filtro-doacao');
             summaryCardsContainerEl = document.getElementById('summary-cards');
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
@@ -769,6 +784,7 @@
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
+            filtroDoacaoEl.addEventListener('change', handleFilterChange);
             filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
             
@@ -794,6 +810,18 @@
                     throw new Error(`Falha ao carregar os dados: ${response.statusText}`);
                 }
                 const csvText = await response.text();
+                
+                // Exibe a data da última atualização
+                const now = new Date();
+                const formattedDate = now.toLocaleString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const updateEl = document.getElementById('last-update-time');
+                if (updateEl) {
+                    updateEl.textContent = `Dados atualizados em: ${formattedDate}`;
+                }
+
                 const parsedData = parseCsvData(csvText);
                 
                 // Atribui os dados formatados à variável global
