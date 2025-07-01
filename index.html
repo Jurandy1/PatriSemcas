@@ -206,16 +206,16 @@
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
                 
-                let finalState = row.Estado || 'Regular';
+                let originalState = row.Estado || 'Regular';
+                let finalState = originalState;
                 const observationText = (row['Observação'] || '').toLowerCase();
-                
-                const defectKeywords = ['avariado', 'defeito', 'danificado', 'não funciona', 'nao funciona'];
-                
-                if (finalState === 'Novo' && defectKeywords.some(keyword => observationText.includes(keyword))) {
-                    finalState = 'Avariado';
-                }
+                const normalizedState = normalizeString(originalState);
 
-                if (finalState === 'Não Funciona' || finalState === 'Com Defeito') {
+                // Palavras-chave que indicam um item avariado
+                const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
+                const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationText);
+
+                if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
                     finalState = 'Avariado';
                 }
                 
@@ -232,7 +232,7 @@
                     donation_source: row['Origem da Doação'] || 'Proprios',
                     observation: row['Observação'] || '',
                     supplier: row.Fornecedor || '',
-                    originalStateWasNew: row.Estado === 'Novo'
+                    originalStateWasNew: originalState === 'Novo'
                 };
             });
         }
@@ -375,7 +375,10 @@
             const attentionItems = filtered.filter(i => i.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const newItems = filtered.filter(i => i.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const goodItems = filtered.filter(i => i.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const totalDonations = filtered.filter(i => i.donation_source && normalizeString(i.donation_source) !== 'proprios').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = filtered.filter(i => {
+                const source = normalizeString(i.donation_source);
+                return i.donation_source && !['proprio', 'proprios'].includes(source);
+            }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             summaryCardsContainerEl.innerHTML = `
                 <div class="card p-5 flex items-center space-x-4">
@@ -511,9 +514,10 @@
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 const matchEstado = !estado || item.state === estado;
                 
+                const source = normalizeString(item.donation_source);
                 const matchDoacao = !doacao ||
-                                    (doacao === 'sim' && normalizeString(item.donation_source) !== 'proprios') ||
-                                    (doacao === 'nao' && normalizeString(item.donation_source) === 'proprios');
+                                    (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) ||
+                                    (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
                 
                 const matchBusca = !busca || 
                                    item.description.toLowerCase().includes(busca) || 
@@ -587,7 +591,10 @@
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => item.donation_source && normalizeString(item.donation_source) !== 'proprios').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const totalDoacoes = currentFilteredData.filter(item => {
+                    const source = normalizeString(item.donation_source);
+                    return item.donation_source && !['proprio', 'proprios'].includes(source);
+                }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
 
                 mainContentAreaEl.innerHTML = `
