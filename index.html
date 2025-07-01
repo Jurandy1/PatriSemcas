@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <!-- 
-        CHANGELOG v17:
-        - Implementada regra de negócio inteligente para reclassificação automática.
-        - Itens marcados como "Novo" na planilha, mas com observações como "avariado",
-          "defeito" ou "não funciona", são agora automaticamente contados e exibidos
-          como "Avariado" nos gráficos e relatórios para refletir a realidade.
+        CHANGELOG v19:
+        - Corrigido problema de codificação de caracteres (UTF-8) para exibir acentos corretamente.
+        - Padronizado o tratamento de estados: Itens "Não Funciona" e "Com Defeito"
+          são agora automaticamente tratados e filtrados como "Avariado".
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -224,9 +223,14 @@
                 
                 // Palavras-chave que indicam um problema, mesmo que o item seja novo.
                 const defectKeywords = ['avariado', 'defeito', 'danificado', 'não funciona', 'nao funciona'];
-
-                // Regra: Se o estado é 'Novo', mas a observação indica um problema, reclassifica como 'Avariado'.
+                
+                // Regra 1: Se o estado é 'Novo', mas a observação indica um problema, reclassifica como 'Avariado'.
                 if (finalState === 'Novo' && defectKeywords.some(keyword => observationText.includes(keyword))) {
+                    finalState = 'Avariado';
+                }
+
+                // Regra 2: Unifica "Não Funciona" e "Com Defeito" em "Avariado" para simplificar.
+                if (finalState === 'Não Funciona' || finalState === 'Com Defeito') {
                     finalState = 'Avariado';
                 }
 
@@ -261,16 +265,14 @@
             'Novo':             { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
             'Bom':              { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
             'Regular':          { bg: 'bg-yellow-100', text: 'text-yellow-800', hex: '#facc15' },
-            'Avariado':         { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' },
-            'Não Funciona':     { bg: 'bg-slate-700', text: 'text-slate-100', hex: '#334155' },
-            'Com Defeito':      { bg: 'bg-orange-100', text: 'text-orange-800', hex: '#f97316' }
+            'Avariado':         { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
         };
 
         // Agrupa itens idênticos para exibição na tabela
         function agruparItens(items) {
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
-                const isDefective = ['Avariado', 'Não Funciona', 'Com Defeito'].includes(item.state);
+                const isDefective = item.state === 'Avariado';
                 const key = isDefective
                     ? `${item.description}-${item.state}-${item.unit_condition}-${item.observation || 'no-obs'}-${item.supplier || 'no-sup'}-${item.id}` 
                     : `${item.description}-${item.state}-${item.unit_condition}-${item.supplier || 'no-sup'}`;
@@ -323,11 +325,7 @@
         function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
             if (!dados || dados.length === 0) return null;
             const stateCounts = dados.reduce((acc, item) => {
-                let stateCategory = item.state;
-                if (stateCategory === 'Não Funciona' || stateCategory === 'Com Defeito') {
-                    stateCategory = 'Avariado';
-                }
-                acc[stateCategory] = (acc[stateCategory] || 0) + parseInt(item.quantity, 10);
+                acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
             
@@ -358,11 +356,7 @@
         function GerarRelatorioUnidade(dados) {
             if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
             const stateCounts = dados.reduce((acc, item) => {
-                let stateCategory = item.state;
-                if (item.state === 'Não Funciona' || item.state === 'Com Defeito') {
-                    stateCategory = 'Avariado';
-                }
-                acc[stateCategory] = (acc[stateCategory] || 0) + parseInt(item.quantity, 10);
+                acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
             
@@ -371,13 +365,19 @@
             reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);
             reportLines.push(`A situação geral é: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`);
             
-            const avariadosDetalhes = dados.filter(item => ['Avariado', 'Não Funciona', 'Com Defeito'].includes(item.state));
+            const avariadosDetalhes = dados.filter(item => item.state === 'Avariado');
             if (avariadosDetalhes.length > 0) {
-                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0)} itens que precisam de atenção:`);
-                const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description}${item.observation? ` (Obs: ${item.observation})` : ''} (${item.state})</li>`).join('');
+                const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
+                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${totalAvariados} itens que precisam de atenção:`);
+                
+                const listaAvariados = agruparItens(avariadosDetalhes).map(item => {
+                    const detailsText = item.observation ? ` (${item.observation})` : '';
+                    return `<li>${item.quantity}x ${item.description}${detailsText}</li>`;
+                }).join('');
+
                 reportLines.push(`<ul>${listaAvariados}</ul>`);
             } else {
-                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado ou não funcionando registrado (considerando o filtro atual).`);
+                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`);
             }
             return reportLines.join('<br>');
         }
@@ -387,7 +387,7 @@
         function renderSummaryCards() {
             const filtered = getFilteredItems(allItems);
             const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const attentionItems = filtered.filter(i => ['Avariado', 'Não Funciona', 'Com Defeito'].includes(i.state)).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const attentionItems = filtered.filter(i => i.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const newItems = filtered.filter(i => i.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const goodItems = filtered.filter(i => i.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const totalDonations = filtered.filter(i => i.donation_source && i.donation_source.toLowerCase() !== 'não').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
@@ -459,11 +459,11 @@
 
             let tableHTML = '';
             itemsToDisplay.forEach(item => {
-                const isNewButDefective = item.originalStateWasNew && (item.state === 'Avariado' || item.state === 'Com Defeito');
+                const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
                 const color = stateColors[item.state] || stateColors['Regular'];
                 const unitDisplayName = formatUnitName(item, true);
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
-                const stateDisplayName = isNewButDefective ? `Novo (${item.state})` : item.state;
+                const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
 
 
                 tableHTML += `
@@ -524,16 +524,7 @@
             return sourceData.filter(item => {
                 const matchServico = !servico || item.id.startsWith(`${servico}_`);
                 const matchUnidade = !unidade || item.unit_condition === unidade;
-                
-                let matchEstado = true;
-                if (estado) {
-                    if (estado === 'Avariado') {
-                        matchEstado = ['Avariado', 'Não Funciona', 'Com Defeito'].includes(item.state);
-                    } else {
-                        matchEstado = item.state === estado;
-                    }
-                }
-
+                const matchEstado = !estado || item.state === estado;
                 const matchDoacao = !doacao ||
                                     (doacao === 'sim' && item.donation_source && item.donation_source.toLowerCase() !== 'não') ||
                                     (doacao === 'nao' && (!item.donation_source || item.donation_source.toLowerCase() === 'não'));
@@ -568,7 +559,7 @@
 
             // Popula o filtro de Estados
             const allStates = [...new Set(allItems.map(item => item.state))];
-            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado', 'Não Funciona', 'Com Defeito'].filter(s => allStates.includes(s));
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
             filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
             sortedStates.forEach(s => {
                 const option = document.createElement('option');
@@ -687,7 +678,7 @@
                     const rankingData = generateRanking(filteredAllItems, ['Novo']);
                     renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
                 } else {
-                    const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado', 'Não Funciona', 'Com Defeito']);
+                    const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado']);
                     renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-50', text: 'text-red-600'});
                 }
             }
@@ -836,7 +827,14 @@
                 if (!response.ok) {
                     throw new Error(`Falha ao carregar os dados: ${response.statusText}`);
                 }
-                const csvText = await response.text();
+                // Garante a decodificação correta dos caracteres
+                const blob = await response.blob();
+                const csvText = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(e);
+                    reader.readAsText(blob, 'UTF-8');
+                });
                 
                 // Exibe a data da última atualização
                 const now = new Date();
