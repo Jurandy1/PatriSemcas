@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
-    <!-- 
-        CHANGELOG v19:
-        - Corrigido problema de codificação de caracteres (UTF-8) para exibir acentos corretamente.
-        - Padronizado o tratamento de estados: Itens "Não Funciona" e "Com Defeito"
-          são agora automaticamente tratados e filtrados como "Avariado".
-    -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
@@ -138,8 +132,7 @@
         </section>
 
         <main id="main-content-area" class="mt-8">
-            <!-- O conteúdo dinâmico (boas-vindas, resumo, tabela) será inserido aqui -->
-        </main>
+            </main>
         
         <footer class="text-center mt-8 text-sm text-gray-500">
             <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
@@ -149,12 +142,9 @@
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
-
-        // URL da sua planilha publicada como CSV
         const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkajUfj-4POn1JT-FjJb-EAbmC8vNmB0PGKnkErE-9IS9WJmDKx2mZiM-ZfpRDcy4ogI4N-OafCLTy/pub?output=csv';
 
-        // Variáveis globais de estado
-        let allItems = []; // Será preenchida com os dados da planilha
+        let allItems = [];
         let dadosOriginais = []; 
         let visaoAtiva = 'boasVindas';
         let tituloDaVisao = 'Bem-vindo!';
@@ -162,7 +152,6 @@
         const itemsPerPage = 20;
         let estadoChartInstance;
 
-        // Referências a elementos do DOM (serão preenchidas após o carregamento)
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
@@ -170,24 +159,29 @@
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (GOOGLE SHEETS) ---
 
         /**
-         * Converte o texto CSV da planilha para um array de objetos JavaScript.
+         * Converte o texto CSV da planilha para um array de objetos JavaScript,
+         * detectando automaticamente o separador (vírgula ou ponto e vírgula).
          * @param {string} csvText - O conteúdo do arquivo CSV.
          * @returns {Array<Object>} - Um array de objetos, onde cada objeto representa uma linha.
          */
         function parseCsvData(csvText) {
-            const lines = csvText.trim().split('\n');
+            const lines = csvText.trim().split(/\r\n|\n/); // Lida com diferentes quebras de linha
             if (lines.length < 2) return [];
             
-            const headers = lines[0].split(',').map(h => h.trim());
+            const headerLine = lines[0];
+            const delimiter = headerLine.includes(';') ? ';' : ',';
+            const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
+            
+            const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
             const data = [];
 
             for (let i = 1; i < lines.length; i++) {
-                // Lida com vírgulas dentro de campos citados (básico)
-                const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                if (lines[i].trim() === '') continue;
+                
+                const values = lines[i].split(splitRegex);
                 const item = {};
                 for (let j = 0; j < headers.length; j++) {
                     let value = values[j] ? values[j].trim() : '';
-                    // Remove aspas do início e do fim, se existirem
                     if (value.startsWith('"') && value.endsWith('"')) {
                         value = value.slice(1, -1);
                     }
@@ -198,11 +192,6 @@
             return data;
         }
         
-        /**
-         * Padroniza uma string para ter a primeira letra de cada palavra em maiúsculo.
-         * @param {string} str - A string a ser padronizada.
-         * @returns {string} - A string padronizada.
-         */
         const capitalizeWords = (str) => {
             if (!str) return "";
             return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
@@ -215,42 +204,41 @@
          */
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
-                // Padroniza o nome da unidade para evitar duplicatas.
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
                 
                 let finalState = row.Estado || 'Regular';
-                const observationText = (row.Observacao || '').toLowerCase();
+                // Usa notação de colchetes para garantir que os caracteres especiais sejam lidos
+                const observationText = (row['Observação'] || '').toLowerCase();
                 
-                // Palavras-chave que indicam um problema, mesmo que o item seja novo.
                 const defectKeywords = ['avariado', 'defeito', 'danificado', 'não funciona', 'nao funciona'];
                 
-                // Regra 1: Se o estado é 'Novo', mas a observação indica um problema, reclassifica como 'Avariado'.
                 if (finalState === 'Novo' && defectKeywords.some(keyword => observationText.includes(keyword))) {
                     finalState = 'Avariado';
                 }
 
-                // Regra 2: Unifica "Não Funciona" e "Com Defeito" em "Avariado" para simplificar.
                 if (finalState === 'Não Funciona' || finalState === 'Com Defeito') {
                     finalState = 'Avariado';
                 }
 
                 return {
-                    id: `${(row.Tipo || 'item').toLowerCase()}_${index}`,
-                    description: row.Descricao || 'N/A',
+                    id: `${(row.Tipo || 'item').toLowerCase().trim()}_${index}`,
+                    type: row.Tipo || 'N/A',
+                    // Usa notação de colchetes para nomes de colunas com caracteres especiais
+                    description: row['Descrição'] || 'N/A',
                     unit_condition: standardizedUnitName,
                     quantity: parseInt(row.Quantidade, 10) || 1,
-                    state: finalState, // Usa o estado final, já corrigido
-                    donation_source: row.Origem_Doacao || 'Não',
-                    observation: row.Observacao || '',
+                    location: row['Localização'] || 'N/A',
+                    state: finalState,
+                    donation_source: row['Origem da Doação'] || 'Não',
+                    observation: row['Observação'] || '',
                     supplier: row.Fornecedor || '',
-                    originalStateWasNew: row.Estado === 'Novo' // Mantém o registro do estado original da planilha
+                    originalStateWasNew: row.Estado === 'Novo'
                 };
             });
         }
 
         // --- FUNÇÕES AUXILIARES E DE LÓGICA DO PAINEL ---
 
-        // Debounce para otimizar a performance do campo de busca
         function debounce(func, delay) {
             let timeout;
             return function(...args) {
@@ -260,7 +248,6 @@
             };
         }
         
-        // Cores para os estados dos itens
         const stateColors = {
             'Novo':             { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
             'Bom':              { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
@@ -268,14 +255,13 @@
             'Avariado':         { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
         };
 
-        // Agrupa itens idênticos para exibição na tabela
         function agruparItens(items) {
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
                 const isDefective = item.state === 'Avariado';
                 const key = isDefective
-                    ? `${item.description}-${item.state}-${item.unit_condition}-${item.observation || 'no-obs'}-${item.supplier || 'no-sup'}-${item.id}` 
-                    : `${item.description}-${item.state}-${item.unit_condition}-${item.supplier || 'no-sup'}`;
+                    ? `${item.type}-${item.description}-${item.state}-${item.unit_condition}-${item.location}-${item.observation || 'no-obs'}-${item.supplier || 'no-sup'}-${item.id}` 
+                    : `${item.type}-${item.description}-${item.state}-${item.unit_condition}-${item.location}-${item.supplier || 'no-sup'}`;
                 
                 if (acc[key]) {
                     acc[key].quantity += parseInt(item.quantity, 10);
@@ -287,27 +273,24 @@
             return Object.values(agrupados);
         }
 
-        // Formata o nome da unidade para exibição
         function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
             let prefix = '';
-            if (item.id.startsWith('creas_')) {
-                prefix = 'CREAS ';
-            } else if (item.id.startsWith('ct_')) {
-                prefix = 'CT ';
-            } else if (item.id.startsWith('ext_')) {
-                return nomeUnidade; 
-            } else if (item.id.startsWith('cras_')) {
-                 if (nomeUnidade.toUpperCase().startsWith('CRAS ')) {
-                    prefix = '';
-                 } else {
-                    prefix = 'CRAS ';
-                 }
+            const idPrefix = (item.id || '').split('_')[0];
+
+            switch(idPrefix) {
+                case 'creas': prefix = 'CREAS '; break;
+                case 'conselho': prefix = 'CT '; break;
+                case 'externa': return nomeUnidade;
+                case 'cras':
+                    if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
+                        prefix = 'CRAS ';
+                    }
+                    break;
             }
             return `${prefix}${nomeUnidade}`;
         }
 
-        // Gera o ranking de unidades
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
             const filteredItems = dados.filter(item => filterStates.includes(item.state));
@@ -321,7 +304,6 @@
             return ranking.slice(0, 5);
         }
         
-        // Gera a configuração para o gráfico de estados
         function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
             if (!dados || dados.length === 0) return null;
             const stateCounts = dados.reduce((acc, item) => {
@@ -352,7 +334,6 @@
             };
         }
         
-        // Gera o relatório descritivo para uma unidade
         function GerarRelatorioUnidade(dados) {
             if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
             const stateCounts = dados.reduce((acc, item) => {
@@ -371,7 +352,7 @@
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${totalAvariados} itens que precisam de atenção:`);
                 
                 const listaAvariados = agruparItens(avariadosDetalhes).map(item => {
-                    const detailsText = item.observation ? ` (${item.observation})` : '';
+                    const detailsText = item.observation ? ` (Local: ${item.location} - Obs: ${item.observation})` : ` (Local: ${item.location})`;
                     return `<li>${item.quantity}x ${item.description}${detailsText}</li>`;
                 }).join('');
 
@@ -452,7 +433,7 @@
             if (!tableBodyEl) return;
 
             if (itemsToDisplay.length === 0) {
-                tableBodyEl.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
+                tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
@@ -465,12 +446,13 @@
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
                 const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
 
-
                 tableHTML += `
                     <tr class="bg-white border-b hover:bg-slate-50">
+                        <td class="px-6 py-4">${item.type}</td>
                         <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
                         <td class="px-6 py-4">${unitDisplayName}</td>
                         <td class="px-6 py-4 text-center">${item.quantity}</td>
+                        <td class="px-6 py-4">${item.location}</td>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
                                 ${stateDisplayName}
@@ -511,7 +493,6 @@
             paginationControlsEl.innerHTML = paginationHTML;
         }
 
-        // Retorna itens filtrados com base nos seletores da UI
         function getFilteredItems(sourceData) {
             const servico = filtroServicoEl.value;
             const unidade = filtroUnidadeEl.value;
@@ -529,18 +510,22 @@
                                     (doacao === 'sim' && item.donation_source && item.donation_source.toLowerCase() !== 'não') ||
                                     (doacao === 'nao' && (!item.donation_source || item.donation_source.toLowerCase() === 'não'));
                 
-                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
+                const matchBusca = !busca || 
+                                   item.description.toLowerCase().includes(busca) || 
+                                   item.type.toLowerCase().includes(busca) ||
+                                   item.location.toLowerCase().includes(busca) ||
+                                   (item.observation && item.observation.toLowerCase().includes(busca));
                 
                 return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
 
-        // Atualiza os filtros de Unidade e Estado com base nos dados carregados
         function updateFilterOptions() {
             const selectedServico = filtroServicoEl.value;
             
-            // Popula o filtro de Unidades
-            const unidadesDoServico = [...new Set(allItems.filter(item => item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
+            const unidadesDoServico = [...new Set(allItems
+                .filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`))
+                .map(item => item.unit_condition))];
             unidadesDoServico.sort((a,b) => a.localeCompare(b));
 
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
@@ -550,14 +535,12 @@
                 unidadesDoServico.forEach(u => {
                     const option = document.createElement('option');
                     option.value = u;
-                    // Formata nome para exibição (ex: CT Bacanga)
                     const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
                     option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
                     filtroUnidadeEl.appendChild(option);
                 });
             }
 
-            // Popula o filtro de Estados
             const allStates = [...new Set(allItems.map(item => item.state))];
             const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
             filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
@@ -569,7 +552,6 @@
             });
         }
         
-        // Função principal que controla qual tela é exibida
         function renderApp() {
             if (estadoChartInstance) {
                 estadoChartInstance.destroy();
@@ -578,6 +560,22 @@
 
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
+            
+            const tableHeadersHTML = `
+                <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Tipo</th>
+                        <th scope="col" class="px-6 py-3">Descrição</th>
+                        <th scope="col" class="px-6 py-3">Unidade</th>
+                        <th scope="col" class="px-6 py-3 text-center">Qtd</th>
+                        <th scope="col" class="px-6 py-3">Localização</th>
+                        <th scope="col" class="px-6 py-3">Estado</th>
+                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
+                        <th scope="col" class="px-6 py-3">Observação</th>
+                        <th scope="col" class="px-6 py-3">Fornecedor</th>
+                    </tr>
+                </thead>
+            `;
 
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
@@ -604,17 +602,7 @@
                         <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2>
                         <div class="card p-0 overflow-x-auto">
                             <table class="w-full text-sm text-left text-slate-500">
-                                <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3">Item</th>
-                                        <th scope="col" class="px-6 py-3">Unidade</th>
-                                        <th scope="col" class="px-6 py-3 text-center">Qtd.</th>
-                                        <th scope="col" class="px-6 py-3">Estado</th>
-                                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
-                                        <th scope="col" class="px-6 py-3">Observação</th>
-                                        <th scope="col" class="px-6 py-3">Fornecedor</th>
-                                    </tr>
-                                </thead>
+                                ${tableHeadersHTML}
                                 <tbody id="inventory-table-body"></tbody>
                             </table>
                         </div>
@@ -631,7 +619,7 @@
                         <div class="flex justify-between items-start flex-wrap gap-4">
                             <h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2>
                             <div class="flex gap-2">
-                                <button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Resumo</button>
+                                <button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button>
                                 <button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button>
                             </div>
                         </div>
@@ -647,17 +635,7 @@
                         <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2>
                         <div class="card p-0 overflow-x-auto">
                            <table class="w-full text-sm text-left text-slate-500">
-                                <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3">Item</th>
-                                        <th scope="col" class="px-6 py-3">Unidade</th>
-                                        <th scope="col" class="px-6 py-3 text-center">Qtd.</th>
-                                        <th scope="col" class="px-6 py-3">Estado</th>
-                                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
-                                        <th scope="col" class="px-6 py-3">Observação</th>
-                                        <th scope="col" class="px-6 py-3">Fornecedor</th>
-                                    </tr>
-                                </thead>
+                                ${tableHeadersHTML}
                                 <tbody id="inventory-table-body"></tbody>
                             </table>
                         </div>
@@ -693,8 +671,14 @@
         
         function handleServicoChange() {
             filtroUnidadeEl.value = '';
-            dadosOriginais = [];
-            visaoAtiva = 'boasVindas';
+            dadosOriginais = allItems.filter(item => item.id.startsWith(`${this.value}_`));
+            visaoAtiva = 'unidade';
+            tituloDaVisao = this.options[this.selectedIndex].text;
+            if (!this.value) {
+                visaoAtiva = 'boasVindas';
+                tituloDaVisao = 'Bem-vindo!';
+                dadosOriginais = [];
+            }
             updateFilterOptions();
             renderApp();
         }
@@ -708,11 +692,11 @@
                 dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada);
                 visaoAtiva = 'unidade';
                 const unidadeInfo = filtroUnidadeEl.options[filtroUnidadeEl.selectedIndex].text;
-                tituloDaVisao = unidadeInfo ? `Inventário de ${unidadeInfo}` : 'Inventário da Unidade';
+                tituloDaVisao = `Inventário de ${unidadeInfo}`;
             } else {
-                visaoAtiva = 'boasVindas';
-                tituloDaVisao = 'Bem-vindo!';
-                dadosOriginais = [];
+                dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`));
+                visaoAtiva = 'unidade';
+                tituloDaVisao = `Inventário de ${filtroServicoEl.options[filtroServicoEl.selectedIndex].text}`;
             }
             renderApp();
         }
@@ -725,6 +709,8 @@
                 tituloDaVisao = 'Resumo Geral do Inventário';
                 visaoAtiva = 'resumo';
                 currentPage = 1;
+                filtroServicoEl.value = '';
+                updateFilterOptions();
                 renderApp();
             }, 50);
         }
@@ -752,11 +738,13 @@
         }
 
         function handleExport() {
-            const headers = ["Descrição", "Unidade", "Qtd.", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
+            const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
             const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
+                `"${(item.type || '').replace(/"/g, '""')}"`,
                 `"${(item.description || '').replace(/"/g, '""')}"`,
                 `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
                 item.quantity,
+                `"${(item.location || '').replace(/"/g, '""')}"`,
                 item.state,
                 `"${(item.donation_source || '').replace(/"/g, '""')}"`,
                 `"${(item.observation || '').replace(/"/g, '""')}"`,
@@ -770,7 +758,8 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${tituloDaVisao.toLowerCase().replace(/[\s/]/g, '_')}_inventario.csv`);
+            const fileName = (tituloDaVisao || 'relatorio').toLowerCase().replace(/[\s/]/g, '_');
+            link.setAttribute("download", `${fileName}_inventario.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -778,7 +767,6 @@
 
         // --- INICIALIZAÇÃO DA APLICAÇÃO ---
 
-        // Atualiza as referências aos elementos do DOM que podem ser recriados
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
             paginationControlsEl = document.getElementById('pagination-controls');
@@ -786,9 +774,7 @@
             rankingListEl = document.getElementById('ranking-atencao');
         }
 
-        // Função que configura os event listeners e inicia a aplicação
         function initApp() {
-            // Referências estáticas
             filtroServicoEl = document.getElementById('filtro-servico');
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
@@ -798,7 +784,6 @@
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
 
-            // Configura os listeners
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
@@ -806,7 +791,6 @@
             filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
             
-            // Listener global para paginação
             document.addEventListener('click', function(event) {
                 if (event.target && event.target.dataset.page) {
                     handlePageChange(event);
@@ -817,7 +801,6 @@
             renderApp();
         }
 
-        // Ponto de entrada: espera o DOM carregar, busca os dados e depois inicia o app.
         document.addEventListener('DOMContentLoaded', async () => {
             const loadingEl = document.getElementById('main-content-area');
             loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do inventário...</p></div>`;
@@ -827,7 +810,6 @@
                 if (!response.ok) {
                     throw new Error(`Falha ao carregar os dados: ${response.statusText}`);
                 }
-                // Garante a decodificação correta dos caracteres
                 const blob = await response.blob();
                 const csvText = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -836,7 +818,6 @@
                     reader.readAsText(blob, 'UTF-8');
                 });
                 
-                // Exibe a data da última atualização
                 const now = new Date();
                 const formattedDate = now.toLocaleString('pt-BR', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -849,15 +830,17 @@
 
                 const parsedData = parseCsvData(csvText);
                 
-                // Atribui os dados formatados à variável global
+                if (!parsedData || parsedData.length === 0) {
+                    throw new Error("Nenhum dado foi processado. Verifique o formato do CSV.");
+                }
+
                 allItems = formatSheetData(parsedData);
                 
-                // Chama a função de inicialização do painel
                 initApp(); 
 
             } catch (error) {
-                console.error('Erro ao buscar dados do Google Sheets:', error);
-                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o inventário. Verifique o link da planilha ou sua conexão.</p></div>`;
+                console.error('Erro ao inicializar o painel:', error);
+                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o inventário. Verifique o link da planilha, o formato do conteúdo (CSV) e sua conexão.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
             }
         });
     </script>
