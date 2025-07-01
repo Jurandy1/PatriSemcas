@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <!-- 
-        CHANGELOG v15:
-        - Adicionado indicador de "Data da Última Atualização" no cabeçalho.
-        - Implementado novo filtro para "Origem" (Todos, Apenas Doações, Apenas Próprios).
-        - Layout de filtros ajustado para 5 colunas em telas maiores.
+        CHANGELOG v17:
+        - Implementada regra de negócio inteligente para reclassificação automática.
+        - Itens marcados como "Novo" na planilha, mas com observações como "avariado",
+          "defeito" ou "não funciona", são agora automaticamente contados e exibidos
+          como "Avariado" nos gráficos e relatórios para refletir a realidade.
     -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
@@ -197,6 +198,16 @@
             }
             return data;
         }
+        
+        /**
+         * Padroniza uma string para ter a primeira letra de cada palavra em maiúsculo.
+         * @param {string} str - A string a ser padronizada.
+         * @returns {string} - A string padronizada.
+         */
+        const capitalizeWords = (str) => {
+            if (!str) return "";
+            return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+        };
 
         /**
          * Formata os dados brutos da planilha para a estrutura que o painel espera.
@@ -204,17 +215,33 @@
          * @returns {Array<Object>} - Dados formatados para uso no painel.
          */
         function formatSheetData(sheetData) {
-            return sheetData.map((row, index) => ({
-                id: `${(row.Tipo || 'item').toLowerCase()}_${index}`,
-                description: row.Descricao || 'N/A',
-                unit_condition: row.Unidade || 'N/A',
-                quantity: parseInt(row.Quantidade, 10) || 1,
-                state: row.Estado || 'Regular',
-                donation_source: row.Origem_Doacao || 'Não',
-                observation: row.Observacao || '',
-                supplier: row.Fornecedor || '',
-                originalStateWasNew: row.Estado === 'Novo'
-            }));
+            return sheetData.map((row, index) => {
+                // Padroniza o nome da unidade para evitar duplicatas.
+                const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
+                
+                let finalState = row.Estado || 'Regular';
+                const observationText = (row.Observacao || '').toLowerCase();
+                
+                // Palavras-chave que indicam um problema, mesmo que o item seja novo.
+                const defectKeywords = ['avariado', 'defeito', 'danificado', 'não funciona', 'nao funciona'];
+
+                // Regra: Se o estado é 'Novo', mas a observação indica um problema, reclassifica como 'Avariado'.
+                if (finalState === 'Novo' && defectKeywords.some(keyword => observationText.includes(keyword))) {
+                    finalState = 'Avariado';
+                }
+
+                return {
+                    id: `${(row.Tipo || 'item').toLowerCase()}_${index}`,
+                    description: row.Descricao || 'N/A',
+                    unit_condition: standardizedUnitName,
+                    quantity: parseInt(row.Quantidade, 10) || 1,
+                    state: finalState, // Usa o estado final, já corrigido
+                    donation_source: row.Origem_Doacao || 'Não',
+                    observation: row.Observacao || '',
+                    supplier: row.Fornecedor || '',
+                    originalStateWasNew: row.Estado === 'Novo' // Mantém o registro do estado original da planilha
+                };
+            });
         }
 
         // --- FUNÇÕES AUXILIARES E DE LÓGICA DO PAINEL ---
