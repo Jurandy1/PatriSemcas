@@ -158,14 +158,8 @@
 
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (GOOGLE SHEETS) ---
 
-        /**
-         * Converte o texto CSV da planilha para um array de objetos JavaScript,
-         * detectando automaticamente o separador (vírgula ou ponto e vírgula).
-         * @param {string} csvText - O conteúdo do arquivo CSV.
-         * @returns {Array<Object>} - Um array de objetos, onde cada objeto representa uma linha.
-         */
         function parseCsvData(csvText) {
-            const lines = csvText.trim().split(/\r\n|\n/); // Lida com diferentes quebras de linha
+            const lines = csvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
             
             const headerLine = lines[0];
@@ -194,20 +188,25 @@
         
         const capitalizeWords = (str) => {
             if (!str) return "";
-            return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+            return str.toLowerCase().replace(/([^\s/]+)/g, word => {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            });
         };
 
-        /**
-         * Formata os dados brutos da planilha para a estrutura que o painel espera.
-         * @param {Array<Object>} sheetData - Dados brutos da planilha.
-         * @returns {Array<Object>} - Dados formatados para uso no painel.
-         */
+        function getServiceKey(serviceName) {
+            const name = (serviceName || '').toLowerCase().trim();
+            if (name.includes('conselho') || name === 'ct') return 'conselho';
+            if (name.includes('cras')) return 'cras';
+            if (name.includes('creas')) return 'creas';
+            if (name.includes('externa')) return 'externa';
+            return 'item';
+        }
+
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
                 
                 let finalState = row.Estado || 'Regular';
-                // Usa notação de colchetes para garantir que os caracteres especiais sejam lidos
                 const observationText = (row['Observação'] || '').toLowerCase();
                 
                 const defectKeywords = ['avariado', 'defeito', 'danificado', 'não funciona', 'nao funciona'];
@@ -219,17 +218,18 @@
                 if (finalState === 'Não Funciona' || finalState === 'Com Defeito') {
                     finalState = 'Avariado';
                 }
+                
+                const serviceKey = getServiceKey(row.Tipo);
 
                 return {
-                    id: `${(row.Tipo || 'item').toLowerCase().trim()}_${index}`,
+                    id: `${serviceKey}_${index}`,
                     type: row.Tipo || 'N/A',
-                    // Usa notação de colchetes para nomes de colunas com caracteres especiais
                     description: row['Descrição'] || 'N/A',
                     unit_condition: standardizedUnitName,
                     quantity: parseInt(row.Quantidade, 10) || 1,
                     location: row['Localização'] || 'N/A',
                     state: finalState,
-                    donation_source: row['Origem da Doação'] || 'Não',
+                    donation_source: row['Origem da Doação'] || 'Proprios',
                     observation: row['Observação'] || '',
                     supplier: row.Fornecedor || '',
                     originalStateWasNew: row.Estado === 'Novo'
@@ -238,6 +238,11 @@
         }
 
         // --- FUNÇÕES AUXILIARES E DE LÓGICA DO PAINEL ---
+
+        function normalizeString(str) {
+            if (!str) return '';
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
 
         function debounce(func, delay) {
             let timeout;
@@ -349,11 +354,10 @@
             const avariadosDetalhes = dados.filter(item => item.state === 'Avariado');
             if (avariadosDetalhes.length > 0) {
                 const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
-                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Foram encontrados ${totalAvariados} itens que precisam de atenção:`);
+                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Total de ${totalAvariados} itens que precisam de atenção:`);
                 
                 const listaAvariados = agruparItens(avariadosDetalhes).map(item => {
-                    const detailsText = item.observation ? ` (Local: ${item.location} - Obs: ${item.observation})` : ` (Local: ${item.location})`;
-                    return `<li>${item.quantity}x ${item.description}${detailsText}</li>`;
+                    return `<li>${item.quantity}x ${item.description} (Local: ${item.location}, Estado: ${item.state})</li>`;
                 }).join('');
 
                 reportLines.push(`<ul>${listaAvariados}</ul>`);
@@ -371,7 +375,7 @@
             const attentionItems = filtered.filter(i => i.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const newItems = filtered.filter(i => i.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const goodItems = filtered.filter(i => i.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const totalDonations = filtered.filter(i => i.donation_source && i.donation_source.toLowerCase() !== 'não').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = filtered.filter(i => i.donation_source && normalizeString(i.donation_source) !== 'proprios').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             summaryCardsContainerEl.innerHTML = `
                 <div class="card p-5 flex items-center space-x-4">
@@ -506,9 +510,10 @@
                 const matchServico = !servico || item.id.startsWith(`${servico}_`);
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 const matchEstado = !estado || item.state === estado;
+                
                 const matchDoacao = !doacao ||
-                                    (doacao === 'sim' && item.donation_source && item.donation_source.toLowerCase() !== 'não') ||
-                                    (doacao === 'nao' && (!item.donation_source || item.donation_source.toLowerCase() === 'não'));
+                                    (doacao === 'sim' && normalizeString(item.donation_source) !== 'proprios') ||
+                                    (doacao === 'nao' && normalizeString(item.donation_source) === 'proprios');
                 
                 const matchBusca = !busca || 
                                    item.description.toLowerCase().includes(busca) || 
@@ -529,9 +534,9 @@
             unidadesDoServico.sort((a,b) => a.localeCompare(b));
 
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            filtroUnidadeEl.disabled = !selectedServico;
-
+            
             if (selectedServico) {
+                filtroUnidadeEl.disabled = false;
                 unidadesDoServico.forEach(u => {
                     const option = document.createElement('option');
                     option.value = u;
@@ -539,6 +544,8 @@
                     option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
                     filtroUnidadeEl.appendChild(option);
                 });
+            } else {
+                filtroUnidadeEl.disabled = true;
             }
 
             const allStates = [...new Set(allItems.map(item => item.state))];
@@ -580,7 +587,7 @@
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => item.donation_source && item.donation_source.toLowerCase() !== 'não').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const totalDoacoes = currentFilteredData.filter(item => item.donation_source && normalizeString(item.donation_source) !== 'proprios').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
 
                 mainContentAreaEl.innerHTML = `
@@ -670,23 +677,25 @@
         }
         
         function handleServicoChange() {
+            const selectedService = this.value;
             filtroUnidadeEl.value = '';
-            dadosOriginais = allItems.filter(item => item.id.startsWith(`${this.value}_`));
-            visaoAtiva = 'unidade';
-            tituloDaVisao = this.options[this.selectedIndex].text;
-            if (!this.value) {
-                visaoAtiva = 'boasVindas';
-                tituloDaVisao = 'Bem-vindo!';
-                dadosOriginais = [];
-            }
             updateFilterOptions();
-            renderApp();
+
+            if (selectedService) {
+                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`;
+            } else {
+                visaoAtiva = 'boasVindas';
+                dadosOriginais = [];
+                renderApp();
+            }
         }
 
         function handleUnidadeChange(event) {
             const servicoSelecionado = filtroServicoEl.value;
             const unidadeSelecionada = event.target.value;
             currentPage = 1;
+
+            if (!servicoSelecionado) return;
 
             if (unidadeSelecionada) {
                 dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada);
@@ -696,7 +705,7 @@
             } else {
                 dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`));
                 visaoAtiva = 'unidade';
-                tituloDaVisao = `Inventário de ${filtroServicoEl.options[filtroServicoEl.selectedIndex].text}`;
+                tituloDaVisao = `Inventário de Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`;
             }
             renderApp();
         }
