@@ -57,82 +57,122 @@
             visibility: visible;
             opacity: 1;
         }
-        /* Loading Spinner */
         .loader {
-            border: 5px solid #f3f3f3; /* Light grey */
-            border-top: 5px solid #3498db; /* Blue */
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
             border-radius: 50%;
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
             margin: auto;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Estilos para as Abas */
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #475569;
+        }
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
         }
     </style>
 </head>
 <body class="antialiased text-slate-700">
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
-        <header class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Painel de Inventário</h1>
-            <p class="text-slate-500 mt-1">Visão consolidada dos ativos nas unidades.</p>
+        <header class="mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Painel Unificado</h1>
+            <p class="text-slate-500 mt-1">Visão consolidada do patrimônio e estoque das unidades.</p>
             <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
-            <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mt-4 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
         </header>
 
-        <div class="card p-4 md:p-6 mb-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                <div>
-                    <label for="filtro-servico" class="block text-sm font-medium text-slate-600 mb-1">Tipo de Unidade</label>
-                    <select id="filtro-servico" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Todos</option>
-                        <option value="conselho">Conselho Tutelar</option>
-                        <option value="cras">CRAS</option>
-                        <option value="creas">CREAS</option>
-                        <option value="externa">Unidade Externa</option>
-                    </select>
+        <!-- ABAS DE NAVEGAÇÃO -->
+        <nav class="border-b border-slate-200 mb-8">
+            <div class="flex">
+                <button id="tab-patrimonio" class="tab-button active">Painel de Patrimônio</button>
+                <button id="tab-estoque" class="tab-button">Controle de Estoque</button>
+            </div>
+        </nav>
+
+        <!-- Conteúdo da Aba de Patrimônio -->
+        <div id="content-patrimonio">
+            <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mb-8 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
+
+            <div class="card p-4 md:p-6 mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    <div>
+                        <label for="filtro-servico" class="block text-sm font-medium text-slate-600 mb-1">Tipo de Unidade</label>
+                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todos</option>
+                            <option value="conselho">Conselho Tutelar</option>
+                            <option value="cras">CRAS</option>
+                            <option value="creas">CREAS</option>
+                            <option value="externa">Unidade Externa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
+                        <select id="filtro-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled>
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
+                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 mb-1">Origem</label>
+                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas</option>
+                            <option value="sim">Apenas Doações</option>
+                            <option value="nao">Apenas Próprios</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar Item</label>
+                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
-                <div>
-                    <label for="filtro-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
-                    <select id="filtro-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled>
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="filtro-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-                    <select id="filtro-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Todos</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 mb-1">Origem</label>
-                    <select id="filtro-doacao" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Todas</option>
-                        <option value="sim">Apenas Doações</option>
-                        <option value="nao">Apenas Próprios</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="filtro-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar Item</label>
-                    <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="w-full md:w-auto mt-4">
+                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg text-base hover:bg-blue-700 transition-colors">Ver Resumo Geral</button>
                 </div>
             </div>
-            <div class="w-full md:w-auto mt-4">
-                <button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg text-base hover:bg-blue-700 transition-colors">Ver Resumo Geral</button>
-            </div>
+            <section id="summary-section" class="mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6" id="summary-cards"></div>
+            </section>
+            <main id="main-content-area" class="mt-8"></main>
         </div>
 
-        <section id="summary-section" class="mb-8">
-             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6" id="summary-cards">
-                </div>
-        </section>
-
-        <main id="main-content-area" class="mt-8">
+        <!-- Conteúdo da Aba de Estoque -->
+        <div id="content-estoque" class="hidden">
+            <div class="card p-4 md:p-6 mb-8">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                     <div>
+                        <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 mb-1">Filtrar por Unidade</label>
+                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar no Estoque</label>
+                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                         <button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Estoque</button>
+                    </div>
+                 </div>
+            </div>
+            <main id="main-content-estoque" class="mt-8">
+                <!-- A tabela de estoque será renderizada aqui -->
             </main>
+        </div>
         
         <footer class="text-center mt-8 text-sm text-gray-500">
             <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
@@ -142,8 +182,10 @@
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
-        const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkajUfj-4POn1JT-FjJb-EAbmC8vNmB0PGKnkErE-9IS9WJmDKx2mZiM-ZfpRDcy4ogI4N-OafCLTy/pub?output=csv';
+        const googleSheetPatrimonioUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkajUfj-4POn1JT-FjJb-EAbmC8vNmB0PGKnkErE-9IS9WJmDKx2mZiM-ZfpRDcy4ogI4N-OafCLTy/pub?output=csv';
+        const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
+        // Variáveis para Patrimônio
         let allItems = [];
         let dadosOriginais = []; 
         let visaoAtiva = 'boasVindas';
@@ -152,26 +194,45 @@
         const itemsPerPage = 20;
         let estadoChartInstance;
 
+        // Variáveis para Estoque
+        let allEstoqueItems = [];
+
+        // Elementos do DOM
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
+        let tabPatrimonio, tabEstoque, contentPatrimonio, contentEstoque;
+        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
 
-        // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (GOOGLE SHEETS) ---
+        // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
 
+        async function fetchAndParseCsv(url) {
+            if (!url || url === 'URL_DA_SUA_PLANILHA_DE_ESTOQUE_AQUI') {
+                console.warn(`URL da planilha não configurada: ${url}`);
+                return []; // Retorna array vazio se a URL não for válida
+            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Falha ao carregar dados da URL: ${url}`);
+            const blob = await response.blob();
+            const csvText = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsText(blob, 'UTF-8');
+            });
+            return parseCsvData(csvText);
+        }
+        
         function parseCsvData(csvText) {
             const lines = csvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
-            
             const headerLine = lines[0];
             const delimiter = headerLine.includes(';') ? ';' : ',';
             const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
-            
             const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
             const data = [];
-
             for (let i = 1; i < lines.length; i++) {
                 if (lines[i].trim() === '') continue;
-                
                 const values = lines[i].split(splitRegex);
                 const item = {};
                 for (let j = 0; j < headers.length; j++) {
@@ -185,14 +246,10 @@
             }
             return data;
         }
-        
         const capitalizeWords = (str) => {
             if (!str) return "";
-            return str.toLowerCase().replace(/([^\s/]+)/g, word => {
-                return word.charAt(0).toUpperCase() + word.slice(1);
-            });
+            return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
         };
-
         function getServiceKey(serviceName) {
             const name = (serviceName || '').toLowerCase().trim();
             if (name.includes('conselho') || name === 'ct') return 'conselho';
@@ -201,26 +258,19 @@
             if (name.includes('externa')) return 'externa';
             return 'item';
         }
-
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
-                
                 let originalState = row.Estado || 'Regular';
                 let finalState = originalState;
                 const observationText = (row['Observação'] || '').toLowerCase();
                 const normalizedState = normalizeString(originalState);
-
-                // Palavras-chave que indicam um item avariado
                 const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
                 const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationText);
-
                 if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
                     finalState = 'Avariado';
                 }
-                
                 const serviceKey = getServiceKey(row.Tipo);
-
                 return {
                     id: `${serviceKey}_${index}`,
                     type: row.Tipo || 'N/A',
@@ -236,14 +286,10 @@
                 };
             });
         }
-
-        // --- FUNÇÕES AUXILIARES E DE LÓGICA DO PAINEL ---
-
         function normalizeString(str) {
             if (!str) return '';
             return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
-
         function debounce(func, delay) {
             let timeout;
             return function(...args) {
@@ -252,14 +298,12 @@
                 timeout = setTimeout(() => func.apply(context, args), delay);
             };
         }
-        
         const stateColors = {
-            'Novo':             { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
-            'Bom':              { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
-            'Regular':          { bg: 'bg-yellow-100', text: 'text-yellow-800', hex: '#facc15' },
-            'Avariado':         { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
+            'Novo': { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
+            'Bom': { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
+            'Regular': { bg: 'bg-yellow-100', text: 'text-yellow-800', hex: '#facc15' },
+            'Avariado': { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
         };
-
         function agruparItens(items) {
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
@@ -267,7 +311,6 @@
                 const key = isDefective
                     ? `${item.type}-${item.description}-${item.state}-${item.unit_condition}-${item.location}-${item.observation || 'no-obs'}-${item.supplier || 'no-sup'}-${item.id}` 
                     : `${item.type}-${item.description}-${item.state}-${item.unit_condition}-${item.location}-${item.supplier || 'no-sup'}`;
-                
                 if (acc[key]) {
                     acc[key].quantity += parseInt(item.quantity, 10);
                 } else {
@@ -277,12 +320,10 @@
             }, {});
             return Object.values(agrupados);
         }
-
         function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
             let prefix = '';
             const idPrefix = (item.id || '').split('_')[0];
-
             switch(idPrefix) {
                 case 'creas': prefix = 'CREAS '; break;
                 case 'conselho': prefix = 'CT '; break;
@@ -295,7 +336,6 @@
             }
             return `${prefix}${nomeUnidade}`;
         }
-
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
             const filteredItems = dados.filter(item => filterStates.includes(item.state));
@@ -308,17 +348,14 @@
             ranking.sort((a, b) => b.quantidade - a.quantidade);
             return ranking.slice(0, 5);
         }
-        
         function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
             if (!dados || dados.length === 0) return null;
             const stateCounts = dados.reduce((acc, item) => {
                 acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-            
             const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
             const colors = stateOrder.map(state => stateColors[state]?.hex || '#cccccc');
-
             return {
                 type: 'bar',
                 data: {
@@ -326,49 +363,33 @@
                     datasets: [{ label: 'Quantidade', data: stateOrder.map(state => stateCounts[state] || 0), backgroundColor: colors }]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { display: false }, 
-                        title: { display: true, text: titulo, font: { size: 16 } } 
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } }
-                    }
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false }, title: { display: true, text: titulo, font: { size: 16 } } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                 }
             };
         }
-        
         function GerarRelatorioUnidade(dados) {
             if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
             const stateCounts = dados.reduce((acc, item) => {
                 acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-            
             const totalUnitItems = Object.values(stateCounts).reduce((sum, count) => sum + count, 0);
             let reportLines = [];
             reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);
             reportLines.push(`A situação geral é: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`);
-            
             const avariadosDetalhes = dados.filter(item => item.state === 'Avariado');
             if (avariadosDetalhes.length > 0) {
                 const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Total de ${totalAvariados} itens que precisam de atenção:`);
-                
-                const listaAvariados = agruparItens(avariadosDetalhes).map(item => {
-                    return `<li>${item.quantity}x ${item.description} (Local: ${item.location}, Estado: ${item.state})</li>`;
-                }).join('');
-
+                const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description} (Local: ${item.location}, Estado: ${item.state})</li>`).join('');
                 reportLines.push(`<ul>${listaAvariados}</ul>`);
             } else {
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`);
             }
             return reportLines.join('<br>');
         }
-
-        // --- FUNÇÕES DE RENDERIZAÇÃO (EXIBIÇÃO NA TELA) ---
-
         function renderSummaryCards() {
             const filtered = getFilteredItems(allItems);
             const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
@@ -379,72 +400,39 @@
                 const source = normalizeString(i.donation_source);
                 return i.donation_source && !['proprio', 'proprios'].includes(source);
             }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-
             summaryCardsContainerEl.innerHTML = `
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div>
-                    <div><p class="text-slate-500 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800">${totalItems}</p></div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-red-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div>
-                    <div><p class="text-slate-500 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800">${attentionItems}</p></div>
-                </div>
-                 <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div>
-                    <div><p class="text-slate-500 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800">${newItems}</p></div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-sky-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div>
-                    <div><p class="text-slate-500 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800">${goodItems}</p></div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div>
-                    <div><p class="text-slate-500 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800">${totalDonations}</p></div>
-                </div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800">${totalItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-red-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800">${attentionItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800">${newItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-sky-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800">${goodItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800">${totalDonations}</p></div></div>
             `;
         }
-
         function updateCharts(dataForChart) {
             const chartData = GerarConfigGraficoEstado(dataForChart, 'Distribuição de Itens por Estado');
-            if (estadoChartInstance) {
-                estadoChartInstance.destroy();
-                estadoChartInstance = null;
-            }
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             if (estadoChartCanvasEl) {
-                if (!chartData) {
-                    estadoChartCanvasEl.parentNode.innerHTML = '<p class="text-center text-slate-500 py-4">Sem dados para o gráfico.</p>';
-                } else {
-                    estadoChartInstance = new Chart(estadoChartCanvasEl.getContext('2d'), chartData);
-                }
+                if (!chartData) { estadoChartCanvasEl.parentNode.innerHTML = '<p class="text-center text-slate-500 py-4">Sem dados para o gráfico.</p>'; } 
+                else { estadoChartInstance = new Chart(estadoChartCanvasEl.getContext('2d'), chartData); }
             }
         }
-        
         function renderRanking(data, title, colorClass) {
             const rankingCardTitle = document.getElementById('ranking-card-title');
             if (!rankingListEl || !rankingCardTitle) return;
-
             rankingCardTitle.textContent = title;
             if (data.length === 0) {
                 rankingListEl.innerHTML = `<li class="text-center text-slate-500 py-4">Nenhum item encontrado.</li>`;
             } else {
-                rankingListEl.innerHTML = data.map((unidade, index) => `
-                    <li class="flex justify-between items-center p-3 rounded-lg ${index === 0 ? colorClass.bg : 'bg-slate-50'}">
-                        <span class="font-medium text-slate-700">${index + 1}. ${unidade.nome}</span>
-                        <span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span>
-                    </li>
-                `).join('');
+                rankingListEl.innerHTML = data.map((unidade, index) => `<li class="flex justify-between items-center p-3 rounded-lg ${index === 0 ? colorClass.bg : 'bg-slate-50'}"><span class="font-medium text-slate-700">${index + 1}. ${unidade.nome}</span><span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span></li>`).join('');
             }
         }
-
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
-
             if (itemsToDisplay.length === 0) {
                 tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
-
             let tableHTML = '';
             itemsToDisplay.forEach(item => {
                 const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
@@ -452,93 +440,40 @@
                 const unitDisplayName = formatUnitName(item, true);
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
                 const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
-
-                tableHTML += `
-                    <tr class="bg-white border-b hover:bg-slate-50">
-                        <td class="px-6 py-4">${item.type}</td>
-                        <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
-                        <td class="px-6 py-4">${unitDisplayName}</td>
-                        <td class="px-6 py-4 text-center">${item.quantity}</td>
-                        <td class="px-6 py-4">${item.location}</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
-                                ${stateDisplayName}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
-                        <td class="px-6 py-4">
-                           ${item.observation ? `
-                                <div class="tooltip">
-                                    ${String(item.observation).substring(0, 30)}${String(item.observation).length > 30 ? '...' : ''}
-                                    <span class="tooltip-text">${item.observation}</span>
-                                </div>
-                            ` : 'N/A'}
-                        </td>
-                         <td class="px-6 py-4">${item.supplier || 'N/A'}</td>
-                    </tr>
-                `;
+                tableHTML += `<tr class="bg-white border-b hover:bg-slate-50"><td class="px-6 py-4">${item.type}</td><td class="px-6 py-4 font-medium text-slate-900">${item.description}</td><td class="px-6 py-4">${unitDisplayName}</td><td class="px-6 py-4 text-center">${item.quantity}</td><td class="px-6 py-4">${item.location}</td><td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">${stateDisplayName}</span></td><td class="px-6 py-4">${item.donation_source || 'N/A'}</td><td class="px-6 py-4">${item.observation ? `<div class="tooltip">${String(item.observation).substring(0, 30)}${String(item.observation).length > 30 ? '...' : ''}<span class="tooltip-text">${item.observation}</span></div>` : 'N/A'}</td><td class="px-6 py-4">${item.supplier || 'N/A'}</td></tr>`;
             });
             tableBodyEl.innerHTML = tableHTML;
             renderPagination(totalItemsCount, Math.ceil(totalItemsCount / itemsPerPage), enablePagination);
         }
-        
         function renderPagination(totalItems, totalPages, enablePagination) {
             if (!paginationControlsEl) return;
             paginationControlsEl.innerHTML = '';
             if (!enablePagination || totalPages <= 1) return;
-
-            let paginationHTML = `
-                <span class="text-sm text-slate-600">
-                    Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}
-                    a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens
-                </span>
-                <div class="inline-flex rounded-md shadow-sm" role="group">
-                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
-                </div>
-            `;
+            let paginationHTML = `<span class="text-sm text-slate-600">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span><div class="inline-flex rounded-md shadow-sm" role="group"><button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button><button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button></div>`;
             paginationControlsEl.innerHTML = paginationHTML;
         }
-
         function getFilteredItems(sourceData) {
             const servico = filtroServicoEl.value;
             const unidade = filtroUnidadeEl.value;
             const estado = filtroEstadoEl.value;
             const doacao = filtroDoacaoEl.value;
             const busca = filtroBuscaEl.value.toLowerCase();
-
             if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
-
             return sourceData.filter(item => {
                 const matchServico = !servico || item.id.startsWith(`${servico}_`);
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 const matchEstado = !estado || item.state === estado;
-                
                 const source = normalizeString(item.donation_source);
-                const matchDoacao = !doacao ||
-                                    (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) ||
-                                    (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
-                
-                const matchBusca = !busca || 
-                                   item.description.toLowerCase().includes(busca) || 
-                                   item.type.toLowerCase().includes(busca) ||
-                                   item.location.toLowerCase().includes(busca) ||
-                                   (item.observation && item.observation.toLowerCase().includes(busca));
-                
+                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
                 return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
-
         function updateFilterOptions() {
             const selectedServico = filtroServicoEl.value;
-            
-            const unidadesDoServico = [...new Set(allItems
-                .filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`))
-                .map(item => item.unit_condition))];
+            const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
             unidadesDoServico.sort((a,b) => a.localeCompare(b));
-
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            
             if (selectedServico) {
                 filtroUnidadeEl.disabled = false;
                 unidadesDoServico.forEach(u => {
@@ -551,7 +486,6 @@
             } else {
                 filtroUnidadeEl.disabled = true;
             }
-
             const allStates = [...new Set(allItems.map(item => item.state))];
             const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
             filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
@@ -562,110 +496,29 @@
                 filtroEstadoEl.appendChild(option);
             });
         }
-        
         function renderApp() {
-            if (estadoChartInstance) {
-                estadoChartInstance.destroy();
-                estadoChartInstance = null;
-            }
-
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
-            
-            const tableHeadersHTML = `
-                <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">Tipo</th>
-                        <th scope="col" class="px-6 py-3">Descrição</th>
-                        <th scope="col" class="px-6 py-3">Unidade</th>
-                        <th scope="col" class="px-6 py-3 text-center">Qtd</th>
-                        <th scope="col" class="px-6 py-3">Localização</th>
-                        <th scope="col" class="px-6 py-3">Estado</th>
-                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
-                        <th scope="col" class="px-6 py-3">Observação</th>
-                        <th scope="col" class="px-6 py-3">Fornecedor</th>
-                    </tr>
-                </thead>
-            `;
-
+            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => {
-                    const source = normalizeString(item.donation_source);
-                    return item.donation_source && !['proprio', 'proprios'].includes(source);
-                }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
-
-                mainContentAreaEl.innerHTML = `
-                    <div>
-                        <h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloDaVisao}</h2>
-                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                            <div class="lg:col-span-2 flex flex-col gap-6">
-                                <div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div>
-                                <div class="card p-4 text-center">
-                                    <h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3>
-                                    <p class="text-3xl font-bold text-purple-700 mt-2">${totalDoacoes}</p>
-                                </div>
-                            </div>
-                            <div class="lg:col-span-3 card p-6">
-                                <h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3>
-                                <div class="text-gray-600 space-y-2">${descriptiveReportContent}</div>
-                            </div>
-                        </div>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2>
-                        <div class="card p-0 overflow-x-auto">
-                            <table class="w-full text-sm text-left text-slate-500">
-                                ${tableHeadersHTML}
-                                <tbody id="inventory-table-body"></tbody>
-                            </table>
-                        </div>
-                        <div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
-                    </div>
-                `;
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-4 text-center"><h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card p-6"><h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3><div class="text-gray-600 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
                 updateCharts(currentFilteredData);
-
             } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start flex-wrap gap-4">
-                            <h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2>
-                            <div class="flex gap-2">
-                                <button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button>
-                                <button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                            <div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div>
-                            <div class="card p-6">
-                                <h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3>
-                                <ul id="ranking-atencao" class="space-y-3"></ul>
-                            </div>
-                        </div>
-
-                        <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2>
-                        <div class="card p-0 overflow-x-auto">
-                           <table class="w-full text-sm text-left text-slate-500">
-                                ${tableHeadersHTML}
-                                <tbody id="inventory-table-body"></tbody>
-                            </table>
-                        </div>
-                        <div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
-                    </div>
-                `;
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-6"><h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 document.getElementById('export-btn').addEventListener('click', handleExport);
                 document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
-                
                 const filteredAllItems = getFilteredItems(allItems);
                 const groupedAllItems = agruparItens(filteredAllItems);
-
                 renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
                 updateCharts(filteredAllItems);
-                
                 if (filtroEstadoEl.value === 'Novo') {
                     const rankingData = generateRanking(filteredAllItems, ['Novo']);
                     renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
@@ -677,33 +530,87 @@
             renderSummaryCards();
         }
 
-        // --- HANDLERS DE EVENTOS ---
-        function handleFilterChange() {
-            currentPage = 1;
-            renderApp();
+        // --- NOVA LÓGICA PARA ESTOQUE ---
+
+        function renderEstoque(items) {
+            mainContentEstoqueEl.innerHTML = ''; // Limpa a área de conteúdo
+            if (items.length === 0) {
+                mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Nenhum item de estoque encontrado. Verifique a URL da planilha de estoque.</p></div>`;
+                return;
+            }
+
+            // Popula o filtro de unidades do estoque
+            const unidadesEstoque = [...new Set(items.map(item => item.Unidade || 'N/A'))].sort();
+            filtroEstoqueUnidadeEl.innerHTML = '<option value="">Todas as Unidades</option>';
+            unidadesEstoque.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = u;
+                filtroEstoqueUnidadeEl.appendChild(option);
+            });
+
+            // Filtra os dados com base nos filtros de estoque
+            const busca = filtroEstoqueBuscaEl.value.toLowerCase();
+            const unidade = filtroEstoqueUnidadeEl.value;
+            const filteredItems = items.filter(item => {
+                const matchUnidade = !unidade || item.Unidade === unidade;
+                const matchBusca = !busca || (item.Item || '').toLowerCase().includes(busca) || (item.Fornecedor || '').toLowerCase().includes(busca);
+                return matchUnidade && matchBusca;
+            });
+
+            // Cria a tabela de estoque
+            const headers = Object.keys(filteredItems[0] || {});
+            const tableHTML = `
+                <div class="card p-0 overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                            <tr>
+                                ${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredItems.map(item => `
+                                <tr class="bg-white border-b hover:bg-slate-50">
+                                    ${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            mainContentEstoqueEl.innerHTML = tableHTML;
         }
         
+        function handleExportEstoque() {
+            if (allEstoqueItems.length === 0) return;
+            const headers = Object.keys(allEstoqueItems[0] || {});
+            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
+            let csvContent = "data:text/csv;charset=utf-8," 
+                             + headers.join(";") + "\n" 
+                             + dataToExport.map(e => e.join(";")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_estoque.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- HANDLERS DE EVENTOS ---
+        function handleFilterChange() { currentPage = 1; renderApp(); }
         function handleServicoChange() {
             const selectedService = this.value;
             filtroUnidadeEl.value = '';
             updateFilterOptions();
-
-            if (selectedService) {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`;
-            } else {
-                visaoAtiva = 'boasVindas';
-                dadosOriginais = [];
-                renderApp();
-            }
+            if (selectedService) { mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`; } 
+            else { visaoAtiva = 'boasVindas'; dadosOriginais = []; renderApp(); }
         }
-
         function handleUnidadeChange(event) {
             const servicoSelecionado = filtroServicoEl.value;
             const unidadeSelecionada = event.target.value;
             currentPage = 1;
-
             if (!servicoSelecionado) return;
-
             if (unidadeSelecionada) {
                 dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada);
                 visaoAtiva = 'unidade';
@@ -716,10 +623,8 @@
             }
             renderApp();
         }
-
         function handleResumoClick() {
             mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando resumo geral...</p></div>`;
-            
             setTimeout(() => {
                 dadosOriginais = allItems;
                 tituloDaVisao = 'Resumo Geral do Inventário';
@@ -730,7 +635,6 @@
                 renderApp();
             }, 50);
         }
-
         function handleVoltar() {
             visaoAtiva = 'boasVindas';
             tituloDaVisao = 'Bem-vindo!';
@@ -744,33 +648,14 @@
             filtroDoacaoEl.value = '';
             renderApp();
         }
-
         function handlePageChange(event) {
             const page = parseInt(event.target.dataset.page);
-            if (page) {
-                currentPage = page;
-                renderApp();
-            }
+            if (page) { currentPage = page; renderApp(); }
         }
-
         function handleExport() {
             const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
-            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
-                `"${(item.type || '').replace(/"/g, '""')}"`,
-                `"${(item.description || '').replace(/"/g, '""')}"`,
-                `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
-                item.quantity,
-                `"${(item.location || '').replace(/"/g, '""')}"`,
-                item.state,
-                `"${(item.donation_source || '').replace(/"/g, '""')}"`,
-                `"${(item.observation || '').replace(/"/g, '""')}"`,
-                `"${(item.supplier || '').replace(/"/g, '""')}"`
-            ]);
-
-            let csvContent = "data:text/csv;charset=utf-8," 
-                            + headers.join(";") + "\n" 
-                            + dataToExport.map(e => e.join(";")).join("\n");
-
+            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [`"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`, item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`, `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`]);
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -782,7 +667,6 @@
         }
 
         // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
             paginationControlsEl = document.getElementById('pagination-controls');
@@ -791,6 +675,7 @@
         }
 
         function initApp() {
+            // Referências do DOM - Patrimônio
             filtroServicoEl = document.getElementById('filtro-servico');
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
@@ -800,63 +685,86 @@
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
 
+            // Referências do DOM - Abas
+            tabPatrimonio = document.getElementById('tab-patrimonio');
+            tabEstoque = document.getElementById('tab-estoque');
+            contentPatrimonio = document.getElementById('content-patrimonio');
+            contentEstoque = document.getElementById('content-estoque');
+
+            // Referências do DOM - Estoque
+            mainContentEstoqueEl = document.getElementById('main-content-estoque');
+            filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
+            filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
+            exportEstoqueBtn = document.getElementById('export-estoque-btn');
+
+            // Event Listeners - Patrimônio
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
             filtroDoacaoEl.addEventListener('change', handleFilterChange);
             filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
-            
             document.addEventListener('click', function(event) {
-                if (event.target && event.target.dataset.page) {
-                    handlePageChange(event);
-                }
+                if (event.target && event.target.dataset.page) { handlePageChange(event); }
             });
+            
+            // Event Listeners - Abas
+            tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
+            tabEstoque.addEventListener('click', () => switchTab('estoque'));
+            
+            // Event Listeners - Estoque
+            filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
+            filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
+            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
 
             updateFilterOptions();
             renderApp();
         }
 
+        async function switchTab(tabName) {
+            if (tabName === 'patrimonio') {
+                tabPatrimonio.classList.add('active');
+                tabEstoque.classList.remove('active');
+                contentPatrimonio.classList.remove('hidden');
+                contentEstoque.classList.add('hidden');
+            } else if (tabName === 'estoque') {
+                tabPatrimonio.classList.remove('active');
+                tabEstoque.classList.add('active');
+                contentPatrimonio.classList.add('hidden');
+                contentEstoque.classList.remove('hidden');
+                
+                // Carrega os dados do estoque apenas se ainda não foram carregados
+                if (allEstoqueItems.length === 0) {
+                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do estoque...</p></div>`;
+                    try {
+                        const estoqueData = await fetchAndParseCsv(googleSheetEstoqueUrl);
+                        allEstoqueItems = estoqueData; // Assume que os dados do estoque não precisam de formatação complexa
+                        renderEstoque(allEstoqueItems);
+                    } catch (error) {
+                         console.error('Erro ao carregar dados do estoque:', error);
+                         mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                    }
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const loadingEl = document.getElementById('main-content-area');
-            loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do inventário...</p></div>`;
+            loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do patrimônio...</p></div>`;
 
             try {
-                const response = await fetch(googleSheetUrl);
-                if (!response.ok) {
-                    throw new Error(`Falha ao carregar os dados: ${response.statusText}`);
-                }
-                const blob = await response.blob();
-                const csvText = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.onerror = e => reject(e);
-                    reader.readAsText(blob, 'UTF-8');
-                });
-                
+                const patrimonioData = await fetchAndParseCsv(googleSheetPatrimonioUrl);
                 const now = new Date();
-                const formattedDate = now.toLocaleString('pt-BR', {
-                    day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
+                const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const updateEl = document.getElementById('last-update-time');
-                if (updateEl) {
-                    updateEl.textContent = `Dados atualizados em: ${formattedDate}`;
-                }
-
-                const parsedData = parseCsvData(csvText);
+                if (updateEl) updateEl.textContent = `Dados atualizados em: ${formattedDate}`;
+                if (!patrimonioData || patrimonioData.length === 0) throw new Error("Nenhum dado de patrimônio foi processado.");
                 
-                if (!parsedData || parsedData.length === 0) {
-                    throw new Error("Nenhum dado foi processado. Verifique o formato do CSV.");
-                }
-
-                allItems = formatSheetData(parsedData);
-                
+                allItems = formatSheetData(patrimonioData);
                 initApp(); 
-
             } catch (error) {
                 console.error('Erro ao inicializar o painel:', error);
-                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o inventário. Verifique o link da planilha, o formato do conteúdo (CSV) e sua conexão.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
             }
         });
     </script>
