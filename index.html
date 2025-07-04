@@ -212,11 +212,11 @@
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
 
         /**
-         * Busca dados JSON de uma URL (agora do Google Apps Script).
-         * @param {string} url - A URL do Google Apps Script.
+         * Busca e parseia dados de uma URL, adaptando-se a CSV ou JSON.
+         * @param {string} url - A URL do recurso (CSV ou Apps Script JSON).
          * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de objetos.
          */
-        async function fetchAndParseCsv(url) { // O nome da função permanece o mesmo para não quebrar outras chamadas
+        async function fetchAndParseCsv(url) { 
             if (!url || url === 'URL_DA_SUA_PLANILHA_DE_ESTOQUE_AQUI') {
                 console.warn(`URL da planilha não configurada: ${url}`);
                 return [];
@@ -226,14 +226,25 @@
                 const errorText = await response.text();
                 throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
             }
-            const data = await response.json(); // Agora esperamos JSON
-            
-            // Se o Apps Script retornar um objeto com 'error', trate-o
-            if (data && data.error) {
-                throw new Error(`Erro do Apps Script: ${data.error}`);
+
+            // Verifica se a URL é do Apps Script (que retorna JSON)
+            if (url.includes('script.google.com/macros/s/')) {
+                const data = await response.json();
+                if (data && data.error) {
+                    throw new Error(`Erro do Apps Script: ${data.error}`);
+                }
+                return data; // Já é um array de objetos JSON
+            } else {
+                // Assume que é um CSV se não for do Apps Script
+                const blob = await response.blob(); // Aguarda a resolução do Blob
+                const csvText = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(e);
+                    reader.readAsText(blob, 'UTF-8'); 
+                });
+                return parseCsvData(csvText); // Reutiliza a função de parsing CSV
             }
-            
-            return data; // Retorna os dados já como array de objetos
         }
         
         /**
@@ -243,8 +254,31 @@
          * @param {string} csvText - A string contendo os dados CSV.
          * @returns {Array<Object>} Um array de objetos onde cada objeto representa uma linha do CSV.
          */
-        // Removida a função parseCsvData pois o Apps Script agora retorna JSON diretamente.
-        // function parseCsvData(csvText) { ... }
+        function parseCsvData(csvText) {
+            const lines = csvText.trim().split(/\r\n|\n/);
+            if (lines.length < 2) return [];
+            const headerLine = lines[0];
+            const delimiter = headerLine.includes(';') ? ';' : ','; // Detecta delimitador
+            // Regex para dividir a linha, ignorando delimitadores dentro de aspas
+            const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
+            const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue; // Ignora linhas vazias
+                const values = lines[i].split(splitRegex);
+                const item = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let value = values[j] ? values[j].trim() : '';
+                    // Remove aspas extras se o valor estiver entre aspas
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    }
+                    item[headers[j]] = value;
+                }
+                data.push(item);
+            }
+            return data;
+        }
 
         /**
          * Capitaliza a primeira letra de cada palavra em uma string, exceto após '/'
@@ -653,6 +687,7 @@
          * Atualiza os gráficos com os dados fornecidos.
          * Destrói a instância anterior do gráfico antes de criar uma nova.
          * @param {Array<Object>} dataForChart - Os dados a serem usados para o gráfico.
+         * @returns {void}
          */
         function updateCharts(dataForChart) {
             const chartData = GerarConfigGraficoEstado(dataForChart, 'Distribuição de Itens por Estado');
@@ -675,6 +710,7 @@
          * @param {Array<Object>} data - Os dados do ranking.
          * @param {string} title - O título do ranking.
          * @param {Object} colorClass - Objeto com classes CSS para cor de fundo e texto.
+         * @returns {void}
          */
         function renderRanking(data, title, colorClass) {
             const rankingCardTitle = document.getElementById('ranking-card-title');
@@ -699,6 +735,7 @@
          * @param {Array<Object>} itemsToDisplay - Itens a serem exibidos na tabela.
          * @param {number} totalItemsCount - Contagem total de itens (para paginação).
          * @param {boolean} enablePagination - Se a paginação deve ser habilitada.
+         * @returns {void}
          */
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
@@ -746,6 +783,7 @@
          * @param {number} totalItems - Número total de itens.
          * @param {number} totalPages - Número total de páginas.
          * @param {boolean} enablePagination - Se a paginação deve ser habilitada.
+         * @returns {void}
          */
         function renderPagination(totalItems, totalPages, enablePagination) {
             if (!paginationControlsEl) return;
@@ -804,6 +842,7 @@
 
         /**
          * Atualiza as opções dos filtros de Unidade e Estado com base nos dados disponíveis.
+         * @returns {void}
          */
         function updateFilterOptions() {
             const selectedServico = filtroServicoEl.value;
@@ -841,6 +880,7 @@
 
         /**
          * Renderiza a interface do aplicativo com base na visão ativa (boas-vindas, unidade ou resumo).
+         * @returns {void}
          */
         function renderApp() {
             // Destrói o gráfico existente antes de renderizar um novo
@@ -973,6 +1013,7 @@
         /**
          * Renderiza a tabela de estoque.
          * @param {Array<Object>} items - Os itens de estoque a serem exibidos.
+         * @returns {void}
          */
         function renderEstoque(items) {
             mainContentEstoqueEl.innerHTML = ''; // Limpa a área de conteúdo
@@ -1029,6 +1070,7 @@
         
         /**
          * Lida com a exportação dos dados de estoque para um arquivo CSV.
+         * @returns {void}
          */
         function handleExportEstoque() {
             if (allEstoqueItems.length === 0) return;
@@ -1056,6 +1098,7 @@
 
         /**
          * Manipula a mudança em qualquer filtro (exceto serviço e unidade) para renderizar o aplicativo.
+         * @returns {void}
          */
         function handleFilterChange() { 
             currentPage = 1; // Volta para a primeira página ao aplicar filtros
@@ -1065,6 +1108,7 @@
         /**
          * Manipula a mudança no filtro de Serviço.
          * Atualiza as opções de Unidade e a visão do painel.
+         * @returns {void}
          */
         function handleServicoChange() {
             const selectedService = this.value;
@@ -1090,6 +1134,7 @@
          * Manipula a mudança no filtro de Unidade.
          * Filtra os dados e atualiza a visão do painel para a unidade selecionada.
          * @param {Event} event - O evento de mudança.
+         * @returns {void}
          */
         function handleUnidadeChange(event) {
             const servicoSelecionado = filtroServicoEl.value;
@@ -1118,6 +1163,7 @@
         /**
          * Lida com o clique no botão "Ver Resumo Geral".
          * Altera a visão para o resumo geral do inventário.
+         * @returns {void}
          */
         function handleResumoClick() {
             // Exibe um loader enquanto os dados são carregados/processados
@@ -1139,6 +1185,7 @@
         /**
          * Lida com o clique no botão "Voltar à Seleção".
          * Reinicia a aplicação para a visão de boas-vindas.
+         * @returns {void}
          */
         function handleVoltar() {
             visaoAtiva = 'boasVindas';
@@ -1158,6 +1205,7 @@
         /**
          * Lida com a mudança de página na paginação.
          * @param {Event} event - O evento de clique.
+         * @returns {void}
          */
         function handlePageChange(event) {
             const page = parseInt(event.target.dataset.page);
@@ -1169,6 +1217,7 @@
 
         /**
          * Lida com a exportação dos dados da tabela atual para um arquivo CSV.
+         * @returns {void}
          */
         function handleExport() {
             const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
@@ -1191,8 +1240,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            const fileName = (tituloDaVisao || 'relatorio').toLowerCase().replace(/[\s/]/g, '_');
-            link.setAttribute("download", `${fileName}_inventario.csv`);
+            link.setAttribute("download", `relatorio_inventario.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1203,6 +1251,7 @@
         /**
          * Atualiza as referências do DOM para elementos que são renderizados dinamicamente.
          * Deve ser chamada sempre que o conteúdo de `mainContentAreaEl` é alterado.
+         * @returns {void}
          */
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
@@ -1213,6 +1262,7 @@
 
         /**
          * Inicializa os elementos do DOM e adiciona os event listeners.
+         * @returns {void}
          */
         function initApp() {
             // Referências do DOM - Patrimônio
@@ -1267,6 +1317,7 @@
         /**
          * Alterna entre as abas de Patrimônio e Estoque.
          * @param {string} tabName - O nome da aba a ser ativada ('patrimonio' ou 'estoque').
+         * @returns {void}
          */
         async function switchTab(tabName) {
             if (tabName === 'patrimonio') {
