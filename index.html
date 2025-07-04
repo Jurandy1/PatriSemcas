@@ -113,6 +113,8 @@
                             <option value="cras">CRAS</option>
                             <option value="creas">CREAS</option>
                             <option value="externa">Unidade Externa</option>
+                            <option value="centro_pop">Centro Pop</option>
+                            <option value="abrigo">Abrigo</option>
                         </select>
                     </div>
                     <div>
@@ -183,7 +185,8 @@
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
         // URL da planilha de patrimônio (Inventário 2025)
-        const googleSheetPatrimonioUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkajUfj-4POn1JT-FjJb-EAbmC8vNmB0PGKnkErE-9IS9WJmDKx2mZiM-ZfpRDcy4ogI4N-OafCLTy/pub?output=csv';
+        // Usando um proxy CORS diferente e mais robusto para contornar restrições de segurança do navegador
+        const googleSheetPatrimonioUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRh9P4FXfEaJX00NTlLfv7l2CdcZ_2pq28YE7Bh0XEoED6H-NtXJCqx4BcdZjp6iH8FzXS2TqJQ_c_X/pub?output=csv');
         // URL da planilha de estoque (mantida a original do seu código, caso seja diferente)
         const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
@@ -284,6 +287,8 @@
             if (name.includes('cras')) return 'cras';
             if (name.includes('creas')) return 'creas';
             if (name.includes('externa')) return 'externa';
+            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop'; // Nova chave
+            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo'; // Nova chave
             return 'item'; // Tipo genérico
         }
 
@@ -315,10 +320,12 @@
 
                 // Explicitamente trata valores comuns de "vazio" para donation_source e supplier
                 const rawDonationSource = (row['Origem da Doação'] || '').trim();
-                const processedDonationSource = (rawDonationSource === '-' || rawDonationSource.toLowerCase() === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
+                // Considera '-' e 'N/A' (case insensitive) como vazio para fins de normalização
+                const processedDonationSource = (rawDonationSource === '-' || normalizeString(rawDonationSource) === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
 
                 const rawSupplier = (row.Fornecedor || '').trim();
-                const processedSupplier = (rawSupplier === '-' || rawSupplier.toLowerCase() === 'n/a' || rawSupplier === '') ? '' : rawSupplier;
+                // Considera '-' e 'N/A' (case insensitive) como vazio para fins de normalização
+                const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a' || rawSupplier === '') ? '' : rawSupplier;
 
                 return {
                     id: `${serviceKey}_${index}`, // ID único para cada item
@@ -371,6 +378,66 @@
         };
 
         /**
+         * Deduplica e prioriza itens com base em seu estado de conservação para o mesmo item físico.
+         * Para cada combinação única de Tipo, Descrição, Unidade e Localização,
+         * mantém apenas o item com o estado de maior prioridade (Novo > Bom > Regular > Avariado)
+         * e soma as quantidades de *todos* os itens que compartilham essa mesma identidade física
+         * (independentemente do estado original, exceto avariados que são tratados separadamente na próxima etapa).
+         * @param {Array<Object>} items - Array de itens a serem processados.
+         * @returns {Array<Object>} Array de itens deduplicados e priorizados.
+         */
+        function deduplicateAndPrioritizeItems(items) {
+            const statePriority = {
+                'Novo': 4,
+                'Bom': 3,
+                'Regular': 2,
+                'Avariado': 1 // Avariado é o de menor prioridade para a "melhor representação"
+            };
+
+            const uniqueCoreItems = new Map(); // Key: coreKey, Value: { item: bestItem, totalQuantity: number }
+
+            items.forEach(item => {
+                const normalizedType = normalizeString(item.type);
+                const normalizedDescription = normalizeString(item.description);
+                const normalizedUnitCondition = normalizeString(item.unit_condition);
+                const normalizedLocation = normalizeString(item.location);
+
+                // Core key identifies the "physical" item
+                const coreKey = `${normalizedType}-${normalizedDescription}-${normalizedUnitCondition}-${normalizedLocation}`;
+
+                if (uniqueCoreItems.has(coreKey)) {
+                    let existingEntry = uniqueCoreItems.get(coreKey);
+                    let existingItem = existingEntry.item;
+                    let existingPriority = statePriority[existingItem.state] || 0;
+                    let currentPriority = statePriority[item.state] || 0;
+
+                    // Always sum the quantity for the same physical item
+                    existingEntry.totalQuantity += item.quantity;
+
+                    // If current item has a higher priority state, update the best item for this coreKey
+                    if (currentPriority > existingPriority) {
+                        existingEntry.item = { ...item }; // Replace with the higher priority item
+                        // The quantity will be assigned from totalQuantity later
+                    }
+                    // If currentPriority is equal or lower, keep the existing bestItem.
+                    // The totalQuantity is already updated.
+                } else {
+                    // First time seeing this core item, add it
+                    uniqueCoreItems.set(coreKey, { item: { ...item }, totalQuantity: item.quantity });
+                }
+            });
+
+            const result = [];
+            uniqueCoreItems.forEach(entry => {
+                // Assign the accumulated totalQuantity to the chosen best item
+                entry.item.quantity = entry.totalQuantity;
+                result.push(entry.item);
+            });
+
+            return result;
+        }
+
+        /**
          * Agrupa itens duplicados, somando suas quantidades.
          * Itens avariados são agrupados de forma mais granular para manter observações únicas.
          * Aplica normalização aos campos usados na chave de agrupamento para evitar duplicações por diferenças de case ou espaços.
@@ -387,16 +454,21 @@
                 const normalizedDescription = normalizeString(item.description);
                 const normalizedUnitCondition = normalizeString(item.unit_condition);
                 const normalizedLocation = normalizeString(item.location);
-                // Usa os valores já processados de donation_source e supplier
-                const normalizedDonationSource = normalizeString(item.donation_source);
                 const normalizedObservation = normalizeString(item.observation);
+                
+                // Para a chave de agrupamento, use os valores já processados (e normalizados) de donation_source e supplier
+                const normalizedDonationSource = normalizeString(item.donation_source);
                 const normalizedSupplier = normalizeString(item.supplier);
 
-                // Chave de agrupamento: mais granular para avariados
-                // Inclui donation_source e supplier na chave para itens não avariados
-                const key = isDefective
-                    ? `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}-${normalizedObservation || 'no-obs'}-${normalizedSupplier || 'no-sup'}` 
-                    : `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}-${normalizedDonationSource || 'no-doacao'}-${normalizedSupplier || 'no-fornecedor'}`;
+                let key;
+                if (isDefective) {
+                    // Para itens avariados, a chave é mais granular para rastrear problemas específicos
+                    key = `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}-${normalizedObservation || 'no-obs'}-${normalizedSupplier || 'no-sup'}`; 
+                } else {
+                    // Para itens não avariados, a chave é menos granular para agrupar mais itens semelhantes
+                    // Removendo donation_source e supplier da chave para um agrupamento mais agressivo
+                    key = `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}`;
+                }
                 
                 if (acc[key]) {
                     acc[key].quantity += parseInt(item.quantity, 10);
@@ -422,13 +494,16 @@
             switch(idPrefix) {
                 case 'creas': prefix = 'CREAS '; break;
                 case 'conselho': prefix = 'CT '; break;
-                case 'externa': return nomeUnidade; // Unidades externas não recebem prefixo
+                case 'externa': return nomeUnidade;
                 case 'cras':
                     // Adiciona "CRAS " apenas se o nome da unidade já não começar com "CRAS " (evita duplicidade)
                     if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
                         prefix = 'CRAS ';
                     }
                     break;
+                case 'centro_pop': // Novo tipo de unidade
+                case 'abrigo': // Novo tipo de unidade
+                    return nomeUnidade; // Não adiciona prefixo para estes tipos
             }
             return `${prefix}${nomeUnidade}`;
         }
@@ -537,12 +612,12 @@
         function renderSummaryCards() {
             const filtered = getFilteredItems(allItems); // Usa allItems para o resumo geral
             const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const attentionItems = filtered.filter(i => i.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const newItems = filtered.filter(i => i.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const goodItems = filtered.filter(i => i.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const totalDonations = filtered.filter(i => {
-                const source = normalizeString(i.donation_source);
-                return i.donation_source && !['proprio', 'proprios'].includes(source); // Considera doação se não for "próprio"
+            const attentionItems = filtered.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const newItems = filtered.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const goodItems = filtered.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = filtered.filter(item => {
+                const source = normalizeString(item.donation_source);
+                return item.donation_source && !['proprio', 'proprios'].includes(source); // Considera doação se não for "próprio"
             }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             summaryCardsContainerEl.innerHTML = `
@@ -796,6 +871,7 @@
 
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
+            console.log('Itens a serem renderizados na tabela:', filteredAndGroupedItems.length, filteredAndGroupedItems); // Log para depuração
 
             const tableHeadersHTML = `
                 <thead class="text-xs text-slate-700 uppercase bg-slate-100">
@@ -1205,7 +1281,7 @@
             exportEstoqueBtn.addEventListener('click', handleExportEstoque);
 
             updateFilterOptions(); // Popula as opções de filtro inicialmente
-            renderApp(); // Renderiza a aplicação pela primeira vez
+            // Removido o renderApp() inicial aqui para que o handleResumoClick() o faça.
         }
 
         /**
@@ -1258,9 +1334,18 @@
                 }
                 
                 allItems = formatSheetData(patrimonioData);
-                console.log('Itens formatados (allItems):', allItems); // Log para depuração
+                console.log('Itens formatados (após formatSheetData):', allItems); // Log para depuração
+
+                // Nova etapa de deduplicação e priorização
+                // A função deduplicateAndPrioritizeItems foi revisada para ser mais robusta
+                allItems = deduplicateAndPrioritizeItems(allItems);
+                console.log('Itens formatados e deduplicados (após deduplicateAndPrioritizeItems):', allItems); // Log atualizado
                 
                 initApp(); // Inicia a aplicação após carregar e formatar os dados
+
+                // Chama handleResumoClick para carregar o resumo geral automaticamente
+                handleResumoClick(); 
+
             } catch (error) {
                 console.error('Erro ao inicializar o painel:', error);
                 loadingEl.innerHTML = `
