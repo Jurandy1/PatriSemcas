@@ -112,6 +112,8 @@
                             <option value="conselho">Conselho Tutelar</option>
                             <option value="cras">CRAS</option>
                             <option value="creas">CREAS</option>
+                            <option value="centropop">Centro Pop</option>
+                            <option value="abrigo">Abrigo</option>
                             <option value="externa">Unidade Externa</option>
                         </select>
                     </div>
@@ -288,14 +290,19 @@
             if (!str) return "";
             return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
         };
+        
+        // *** ALTERADO: Adicionado 'abrigo' e suas variantes ***
         function getServiceKey(serviceName) {
             const name = (serviceName || '').toLowerCase().trim();
             if (name.includes('conselho') || name === 'ct') return 'conselho';
             if (name.includes('cras')) return 'cras';
             if (name.includes('creas')) return 'creas';
+            if (name.includes('centro pop')) return 'centropop';
+            if (name.includes('abrigo') || name.includes('cat') || name.includes('r.i')) return 'abrigo';
             if (name.includes('externa')) return 'externa';
             return 'item';
         }
+
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
@@ -358,6 +365,8 @@
             }, {});
             return Object.values(agrupados);
         }
+        
+        // *** ALTERADO: Adicionado formatação para 'abrigo' ***
         function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
             let prefix = '';
@@ -365,6 +374,8 @@
             switch(idPrefix) {
                 case 'creas': prefix = 'CREAS '; break;
                 case 'conselho': prefix = 'CT '; break;
+                case 'centropop': prefix = 'Centro Pop '; break;
+                case 'abrigo': return nomeUnidade; // Retorna o nome direto (CAT, R.I)
                 case 'externa': return nomeUnidade;
                 case 'cras':
                     if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
@@ -374,6 +385,7 @@
             }
             return `${prefix}${nomeUnidade}`;
         }
+
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
             const filteredItems = dados.filter(item => filterStates.includes(item.state));
