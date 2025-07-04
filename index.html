@@ -185,8 +185,8 @@
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
         // URL da planilha de patrimônio (Inventário 2025)
-        // Usando um proxy CORS diferente e mais robusto para contornar restrições de segurança do navegador
-        const googleSheetPatrimonioUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRh9P4FXfEaJX00NTlLfv7l2CdcZ_2pq28YE7Bh0XEoED6H-NtXJCqx4BcdZjp6iH8FzXS2TqJQ_c_X/pub?output=csv');
+        // Agora usando o Google Apps Script vinculado à planilha como proxy
+        const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
         // URL da planilha de estoque (mantida a original do seu código, caso seja diferente)
         const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
@@ -212,25 +212,28 @@
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
 
         /**
-         * Busca e parseia dados CSV de uma URL.
-         * @param {string} url - A URL do arquivo CSV.
-         * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de objetos representando os dados CSV.
+         * Busca dados JSON de uma URL (agora do Google Apps Script).
+         * @param {string} url - A URL do Google Apps Script.
+         * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de objetos.
          */
-        async function fetchAndParseCsv(url) {
+        async function fetchAndParseCsv(url) { // O nome da função permanece o mesmo para não quebrar outras chamadas
             if (!url || url === 'URL_DA_SUA_PLANILHA_DE_ESTOQUE_AQUI') {
                 console.warn(`URL da planilha não configurada: ${url}`);
-                return []; // Retorna array vazio se a URL não for válida
+                return [];
             }
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`Falha ao carregar dados da URL: ${url}`);
-            const blob = await response.blob();
-            const csvText = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = e => reject(e);
-                reader.readAsText(blob, 'UTF-8');
-            });
-            return parseCsvData(csvText);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
+            }
+            const data = await response.json(); // Agora esperamos JSON
+            
+            // Se o Apps Script retornar um objeto com 'error', trate-o
+            if (data && data.error) {
+                throw new Error(`Erro do Apps Script: ${data.error}`);
+            }
+            
+            return data; // Retorna os dados já como array de objetos
         }
         
         /**
@@ -240,31 +243,8 @@
          * @param {string} csvText - A string contendo os dados CSV.
          * @returns {Array<Object>} Um array de objetos onde cada objeto representa uma linha do CSV.
          */
-        function parseCsvData(csvText) {
-            const lines = csvText.trim().split(/\r\n|\n/);
-            if (lines.length < 2) return [];
-            const headerLine = lines[0];
-            const delimiter = headerLine.includes(';') ? ';' : ','; // Detecta delimitador
-            // Regex para dividir a linha, ignorando delimitadores dentro de aspas
-            const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
-            const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                if (lines[i].trim() === '') continue; // Ignora linhas vazias
-                const values = lines[i].split(splitRegex);
-                const item = {};
-                for (let j = 0; j < headers.length; j++) {
-                    let value = values[j] ? values[j].trim() : '';
-                    // Remove aspas extras se o valor estiver entre aspas
-                    if (value.startsWith('"') && value.endsWith('"')) {
-                        value = value.slice(1, -1);
-                    }
-                    item[headers[j]] = value;
-                }
-                data.push(item);
-            }
-            return data;
-        }
+        // Removida a função parseCsvData pois o Apps Script agora retorna JSON diretamente.
+        // function parseCsvData(csvText) { ... }
 
         /**
          * Capitaliza a primeira letra de cada palavra em uma string, exceto após '/'
@@ -440,7 +420,7 @@
         /**
          * Agrupa itens duplicados, somando suas quantidades.
          * Itens avariados são agrupados de forma mais granular para manter observações únicas.
-         * Aplica normalização aos campos usados na chave de agrupamento para evitar duplicações por diferenças de case ou espaços.
+         * Aplica normalização aos campos usados na chave de agrupamento para evitar duplicação por diferenças de case ou espaços.
          * @param {Array<Object>} items - Array de itens a serem agrupados.
          * @returns {Array<Object>} Array de itens agrupados.
          */
