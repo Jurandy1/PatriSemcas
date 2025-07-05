@@ -87,15 +87,16 @@
         
         <header class="mb-4">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Painel Unificado</h1>
-            <p class="text-slate-500 mt-1">Visão consolidada do patrimônio e estoque das unidades.</p>
+            <p class="text-slate-500 mt-1">Visão consolidada do patrimônio, estoque e totais das unidades.</p>
             <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
         </header>
 
         <!-- ABAS DE NAVEGAÇÃO -->
         <nav class="border-b border-slate-200 mb-8">
-            <div class="flex">
+            <div class="flex flex-wrap">
                 <button id="tab-patrimonio" class="tab-button active">Painel de Patrimônio</button>
                 <button id="tab-estoque" class="tab-button">Controle de Estoque</button>
+                <button id="tab-total-itens" class="tab-button">Total de Itens</button>
             </div>
         </nav>
 
@@ -176,6 +177,46 @@
             </main>
         </div>
         
+        <!-- Conteúdo da Aba Total de Itens (MODIFICADO) -->
+        <div id="content-total-itens" class="hidden">
+            <div class="card p-4 md:p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 mb-1">Categoria (Tipo)</label>
+                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição</label>
+                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
+                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
+                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- Resumo dos Totais (NOVO) -->
+            <div id="total-itens-summary" class="mb-6">
+                <!-- O resumo será renderizado aqui -->
+            </div>
+            <main id="main-content-total-itens" class="mt-8">
+                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Os resultados da totalização serão renderizados aqui -->
+                </div>
+            </main>
+        </div>
+
+
         <footer class="text-center mt-8 text-sm text-gray-500">
             <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         </footer>
@@ -184,10 +225,7 @@
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
-        // URL da planilha de patrimônio (Inventário 2025)
-        // Agora usando o Google Apps Script vinculado à planilha como proxy
         const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
-        // URL da planilha de estoque (mantida a original do seu código, caso seja diferente)
         const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
         // Variáveis para Patrimônio
@@ -206,18 +244,22 @@
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
-        let tabPatrimonio, tabEstoque, contentPatrimonio, contentEstoque;
+        
+        // Elementos das Abas
+        let tabPatrimonio, tabEstoque, tabTotalItens;
+        let contentPatrimonio, contentEstoque, contentTotalItens;
+        
+        // Elementos do Estoque
         let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
+
+        // Elementos do Total de Itens (MODIFICADO)
+        let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
+
 
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
 
-        /**
-         * Busca e parseia dados de uma URL, adaptando-se a CSV ou JSON.
-         * @param {string} url - A URL do recurso (CSV ou Apps Script JSON).
-         * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de objetos.
-         */
         async function fetchAndParseCsv(url) { 
-            if (!url || url === 'URL_DA_SUA_PLANILHA_DE_ESTOQUE_AQUI') {
+            if (!url || url.startsWith('URL_DA_SUA_PLANILHA')) {
                 console.warn(`URL da planilha não configurada: ${url}`);
                 return [];
             }
@@ -227,49 +269,38 @@
                 throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
             }
 
-            // Verifica se a URL é do Apps Script (que retorna JSON)
             if (url.includes('script.google.com/macros/s/')) {
                 const data = await response.json();
                 if (data && data.error) {
                     throw new Error(`Erro do Apps Script: ${data.error}`);
                 }
-                return data; // Já é um array de objetos JSON
+                return data;
             } else {
-                // Assume que é um CSV se não for do Apps Script
-                const blob = await response.blob(); // Aguarda a resolução do Blob
+                const blob = await response.blob();
                 const csvText = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = e => resolve(e.target.result);
                     reader.onerror = e => reject(e);
                     reader.readAsText(blob, 'UTF-8'); 
                 });
-                return parseCsvData(csvText); // Reutiliza a função de parsing CSV
+                return parseCsvData(csvText);
             }
         }
         
-        /**
-         * Parseia uma string CSV em um array de objetos.
-         * Detecta automaticamente o delimitador (vírgula ou ponto e vírgula).
-         * Lida com valores entre aspas.
-         * @param {string} csvText - A string contendo os dados CSV.
-         * @returns {Array<Object>} Um array de objetos onde cada objeto representa uma linha do CSV.
-         */
         function parseCsvData(csvText) {
             const lines = csvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
             const headerLine = lines[0];
-            const delimiter = headerLine.includes(';') ? ';' : ','; // Detecta delimitador
-            // Regex para dividir a linha, ignorando delimitadores dentro de aspas
+            const delimiter = headerLine.includes(';') ? ';' : ',';
             const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
             const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
             const data = [];
             for (let i = 1; i < lines.length; i++) {
-                if (lines[i].trim() === '') continue; // Ignora linhas vazias
+                if (lines[i].trim() === '') continue;
                 const values = lines[i].split(splitRegex);
                 const item = {};
                 for (let j = 0; j < headers.length; j++) {
                     let value = values[j] ? values[j].trim() : '';
-                    // Remove aspas extras se o valor estiver entre aspas
                     if (value.startsWith('"') && value.endsWith('"')) {
                         value = value.slice(1, -1);
                     }
@@ -280,39 +311,22 @@
             return data;
         }
 
-        /**
-         * Capitaliza a primeira letra de cada palavra em uma string, exceto após '/'
-         * @param {string} str - A string a ser capitalizada.
-         * @returns {string} A string com as palavras capitalizadas.
-         */
         const capitalizeWords = (str) => {
             if (!str) return "";
             return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
         };
 
-        /**
-         * Retorna uma chave padronizada para o tipo de serviço.
-         * @param {string} serviceName - O nome do serviço.
-         * @returns {string} A chave padronizada do serviço.
-         */
         function getServiceKey(serviceName) {
             const name = (serviceName || '').toLowerCase().trim();
             if (name.includes('conselho') || name === 'ct') return 'conselho';
             if (name.includes('cras')) return 'cras';
             if (name.includes('creas')) return 'creas';
             if (name.includes('externa')) return 'externa';
-            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop'; // Nova chave
-            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo'; // Nova chave
-            return 'item'; // Tipo genérico
+            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
+            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo';
+            return 'item';
         }
 
-        /**
-         * Formata os dados da planilha para um formato padronizado.
-         * Inclui lógica para identificar itens "Avariados" com base no estado e observações.
-         * Trata valores comuns de "vazio" para 'Origem da Doação' e 'Fornecedor'.
-         * @param {Array<Object>} sheetData - Os dados brutos da planilha.
-         * @returns {Array<Object>} Os dados formatados.
-         */
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
@@ -321,59 +335,40 @@
                 const observationText = (row['Observação'] || '').toLowerCase();
                 const normalizedState = normalizeString(originalState);
 
-                // Verifica se o estado ou a observação indicam avaria
                 const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
                 const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationText);
 
-                // Se o estado original for "Novo" mas a observação indicar avaria, marca como "Avariado"
                 if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
                     finalState = 'Avariado';
                 }
 
                 const serviceKey = getServiceKey(row.Tipo);
-
-                // Explicitamente trata valores comuns de "vazio" para donation_source e supplier
                 const rawDonationSource = (row['Origem da Doação'] || '').trim();
-                // Considera '-' e 'N/A' (case insensitive) como vazio para fins de normalização
                 const processedDonationSource = (rawDonationSource === '-' || normalizeString(rawDonationSource) === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
-
                 const rawSupplier = (row.Fornecedor || '').trim();
-                // Considera '-' e 'N/A' (case insensitive) como vazio para fins de normalização
                 const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a' || rawSupplier === '') ? '' : rawSupplier;
 
                 return {
-                    id: `${serviceKey}_${index}`, // ID único para cada item
+                    id: `${serviceKey}_${index}`,
                     type: row.Tipo || 'N/A',
                     description: row['Descrição'] || 'N/A',
                     unit_condition: standardizedUnitName,
                     quantity: parseInt(row.Quantidade, 10) || 1,
                     location: row['Localização'] || 'N/A',
                     state: finalState,
-                    donation_source: processedDonationSource, // Usa o valor processado
+                    donation_source: processedDonationSource,
                     observation: row['Observação'] || '',
-                    supplier: processedSupplier, // Usa o valor processado
-                    originalStateWasNew: originalState === 'Novo' // Flag para controle de estado "Novo (Avariado)"
+                    supplier: processedSupplier,
+                    originalStateWasNew: originalState === 'Novo'
                 };
             });
         }
 
-        /**
-         * Normaliza uma string removendo acentos e convertendo para minúsculas.
-         * @param {string} str - A string a ser normalizada.
-         * @returns {string} A string normalizada.
-         */
         function normalizeString(str) {
             if (!str) return '';
             return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
 
-        /**
-         * Função debounce para limitar a frequência de execução de uma função.
-         * Útil para eventos como 'input' em campos de busca.
-         * @param {Function} func - A função a ser "debounceada".
-         * @param {number} delay - O tempo de atraso em milissegundos.
-         * @returns {Function} A função "debounceada".
-         */
         function debounce(func, delay) {
             let timeout;
             return function(...args) {
@@ -383,7 +378,6 @@
             };
         }
 
-        // Mapeamento de estados de conservação para classes CSS e cores hexadecimais
         const stateColors = {
             'Novo': { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
             'Bom': { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
@@ -391,98 +385,13 @@
             'Avariado': { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
         };
 
-        /**
-         * Deduplica e prioriza itens com base em seu estado de conservação para o mesmo item físico.
-         * Para cada combinação única de Tipo, Descrição, Unidade e Localização,
-         * mantém apenas o item com o estado de maior prioridade (Novo > Bom > Regular > Avariado)
-         * e soma as quantidades de *todos* os itens que compartilham essa mesma identidade física
-         * (independentemente do estado original, exceto avariados que são tratados separadamente na próxima etapa).
-         * @param {Array<Object>} items - Array de itens a serem processados.
-         * @returns {Array<Object>} Array de itens deduplicados e priorizados.
-         */
-        function deduplicateAndPrioritizeItems(items) {
-            const statePriority = {
-                'Novo': 4,
-                'Bom': 3,
-                'Regular': 2,
-                'Avariado': 1 // Avariado é o de menor prioridade para a "melhor representação"
-            };
-
-            const uniqueCoreItems = new Map(); // Key: coreKey, Value: { item: bestItem, totalQuantity: number }
-
-            items.forEach(item => {
-                const normalizedType = normalizeString(item.type);
-                const normalizedDescription = normalizeString(item.description);
-                const normalizedUnitCondition = normalizeString(item.unit_condition);
-                const normalizedLocation = normalizeString(item.location);
-
-                // Core key identifies the "physical" item
-                const coreKey = `${normalizedType}-${normalizedDescription}-${normalizedUnitCondition}-${normalizedLocation}`;
-
-                if (uniqueCoreItems.has(coreKey)) {
-                    let existingEntry = uniqueCoreItems.get(coreKey);
-                    let existingItem = existingEntry.item;
-                    let existingPriority = statePriority[existingItem.state] || 0;
-                    let currentPriority = statePriority[item.state] || 0;
-
-                    // Always sum the quantity for the same physical item
-                    existingEntry.totalQuantity += item.quantity;
-
-                    // If current item has a higher priority state, update the best item for this coreKey
-                    if (currentPriority > existingPriority) {
-                        existingEntry.item = { ...item }; // Replace with the higher priority item
-                        // The quantity will be assigned from totalQuantity later
-                    }
-                    // If currentPriority is equal or lower, keep the existing bestItem.
-                    // The totalQuantity is already updated.
-                } else {
-                    // First time seeing this core item, add it
-                    uniqueCoreItems.set(coreKey, { item: { ...item }, totalQuantity: item.quantity });
-                }
-            });
-
-            const result = [];
-            uniqueCoreItems.forEach(entry => {
-                // Assign the accumulated totalQuantity to the chosen best item
-                entry.item.quantity = entry.totalQuantity;
-                result.push(entry.item);
-            });
-
-            return result;
-        }
-
-        /**
-         * Agrupa itens duplicados, somando suas quantidades.
-         * Itens avariados são agrupados de forma mais granular para manter observações únicas.
-         * Aplica normalização aos campos usados na chave de agrupamento para evitar duplicação por diferenças de case ou espaços.
-         * @param {Array<Object>} items - Array de itens a serem agrupados.
-         * @returns {Array<Object>} Array de itens agrupados.
-         */
         function agruparItens(items) {
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
                 const isDefective = item.state === 'Avariado';
-
-                // Normaliza os campos antes de criar a chave para garantir que variações de case ou espaços não causem duplicação
-                const normalizedType = normalizeString(item.type);
-                const normalizedDescription = normalizeString(item.description);
-                const normalizedUnitCondition = normalizeString(item.unit_condition);
-                const normalizedLocation = normalizeString(item.location);
-                const normalizedObservation = normalizeString(item.observation);
-                
-                // Para a chave de agrupamento, use os valores já processados (e normalizados) de donation_source e supplier
-                const normalizedDonationSource = normalizeString(item.donation_source);
-                const normalizedSupplier = normalizeString(item.supplier);
-
-                let key;
-                if (isDefective) {
-                    // Para itens avariados, a chave é mais granular para rastrear problemas específicos
-                    key = `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}-${normalizedObservation || 'no-obs'}-${normalizedSupplier || 'no-sup'}`; 
-                } else {
-                    // Para itens não avariados, a chave é menos granular para agrupar mais itens semelhantes
-                    // Removendo donation_source e supplier da chave para um agrupamento mais agressivo
-                    key = `${normalizedType}-${normalizedDescription}-${item.state}-${normalizedUnitCondition}-${normalizedLocation}`;
-                }
+                const key = isDefective 
+                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}`
+                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
                 
                 if (acc[key]) {
                     acc[key].quantity += parseInt(item.quantity, 10);
@@ -494,40 +403,27 @@
             return Object.values(agrupados);
         }
 
-        /**
-         * Formata o nome da unidade, adicionando prefixos como "CRAS" ou "CREAS" se necessário.
-         * @param {Object} item - O objeto do item.
-         * @param {boolean} includeType - Se deve incluir o tipo de serviço no nome.
-         * @returns {string} O nome formatado da unidade.
-         */
         function formatUnitName(item, includeType = false) {
             let nomeUnidade = item.unit_condition;
             let prefix = '';
-            const idPrefix = (item.id || '').split('_')[0]; // Pega o prefixo do ID (ex: 'cras', 'conselho')
+            const idPrefix = (item.id || '').split('_')[0];
 
             switch(idPrefix) {
                 case 'creas': prefix = 'CREAS '; break;
                 case 'conselho': prefix = 'CT '; break;
                 case 'externa': return nomeUnidade;
                 case 'cras':
-                    // Adiciona "CRAS " apenas se o nome da unidade já não começar com "CRAS " (evita duplicidade)
                     if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
                         prefix = 'CRAS ';
                     }
                     break;
-                case 'centro_pop': // Novo tipo de unidade
-                case 'abrigo': // Novo tipo de unidade
-                    return nomeUnidade; // Não adiciona prefixo para estes tipos
+                case 'centro_pop':
+                case 'abrigo':
+                    return nomeUnidade;
             }
             return `${prefix}${nomeUnidade}`;
         }
 
-        /**
-         * Gera um ranking das unidades com base na quantidade de itens em estados específicos.
-         * @param {Array<Object>} dados - Os dados dos itens.
-         * @param {Array<string>} filterStates - Array de estados a serem considerados no ranking (ex: ['Avariado']).
-         * @returns {Array<Object>} O ranking das unidades.
-         */
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
             const filteredItems = dados.filter(item => filterStates.includes(item.state));
@@ -537,22 +433,16 @@
                 return acc;
             }, {});
             const ranking = Object.entries(unitCounts).map(([nome, quantidade]) => ({ nome, quantidade }));
-            ranking.sort((a, b) => b.quantidade - a.quantidade); // Ordena do maior para o menor
-            return ranking.slice(0, 5); // Retorna apenas os top 5
+            ranking.sort((a, b) => b.quantidade - a.quantidade);
+            return ranking.slice(0, 5);
         }
 
-        /**
-         * Gera a configuração para o gráfico de barras de estado de conservação.
-         * @param {Array<Object>} dados - Os dados dos itens.
-         * @param {string} titulo - O título do gráfico.
-         * @returns {Object|null} A configuração do gráfico Chart.js ou null se não houver dados.
-         */
         function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
             if (!dados || dados.length === 0) return null;
             const stateCounts = dados.reduce((acc, item) => {
                 acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
-            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0}); // Garante que todos os estados apareçam, mesmo com 0 itens
+            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
 
             const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
             const colors = stateOrder.map(state => stateColors[state]?.hex || '#cccccc');
@@ -571,42 +461,24 @@
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: {
-                        legend: { display: false }, // Não mostra a legenda do dataset
-                        title: {
-                            display: true,
-                            text: titulo,
-                            font: { size: 16 }
-                        }
+                        legend: { display: false },
+                        title: { display: true, text: titulo, font: { size: 16 } }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0 } // Garante que os ticks do eixo Y sejam inteiros
-                        }
-                    }
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
                 }
             };
         }
 
-        /**
-         * Gera um relatório descritivo para uma unidade específica.
-         * @param {Array<Object>} dados - Os dados dos itens da unidade.
-         * @returns {string} O HTML do relatório descritivo.
-         */
         function GerarRelatorioUnidade(dados) {
             if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
-
             const stateCounts = dados.reduce((acc, item) => {
                 acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
                 return acc;
             }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-
             const totalUnitItems = Object.values(stateCounts).reduce((sum, count) => sum + count, 0);
-
             let reportLines = [];
             reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);
             reportLines.push(`A situação geral é: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`);
-
             const avariadosDetalhes = dados.filter(item => item.state === 'Avariado');
             if (avariadosDetalhes.length > 0) {
                 const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
@@ -616,86 +488,32 @@
             } else {
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`);
             }
-
             return reportLines.join('<br>');
         }
 
-        /**
-         * Renderiza os cartões de resumo na seção de sumário.
-         */
         function renderSummaryCards() {
-            const filtered = getFilteredItems(allItems); // Usa allItems para o resumo geral
+            const filtered = getFilteredItems(allItems);
             const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const attentionItems = filtered.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const newItems = filtered.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const goodItems = filtered.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
             const totalDonations = filtered.filter(item => {
                 const source = normalizeString(item.donation_source);
-                return item.donation_source && !['proprio', 'proprios'].includes(source); // Considera doação se não for "próprio"
+                return item.donation_source && !['proprio', 'proprios'].includes(source);
             }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             summaryCardsContainerEl.innerHTML = `
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-blue-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">Total de Itens</p>
-                        <p class="text-2xl font-bold text-slate-800">${totalItems}</p>
-                    </div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-red-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">Itens Avariados</p>
-                        <p class="text-2xl font-bold text-slate-800">${attentionItems}</p>
-                    </div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-green-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">Itens Novos</p>
-                        <p class="text-2xl font-bold text-slate-800">${newItems}</p>
-                    </div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-sky-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">Itens em Bom Estado</p>
-                        <p class="text-2xl font-bold text-slate-800">${goodItems}</p>
-                    </div>
-                </div>
-                <div class="card p-5 flex items-center space-x-4">
-                    <div class="bg-purple-100 p-3 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
-                    </div>
-                    <div>
-                        <p class="text-slate-500 text-sm">Total de Doações</p>
-                        <p class="text-2xl font-bold text-slate-800">${totalDonations}</p>
-                    </div>
-                </div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800">${totalItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-red-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800">${attentionItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800">${newItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-sky-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800">${goodItems}</p></div></div>
+                <div class="card p-5 flex items-center space-x-4"><div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800">${totalDonations}</p></div></div>
             `;
         }
 
-        /**
-         * Atualiza os gráficos com os dados fornecidos.
-         * Destrói a instância anterior do gráfico antes de criar uma nova.
-         * @param {Array<Object>} dataForChart - Os dados a serem usados para o gráfico.
-         * @returns {void}
-         */
         function updateCharts(dataForChart) {
             const chartData = GerarConfigGraficoEstado(dataForChart, 'Distribuição de Itens por Estado');
-            // Destrói a instância anterior do gráfico se existir
-            if (estadoChartInstance) { 
-                estadoChartInstance.destroy(); 
-                estadoChartInstance = null; 
-            }
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             if (estadoChartCanvasEl) {
                 if (!chartData) {
                     estadoChartCanvasEl.parentNode.innerHTML = '<p class="text-center text-slate-500 py-4">Sem dados para o gráfico.</p>';
@@ -705,19 +523,10 @@
             }
         }
 
-        /**
-         * Renderiza o ranking de unidades.
-         * @param {Array<Object>} data - Os dados do ranking.
-         * @param {string} title - O título do ranking.
-         * @param {Object} colorClass - Objeto com classes CSS para cor de fundo e texto.
-         * @returns {void}
-         */
         function renderRanking(data, title, colorClass) {
             const rankingCardTitle = document.getElementById('ranking-card-title');
             if (!rankingListEl || !rankingCardTitle) return;
-
             rankingCardTitle.textContent = title;
-
             if (data.length === 0) {
                 rankingListEl.innerHTML = `<li class="text-center text-slate-500 py-4">Nenhum item encontrado.</li>`;
             } else {
@@ -730,22 +539,13 @@
             }
         }
 
-        /**
-         * Renderiza a tabela de itens.
-         * @param {Array<Object>} itemsToDisplay - Itens a serem exibidos na tabela.
-         * @param {number} totalItemsCount - Contagem total de itens (para paginação).
-         * @param {boolean} enablePagination - Se a paginação deve ser habilitada.
-         * @returns {void}
-         */
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
-
             if (itemsToDisplay.length === 0) {
                 tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
-
             let tableHTML = '';
             itemsToDisplay.forEach(item => {
                 const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
@@ -753,110 +553,60 @@
                 const unitDisplayName = formatUnitName(item, true);
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
                 const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
-
                 tableHTML += `
                     <tr class="bg-white border-b hover:bg-slate-50">
-                        <td class="px-6 py-4">${item.type}</td>
-                        <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
-                        <td class="px-6 py-4">${unitDisplayName}</td>
-                        <td class="px-6 py-4 text-center">${item.quantity}</td>
-                        <td class="px-6 py-4">${item.location}</td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
-                                ${stateDisplayName}
-                            </span>
-                        </td>
+                        <td class="px-6 py-4">${item.type}</td><td class="px-6 py-4 font-medium text-slate-900">${item.description}</td><td class="px-6 py-4">${unitDisplayName}</td><td class="px-6 py-4 text-center">${item.quantity}</td><td class="px-6 py-4">${item.location}</td>
+                        <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">${stateDisplayName}</span></td>
                         <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
-                        <td class="px-6 py-4">
-                            ${item.observation ? `<div class="tooltip">${String(item.observation).substring(0, 30)}${String(item.observation).length > 30 ? '...' : ''}<span class="tooltip-text">${item.observation}</span></div>` : 'N/A'}
-                        </td>
+                        <td class="px-6 py-4">${item.observation ? `<div class="tooltip">${String(item.observation).substring(0, 30)}${String(item.observation).length > 30 ? '...' : ''}<span class="tooltip-text">${item.observation}</span></div>` : 'N/A'}</td>
                         <td class="px-6 py-4">${item.supplier || 'N/A'}</td>
-                    </tr>
-                `;
+                    </tr>`;
             });
             tableBodyEl.innerHTML = tableHTML;
             renderPagination(totalItemsCount, Math.ceil(totalItemsCount / itemsPerPage), enablePagination);
         }
 
-        /**
-         * Renderiza os controles de paginação.
-         * @param {number} totalItems - Número total de itens.
-         * @param {number} totalPages - Número total de páginas.
-         * @param {boolean} enablePagination - Se a paginação deve ser habilitada.
-         * @returns {void}
-         */
         function renderPagination(totalItems, totalPages, enablePagination) {
             if (!paginationControlsEl) return;
-
-            paginationControlsEl.innerHTML = ''; // Limpa a paginação existente
-
-            if (!enablePagination || totalPages <= 1) {
-                return; // Não renderiza paginação se não estiver habilitada ou houver apenas 1 página
-            }
-
+            paginationControlsEl.innerHTML = '';
+            if (!enablePagination || totalPages <= 1) return;
             let paginationHTML = `
                 <span class="text-sm text-slate-600">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span>
                 <div class="inline-flex rounded-md shadow-sm" role="group">
                     <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
                     <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
-                </div>
-            `;
+                </div>`;
             paginationControlsEl.innerHTML = paginationHTML;
         }
 
-        /**
-         * Retorna os itens filtrados com base nos valores dos filtros.
-         * @param {Array<Object>} sourceData - Os dados de origem a serem filtrados.
-         * @returns {Array<Object>} Os itens filtrados.
-         */
         function getFilteredItems(sourceData) {
             const servico = filtroServicoEl.value;
             const unidade = filtroUnidadeEl.value;
             const estado = filtroEstadoEl.value;
             const doacao = filtroDoacaoEl.value;
             const busca = filtroBuscaEl.value.toLowerCase();
-
-            if (!servico && !unidade && !estado && !busca && !doacao) {
-                return sourceData; // Retorna todos os itens se nenhum filtro estiver ativo
-            }
-
+            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
             return sourceData.filter(item => {
                 const matchServico = !servico || item.id.startsWith(`${servico}_`);
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 const matchEstado = !estado || item.state === estado;
-                
                 const source = normalizeString(item.donation_source);
-                const matchDoacao = !doacao || 
-                                    (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || 
-                                    (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
-
-                const matchBusca = !busca || 
-                                   item.description.toLowerCase().includes(busca) || 
-                                   item.type.toLowerCase().includes(busca) || 
-                                   item.location.toLowerCase().includes(busca) || 
-                                   (item.observation && item.observation.toLowerCase().includes(busca));
-
+                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
                 return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
 
-        /**
-         * Atualiza as opções dos filtros de Unidade e Estado com base nos dados disponíveis.
-         * @returns {void}
-         */
         function updateFilterOptions() {
             const selectedServico = filtroServicoEl.value;
-            
-            // Atualiza as opções da Unidade
             const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
-            unidadesDoServico.sort((a,b) => a.localeCompare(b)); // Ordena alfabeticamente
+            unidadesDoServico.sort((a,b) => a.localeCompare(b));
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
             if (selectedServico) {
                 filtroUnidadeEl.disabled = false;
                 unidadesDoServico.forEach(u => {
                     const option = document.createElement('option');
                     option.value = u;
-                    // Encontra um item de exemplo para formatar o nome da unidade corretamente
                     const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
                     option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
                     filtroUnidadeEl.appendChild(option);
@@ -864,10 +614,7 @@
             } else {
                 filtroUnidadeEl.disabled = true;
             }
-
-            // Atualiza as opções do Estado
             const allStates = [...new Set(allItems.map(item => item.state))];
-            // Garante uma ordem específica para os estados
             const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
             filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
             sortedStates.forEach(s => {
@@ -878,125 +625,30 @@
             });
         }
 
-        /**
-         * Renderiza a interface do aplicativo com base na visão ativa (boas-vindas, unidade ou resumo).
-         * @returns {void}
-         */
         function renderApp() {
-            // Destrói o gráfico existente antes de renderizar um novo
-            if (estadoChartInstance) { 
-                estadoChartInstance.destroy(); 
-                estadoChartInstance = null; 
-            }
-
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
-            console.log('Itens a serem renderizados na tabela:', filteredAndGroupedItems.length, filteredAndGroupedItems); // Log para depuração
-
-            const tableHeadersHTML = `
-                <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">Tipo</th>
-                        <th scope="col" class="px-6 py-3">Descrição</th>
-                        <th scope="col" class="px-6 py-3">Unidade</th>
-                        <th scope="col" class="px-6 py-3 text-center">Qtd</th>
-                        <th scope="col" class="px-6 py-3">Localização</th>
-                        <th scope="col" class="px-6 py-3">Estado</th>
-                        <th scope="col" class="px-6 py-3">Origem da Doação</th>
-                        <th scope="col" class="px-6 py-3">Observação</th>
-                        <th scope="col" class="px-6 py-3">Fornecedor</th>
-                    </tr>
-                </thead>
-            `;
+            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
 
             if (visaoAtiva === 'boasVindas') {
-                mainContentAreaEl.innerHTML = `
-                    <div class="text-center p-20 bg-white rounded-lg shadow-md border">
-                        <p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p>
-                    </div>
-                `;
+                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => { 
-                    const source = normalizeString(item.donation_source); 
-                    return item.donation_source && !['proprio', 'proprios'].includes(source); 
-                }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-
+                const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
-
-                mainContentAreaEl.innerHTML = `
-                    <div>
-                        <h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloDaVisao}</h2>
-                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                            <div class="lg:col-span-2 flex flex-col gap-6">
-                                <div class="card p-4 h-full">
-                                    <div class="chart-container">
-                                        <canvas id="estadoChart"></canvas>
-                                    </div>
-                                </div>
-                                <div class="card p-4 text-center">
-                                    <h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3>
-                                    <p class="text-3xl font-bold text-purple-700 mt-2">${totalDoacoes}</p>
-                                </div>
-                            </div>
-                            <div class="lg:col-span-3 card p-6">
-                                <h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3>
-                                <div class="text-gray-600 space-y-2">${descriptiveReportContent}</div>
-                            </div>
-                        </div>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2>
-                        <div class="card p-0 overflow-x-auto">
-                            <table class="w-full text-sm text-left text-slate-500">
-                                ${tableHeadersHTML}
-                                <tbody id="inventory-table-body"></tbody>
-                            </table>
-                        </div>
-                        <div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
-                    </div>
-                `;
-                updateDynamicDOMReferences(); // Atualiza as referências do DOM após a renderização
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-4 text-center"><h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card p-6"><h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3><div class="text-gray-600 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                updateDynamicDOMReferences();
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
                 updateCharts(currentFilteredData);
             } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start flex-wrap gap-4">
-                            <h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2>
-                            <div class="flex gap-2">
-                                <button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button>
-                                <button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                            <div class="card p-4">
-                                <div class="chart-container">
-                                    <canvas id="estadoChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="card p-6">
-                                <h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3>
-                                <ul id="ranking-atencao" class="space-y-3"></ul>
-                            </div>
-                        </div>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2>
-                        <div class="card p-0 overflow-x-auto">
-                            <table class="w-full text-sm text-left text-slate-500">
-                                ${tableHeadersHTML}
-                                <tbody id="inventory-table-body"></tbody>
-                            </table>
-                        </div>
-                        <div id="pagination-controls" class="flex items-center justify-between mt-6"></div>
-                    </div>
-                `;
-                updateDynamicDOMReferences(); // Atualiza as referências do DOM após a renderização
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-6"><h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                updateDynamicDOMReferences();
                 document.getElementById('export-btn').addEventListener('click', handleExport);
                 document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
-
-                const filteredAllItems = getFilteredItems(allItems); // Filtra todos os itens para o resumo
+                const filteredAllItems = getFilteredItems(allItems);
                 const groupedAllItems = agruparItens(filteredAllItems);
                 renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
                 updateCharts(filteredAllItems);
-
-                // Lógica para o ranking baseado no filtro de estado
                 if (filtroEstadoEl.value === 'Novo') {
                     const rankingData = generateRanking(filteredAllItems, ['Novo']);
                     renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
@@ -1005,85 +657,40 @@
                     renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-50', text: 'text-red-600'});
                 }
             }
-            renderSummaryCards(); // Sempre renderiza os cartões de resumo
+            renderSummaryCards();
         }
 
-        // --- NOVA LÓGICA PARA ESTOQUE ---
-
-        /**
-         * Renderiza a tabela de estoque.
-         * @param {Array<Object>} items - Os itens de estoque a serem exibidos.
-         * @returns {void}
-         */
+        // --- LÓGICA PARA ESTOQUE ---
         function renderEstoque(items) {
-            mainContentEstoqueEl.innerHTML = ''; // Limpa a área de conteúdo
-
+            mainContentEstoqueEl.innerHTML = '';
             if (items.length === 0) {
-                mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Nenhum item de estoque encontrado. Verifique a URL da planilha de estoque.</p></div>`;
+                mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Nenhum item de estoque encontrado.</p></div>`;
                 return;
             }
-
-            // Popula o filtro de unidades do estoque
             const unidadesEstoque = [...new Set(items.map(item => item.Unidade || 'N/A'))].sort();
             filtroEstoqueUnidadeEl.innerHTML = '<option value="">Todas as Unidades</option>';
             unidadesEstoque.forEach(u => {
                 const option = document.createElement('option');
-                option.value = u;
-                option.textContent = u;
+                option.value = u; option.textContent = u;
                 filtroEstoqueUnidadeEl.appendChild(option);
             });
-
-            // Filtra os dados com base nos filtros de estoque
             const busca = filtroEstoqueBuscaEl.value.toLowerCase();
             const unidade = filtroEstoqueUnidadeEl.value;
             const filteredItems = items.filter(item => {
                 const matchUnidade = !unidade || item.Unidade === unidade;
-                const matchBusca = !busca || 
-                                   (item.Item || '').toLowerCase().includes(busca) || 
-                                   (item.Fornecedor || '').toLowerCase().includes(busca);
+                const matchBusca = !busca || (item.Item || '').toLowerCase().includes(busca) || (item.Fornecedor || '').toLowerCase().includes(busca);
                 return matchUnidade && matchBusca;
             });
-
-            // Cria a tabela de estoque
-            // Pega os cabeçalhos do primeiro item, assumindo que todos os itens têm as mesmas chaves
             const headers = Object.keys(filteredItems[0] || {}); 
-            const tableHTML = `
-                <div class="card p-0 overflow-x-auto">
-                    <table class="w-full text-sm text-left text-slate-500">
-                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
-                            <tr>
-                                ${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${filteredItems.map(item => `
-                                <tr class="bg-white border-b hover:bg-slate-50">
-                                    ${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            const tableHTML = `<div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500"><thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white border-b hover:bg-slate-50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
             mainContentEstoqueEl.innerHTML = tableHTML;
         }
         
-        /**
-         * Lida com a exportação dos dados de estoque para um arquivo CSV.
-         * @returns {void}
-         */
         function handleExportEstoque() {
             if (allEstoqueItems.length === 0) return;
-
             const headers = Object.keys(allEstoqueItems[0] || {});
-            const dataToExport = allEstoqueItems.map(item => 
-                headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`) // Adiciona aspas e escapa aspas internas
-            );
-
-            let csvContent = "data:text/csv;charset=utf-8," 
-                             + headers.join(";") + "\n" 
-                             + dataToExport.map(e => e.join(";")).join("\n");
-
+            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -1093,66 +700,183 @@
             document.body.removeChild(link);
         }
 
+        // --- LÓGICA PARA TOTAL DE ITENS (REFEITA) ---
+
+        function populateTotalItensFilters() {
+            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl) return;
+
+            // Popula filtro de Categoria
+            const categorias = [...new Set(allItems.map(item => item.type))]
+                .filter(type => type && type !== 'N/A')
+                .sort((a, b) => a.localeCompare(b));
+            filtroTotalCategoriaEl.innerHTML = '<option value="">Todas</option>';
+            categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                filtroTotalCategoriaEl.appendChild(option);
+            });
+
+            // Popula filtro de Unidade
+            const unidades = [...new Set(allItems.map(item => formatUnitName(item, true)))]
+                .sort((a, b) => a.localeCompare(b));
+            filtroTotalUnidadeEl.innerHTML = '<option value="">Todas</option>';
+            unidades.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = u;
+                filtroTotalUnidadeEl.appendChild(option);
+            });
+            
+            // Popula filtro de Estado
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroTotalEstadoEl.innerHTML = '<option value="">Todos</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s;
+                filtroTotalEstadoEl.appendChild(option);
+            });
+        }
+
+        function renderTotalItens() {
+            const container = document.getElementById('total-itens-results');
+            const summaryContainer = document.getElementById('total-itens-summary');
+            if (!container || !summaryContainer) return;
+
+            const selectedCategoria = filtroTotalCategoriaEl.value;
+            const searchTerm = filtroTotalItemEl.value.toLowerCase();
+            const selectedUnidade = filtroTotalUnidadeEl.value;
+            const selectedEstado = filtroTotalEstadoEl.value;
+
+            // 1. Filtra os dados com base em todos os filtros
+            let filteredData = allItems;
+            if (selectedCategoria) {
+                filteredData = filteredData.filter(item => item.type === selectedCategoria);
+            }
+            if (selectedUnidade) {
+                filteredData = filteredData.filter(item => formatUnitName(item, true) === selectedUnidade);
+            }
+            if (selectedEstado) {
+                filteredData = filteredData.filter(item => item.state === selectedEstado);
+            }
+            if (searchTerm) {
+                filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
+            }
+
+            // 2. Agrupa os dados filtrados por descrição para obter os totais
+            const groupedItems = {};
+            
+            filteredData.forEach(item => {
+                const desc = item.description;
+                if (!desc || desc === 'N/A') return;
+
+                if (!groupedItems[desc]) {
+                    groupedItems[desc] = {
+                        total: 0,
+                        type: item.type,
+                        locations: {} // Objeto para agrupar por local
+                    };
+                }
+                
+                groupedItems[desc].total += item.quantity;
+                const unitName = formatUnitName(item, true);
+                const locationKey = `${unitName} - ${item.location || 'N/D'}`;
+
+                groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
+            });
+            
+            const uniqueItemCount = Object.keys(groupedItems).length;
+            const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
+
+            // 3. Renderiza o resumo
+            if (uniqueItemCount > 0) {
+                 summaryContainer.innerHTML = `
+                    <div class="card p-4 bg-slate-50 border border-slate-200">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <p class="text-slate-600 font-medium">
+                                Exibindo <span class="font-bold text-blue-600">${uniqueItemCount}</span> tipo(s) de item.
+                            </p>
+                            <div class="text-right">
+                                <p class="text-sm text-slate-500">Quantidade Total nos Itens Filtrados</p>
+                                <p class="text-2xl font-bold text-slate-800">${grandTotalQuantity}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } else {
+                summaryContainer.innerHTML = ''; // Limpa o resumo se não houver resultados
+            }
+
+            // 4. Renderiza os resultados
+            if (uniqueItemCount === 0) {
+                container.innerHTML = `<div class="text-center p-10 bg-white rounded-lg shadow-sm border col-span-full"><p class="text-lg text-gray-500">Nenhum item encontrado com os filtros selecionados.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = Object.entries(groupedItems)
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map(([desc, data]) => {
+                    const locationsHTML = Object.entries(data.locations)
+                        .sort((a, b) => a[0].localeCompare(b[0])) // Ordena os locais alfabeticamente
+                        .map(([locationKey, quantity]) => `
+                            <li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-50">
+                                <span class="truncate pr-2">${locationKey}</span>
+                                <span class="font-medium text-slate-600 flex-shrink-0">${quantity}</span>
+                            </li>
+                        `).join('');
+
+                    return `
+                        <div class="card p-4 flex flex-col">
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-semibold text-slate-800 text-base md:text-lg pr-2">${desc}</h3>
+                                    <div class="text-right flex-shrink-0">
+                                        <p class="text-xs text-slate-500">Total</p>
+                                        <p class="text-2xl font-bold text-blue-600">${data.total}</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">${data.type}</p>
+                            </div>
+                            <div class="mt-4 border-t pt-3">
+                                <p class="text-xs font-medium text-slate-400 uppercase mb-2">Distribuição</p>
+                                <ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
 
         // --- HANDLERS DE EVENTOS ---
-
-        /**
-         * Manipula a mudança em qualquer filtro (exceto serviço e unidade) para renderizar o aplicativo.
-         * @returns {void}
-         */
         function handleFilterChange() { 
-            currentPage = 1; // Volta para a primeira página ao aplicar filtros
+            currentPage = 1;
             renderApp(); 
         }
 
-        /**
-         * Manipula a mudança no filtro de Serviço.
-         * Atualiza as opções de Unidade e a visão do painel.
-         * @returns {void}
-         */
         function handleServicoChange() {
             const selectedService = this.value;
-            filtroUnidadeEl.value = ''; // Limpa a seleção da unidade ao mudar o serviço
-            updateFilterOptions(); // Atualiza as opções de unidade com base no serviço selecionado
-
+            filtroUnidadeEl.value = '';
+            updateFilterOptions();
             if (selectedService) {
-                // Se um serviço for selecionado, pede para o usuário selecionar uma unidade
-                mainContentAreaEl.innerHTML = `
-                    <div class="text-center p-20 bg-white rounded-lg shadow-md border">
-                        <p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p>
-                    </div>
-                `;
+                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`;
             } else {
-                // Se "Todos" for selecionado, volta para a visão de boas-vindas
                 visaoAtiva = 'boasVindas';
-                dadosOriginais = []; // Limpa os dados originais para a visão de boas-vindas
+                dadosOriginais = [];
                 renderApp();
             }
         }
 
-        /**
-         * Manipula a mudança no filtro de Unidade.
-         * Filtra os dados e atualiza a visão do painel para a unidade selecionada.
-         * @param {Event} event - O evento de mudança.
-         * @returns {void}
-         */
         function handleUnidadeChange(event) {
             const servicoSelecionado = filtroServicoEl.value;
             const unidadeSelecionada = event.target.value;
-            currentPage = 1; // Volta para a primeira página ao mudar a unidade
-
-            if (!servicoSelecionado) return; // Não faz nada se nenhum serviço estiver selecionado
-
+            currentPage = 1;
+            if (!servicoSelecionado) return;
             if (unidadeSelecionada) {
-                // Filtra os itens pela unidade e serviço selecionados
-                dadosOriginais = allItems.filter(item => 
-                    item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada
-                );
+                dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === unidadeSelecionada);
                 visaoAtiva = 'unidade';
-                const unidadeInfo = filtroUnidadeEl.options[filtroUnidadeEl.selectedIndex].text;
-                tituloDaVisao = `Inventário de ${unidadeInfo}`;
+                tituloDaVisao = `Inventário de ${filtroUnidadeEl.options[filtroUnidadeEl.selectedIndex].text}`;
             } else {
-                // Se "Todas" as unidades forem selecionadas para um serviço
                 dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`));
                 visaoAtiva = 'unidade';
                 tituloDaVisao = `Inventário de Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`;
@@ -1160,39 +884,24 @@
             renderApp();
         }
 
-        /**
-         * Lida com o clique no botão "Ver Resumo Geral".
-         * Altera a visão para o resumo geral do inventário.
-         * @returns {void}
-         */
         function handleResumoClick() {
-            // Exibe um loader enquanto os dados são carregados/processados
-            mainContentAreaEl.innerHTML = `
-                <div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando resumo geral...</p></div>
-            `;
-            // Pequeno delay para o loader aparecer antes do processamento
+            mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando resumo geral...</p></div>`;
             setTimeout(() => {
-                dadosOriginais = allItems; // Define todos os itens como dados originais para o resumo
+                dadosOriginais = allItems;
                 tituloDaVisao = 'Resumo Geral do Inventário';
                 visaoAtiva = 'resumo';
-                currentPage = 1; // Volta para a primeira página
-                filtroServicoEl.value = ''; // Limpa o filtro de serviço
-                updateFilterOptions(); // Atualiza as opções dos filtros
+                currentPage = 1;
+                filtroServicoEl.value = '';
+                updateFilterOptions();
                 renderApp();
-            }, 50); // Pequeno atraso para permitir que o DOM atualize com o loader
+            }, 50);
         }
 
-        /**
-         * Lida com o clique no botão "Voltar à Seleção".
-         * Reinicia a aplicação para a visão de boas-vindas.
-         * @returns {void}
-         */
         function handleVoltar() {
             visaoAtiva = 'boasVindas';
             tituloDaVisao = 'Bem-vindo!';
             dadosOriginais = [];
             currentPage = 1;
-            // Reseta todos os filtros
             filtroServicoEl.value = '';
             filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
             filtroUnidadeEl.disabled = true;
@@ -1202,11 +911,6 @@
             renderApp();
         }
 
-        /**
-         * Lida com a mudança de página na paginação.
-         * @param {Event} event - O evento de clique.
-         * @returns {void}
-         */
         function handlePageChange(event) {
             const page = parseInt(event.target.dataset.page);
             if (page) {
@@ -1215,28 +919,14 @@
             }
         }
 
-        /**
-         * Lida com a exportação dos dados da tabela atual para um arquivo CSV.
-         * @returns {void}
-         */
         function handleExport() {
             const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
             const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
-                `"${(item.type || '').replace(/"/g, '""')}"`,
-                `"${(item.description || '').replace(/"/g, '""')}"`,
-                `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
-                item.quantity,
-                `"${(item.location || '').replace(/"/g, '""')}"`,
-                item.state,
-                `"${(item.donation_source || '').replace(/"/g, '""')}"`,
-                `"${(item.observation || '').replace(/"/g, '""')}"`,
-                `"${(item.supplier || '').replace(/"/g, '""')}"`
+                `"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
+                item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`,
+                `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`
             ]);
-
-            let csvContent = "data:text/csv;charset=utf-8," 
-                             + headers.join(";") + "\n" 
-                             + dataToExport.map(e => e.join(";")).join("\n");
-
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -1247,12 +937,6 @@
         }
 
         // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-
-        /**
-         * Atualiza as referências do DOM para elementos que são renderizados dinamicamente.
-         * Deve ser chamada sempre que o conteúdo de `mainContentAreaEl` é alterado.
-         * @returns {void}
-         */
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
             paginationControlsEl = document.getElementById('pagination-controls');
@@ -1260,10 +944,6 @@
             rankingListEl = document.getElementById('ranking-atencao');
         }
 
-        /**
-         * Inicializa os elementos do DOM e adiciona os event listeners.
-         * @returns {void}
-         */
         function initApp() {
             // Referências do DOM - Patrimônio
             filtroServicoEl = document.getElementById('filtro-servico');
@@ -1278,14 +958,22 @@
             // Referências do DOM - Abas
             tabPatrimonio = document.getElementById('tab-patrimonio');
             tabEstoque = document.getElementById('tab-estoque');
+            tabTotalItens = document.getElementById('tab-total-itens');
             contentPatrimonio = document.getElementById('content-patrimonio');
             contentEstoque = document.getElementById('content-estoque');
+            contentTotalItens = document.getElementById('content-total-itens');
 
             // Referências do DOM - Estoque
             mainContentEstoqueEl = document.getElementById('main-content-estoque');
             filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
             filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
             exportEstoqueBtn = document.getElementById('export-estoque-btn');
+            
+            // Referências do DOM - Total de Itens (MODIFICADO)
+            filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
+            filtroTotalItemEl = document.getElementById('filtro-total-item');
+            filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
+            filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
 
             // Event Listeners - Patrimônio
             filtroServicoEl.addEventListener('change', handleServicoChange);
@@ -1294,67 +982,63 @@
             filtroDoacaoEl.addEventListener('change', handleFilterChange);
             filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
-            // Delega o evento de clique para os botões de paginação
-            document.addEventListener('click', function(event) {
-                if (event.target && event.target.dataset.page) {
-                    handlePageChange(event);
-                }
-            });
+            document.addEventListener('click', function(event) { if (event.target && event.target.dataset.page) { handlePageChange(event); } });
             
             // Event Listeners - Abas
             tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
             tabEstoque.addEventListener('click', () => switchTab('estoque'));
+            tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
             
             // Event Listeners - Estoque
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
             exportEstoqueBtn.addEventListener('click', handleExportEstoque);
 
-            updateFilterOptions(); // Popula as opções de filtro inicialmente
-            // Removido o renderApp() inicial aqui para que o handleResumoClick() o faça.
+            // Event Listeners - Total de Itens (MODIFICADO)
+            filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
+            filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
+            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
+            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
+
+            updateFilterOptions();
         }
 
-        /**
-         * Alterna entre as abas de Patrimônio e Estoque.
-         * @param {string} tabName - O nome da aba a ser ativada ('patrimonio' ou 'estoque').
-         * @returns {void}
-         */
         async function switchTab(tabName) {
+            // Desativa todas as abas e esconde todos os conteúdos
+            [tabPatrimonio, tabEstoque, tabTotalItens].forEach(tab => tab.classList.remove('active'));
+            [contentPatrimonio, contentEstoque, contentTotalItens].forEach(content => content.classList.add('hidden'));
+
             if (tabName === 'patrimonio') {
                 tabPatrimonio.classList.add('active');
-                tabEstoque.classList.remove('active');
                 contentPatrimonio.classList.remove('hidden');
-                contentEstoque.classList.add('hidden');
             } else if (tabName === 'estoque') {
-                tabPatrimonio.classList.remove('active');
                 tabEstoque.classList.add('active');
-                contentPatrimonio.classList.add('hidden');
                 contentEstoque.classList.remove('hidden');
-                
-                // Carrega os dados do estoque apenas se ainda não foram carregados
                 if (allEstoqueItems.length === 0) {
                     mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do estoque...</p></div>`;
                     try {
                         const estoqueData = await fetchAndParseCsv(googleSheetEstoqueUrl);
-                        allEstoqueItems = estoqueData; // Assume que os dados do estoque não precisam de formatação complexa
+                        allEstoqueItems = estoqueData;
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
                          console.error('Erro ao carregar dados do estoque:', error);
                          mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
                     }
                 }
+            } else if (tabName === 'total-itens') {
+                tabTotalItens.classList.add('active');
+                contentTotalItens.classList.remove('hidden');
+                // Popula os filtros e renderiza o estado inicial
+                populateTotalItensFilters();
+                renderTotalItens();
             }
         }
 
-        // Evento que é disparado quando o DOM está completamente carregado
         document.addEventListener('DOMContentLoaded', async () => {
             const loadingEl = document.getElementById('main-content-area');
             loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do patrimônio...</p></div>`;
-
             try {
                 const patrimonioData = await fetchAndParseCsv(googleSheetPatrimonioUrl);
-                console.log('Dados CSV brutos carregados:', patrimonioData); // Log para depuração
-                
                 const now = new Date();
                 const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const updateEl = document.getElementById('last-update-time');
@@ -1365,26 +1049,13 @@
                 }
                 
                 allItems = formatSheetData(patrimonioData);
-                console.log('Itens formatados (após formatSheetData):', allItems); // Log para depuração
-
-                // Nova etapa de deduplicação e priorização
-                // A função deduplicateAndPrioritizeItems foi revisada para ser mais robusta
-                allItems = deduplicateAndPrioritizeItems(allItems);
-                console.log('Itens formatados e deduplicados (após deduplicateAndPrioritizeItems):', allItems); // Log atualizado
                 
-                initApp(); // Inicia a aplicação após carregar e formatar os dados
-
-                // Chama handleResumoClick para carregar o resumo geral automaticamente
+                initApp();
                 handleResumoClick(); 
 
             } catch (error) {
                 console.error('Erro ao inicializar o painel:', error);
-                loadingEl.innerHTML = `
-                    <div class="text-center p-20 bg-white rounded-lg shadow-md border">
-                        <p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p>
-                        <p class="text-sm text-slate-500 mt-2">${error.message}</p>
-                    </div>
-                `;
+                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
             }
         });
     </script>
