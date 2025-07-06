@@ -224,38 +224,6 @@
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
-        
-        // !! AÇÃO NECESSÁRIA PARA A DATA DE ATUALIZAÇÃO DO PATRIMÔNIO !!
-        // Para que a data de atualização real da planilha apareça, você precisa atualizar o seu
-        // Google Apps Script da planilha de PATRIMÔNIO.
-        //
-        // PASSO 1: Na sua planilha do PATRIMÔNIO, vá em "Extensões" > "Apps Script".
-        // PASSO 2: Apague o código antigo e cole este novo código:
-        //
-        // function doGet(e) {
-        //   // Altere "NOME_DA_SUA_ABA" para o nome exato da aba que contém os dados do patrimônio.
-        //   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("NOME_DA_SUA_ABA");
-        //   const data = sheet.getDataRange().getValues();
-        //   const lastUpdated = SpreadsheetApp.getActiveSpreadsheet().getLastUpdated();
-        //
-        //   const headers = data.shift();
-        //   const json = data.map(row => {
-        //     let obj = {};
-        //     headers.forEach((header, i) => { obj[header] = row[i]; });
-        //     return obj;
-        //   });
-        //
-        //   const result = {
-        //     lastUpdated: lastUpdated,
-        //     content: json
-        //   };
-        //
-        //   return ContentService
-        //     .createTextOutput(JSON.stringify(result))
-        //     .setMimeType(ContentService.MimeType.JSON);
-        // }
-        //
-        // PASSO 3: Salve e faça uma NOVA IMPLANTAÇÃO ("Implantar" > "Gerenciar implantações", selecione a sua e clique em "Editar", depois mude a versão para "Nova versão" e clique em "Implantar").
         const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
         
         const originalEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
@@ -376,7 +344,11 @@
             }
 
             if (isJson) {
-                return await response.json();
+                const data = await response.json();
+                if (data && data.error) {
+                    throw new Error(`Erro do Apps Script: ${data.error}`);
+                }
+                return data;
             } else {
                 const csvText = await response.text();
                 return parseCsvData(csvText);
@@ -916,6 +888,10 @@
         }
 
         function handleResumoClick() {
+            if (allItems.length === 0) {
+                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">Os dados do resumo geral não estão disponíveis. Verifique a fonte de dados.</p></div>`;
+                 return;
+            }
             mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando resumo geral...</p></div>`;
             setTimeout(() => {
                 dadosOriginais = allItems;
@@ -1037,8 +1013,6 @@
                     handleFilterChange();
                 }
             });
-
-            updateFilterOptions();
         }
 
         async function switchTab(tabName) {
@@ -1075,33 +1049,42 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Inicializa a estrutura da aplicação e os ouvintes de evento
+            initApp();
+
             const loadingEl = document.getElementById('main-content-area');
             loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do patrimônio...</p></div>`;
+            
+            // 2. Tenta carregar os dados principais do patrimônio
             try {
                 const patrimonioResponse = await fetchAndParseData(googleSheetPatrimonioUrl, true);
                 
-                const patrimonioData = patrimonioResponse.content || patrimonioResponse;
-                const lastUpdated = patrimonioResponse.lastUpdated;
-
-                if (lastUpdated) {
-                    const lastUpdatedDate = new Date(lastUpdated);
-                    const formattedDate = lastUpdatedDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    const updateEl = document.getElementById('last-update-time');
-                    if (updateEl) updateEl.textContent = `Dados da planilha atualizados em: ${formattedDate}`;
-                }
+                const patrimonioData = Array.isArray(patrimonioResponse) ? patrimonioResponse : patrimonioResponse.content;
                 
                 if (!patrimonioData || patrimonioData.length === 0) {
-                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique a planilha e o Apps Script.");
+                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique se o nome da aba no script está correto e se a planilha contém dados.");
                 }
                 
                 allItems = formatSheetData(patrimonioData);
                 
-                initApp();
+                // 3. Com os dados carregados, popula os filtros e a visualização inicial
+                updateFilterOptions();
+                populateTotalItensFilters();
                 handleResumoClick(); 
 
+                const now = new Date();
+                const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const updateEl = document.getElementById('last-update-time');
+                if (updateEl) updateEl.textContent = `Dados carregados em: ${formattedDate}`;
+
+
             } catch (error) {
-                console.error('Erro ao inicializar o painel:', error);
+                console.error('Erro ao inicializar o painel de patrimônio:', error);
+                // 4. Se a carga falhar, exibe o erro mas mantém o app funcional
                 loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                
+                // Atualiza os cards de resumo para refletir a ausência de dados
+                renderSummaryCards();
             }
         });
     </script>
