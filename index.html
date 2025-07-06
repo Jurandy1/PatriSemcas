@@ -85,10 +85,8 @@
 <body class="antialiased text-slate-700">
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         
-        <header class="mb-4">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Painel Unificado</h1>
-            <p class="text-slate-500 mt-1">Visão consolidada do patrimônio, estoque e totais das unidades.</p>
-            <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
+        <header class="mb-4 text-right">
+             <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
         </header>
 
         <!-- ABAS DE NAVEGAÇÃO -->
@@ -96,7 +94,7 @@
             <div class="flex flex-wrap">
                 <button id="tab-patrimonio" class="tab-button active">Painel de Patrimônio</button>
                 <button id="tab-estoque" class="tab-button">Controle de Estoque</button>
-                <button id="tab-total-itens" class="tab-button">Total de Itens</button>
+                <button id="tab-total-itens" class="tab-button">Relatório de Itens</button>
             </div>
         </nav>
 
@@ -156,7 +154,7 @@
         <!-- Conteúdo da Aba de Estoque -->
         <div id="content-estoque" class="hidden">
             <div class="card p-4 md:p-6 mb-8">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                      <div>
                         <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 mb-1">Filtrar por Unidade</label>
                         <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -167,9 +165,6 @@
                         <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar no Estoque</label>
                         <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    <div>
-                         <button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Estoque</button>
-                    </div>
                  </div>
             </div>
             <main id="main-content-estoque" class="mt-8">
@@ -177,19 +172,20 @@
             </main>
         </div>
         
-        <!-- Conteúdo da Aba Total de Itens (MODIFICADO) -->
+        <!-- Conteúdo da Aba Relatório de Itens -->
         <div id="content-total-itens" class="hidden">
-            <div class="card p-4 md:p-6 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             <div class="card p-4 md:p-6 mb-8">
+                <div class="mb-4">
+                    <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição do Item</label>
+                    <input type="text" id="filtro-total-item" placeholder="Digite para buscar um item, ex: Cadeira, Mesa, Computador..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 mb-1">Categoria (Tipo)</label>
                         <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Todas</option>
                         </select>
-                    </div>
-                    <div>
-                        <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição</label>
-                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
@@ -200,19 +196,22 @@
                     <div>
                         <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
                         <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtro-total-fornecedor" class="block text-sm font-medium text-slate-600 mb-1">Fornecedor</label>
+                        <select id="filtro-total-fornecedor" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Todos</option>
                         </select>
                     </div>
                 </div>
             </div>
-            <!-- Resumo dos Totais (NOVO) -->
-            <div id="total-itens-summary" class="mb-6">
-                <!-- O resumo será renderizado aqui -->
-            </div>
+
+            <div id="total-itens-summary" class="mb-6"></div>
+            
             <main id="main-content-total-itens" class="mt-8">
-                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Os resultados da totalização serão renderizados aqui -->
-                </div>
+                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
             </main>
         </div>
 
@@ -225,8 +224,42 @@
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
+        
+        // !! AÇÃO NECESSÁRIA PARA A DATA DE ATUALIZAÇÃO DO PATRIMÔNIO !!
+        // Para que a data de atualização real da planilha apareça, você precisa atualizar o seu
+        // Google Apps Script da planilha de PATRIMÔNIO.
+        //
+        // PASSO 1: Na sua planilha do PATRIMÔNIO, vá em "Extensões" > "Apps Script".
+        // PASSO 2: Apague o código antigo e cole este novo código:
+        //
+        // function doGet(e) {
+        //   // Altere "NOME_DA_SUA_ABA" para o nome exato da aba que contém os dados do patrimônio.
+        //   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("NOME_DA_SUA_ABA");
+        //   const data = sheet.getDataRange().getValues();
+        //   const lastUpdated = SpreadsheetApp.getActiveSpreadsheet().getLastUpdated();
+        //
+        //   const headers = data.shift();
+        //   const json = data.map(row => {
+        //     let obj = {};
+        //     headers.forEach((header, i) => { obj[header] = row[i]; });
+        //     return obj;
+        //   });
+        //
+        //   const result = {
+        //     lastUpdated: lastUpdated,
+        //     content: json
+        //   };
+        //
+        //   return ContentService
+        //     .createTextOutput(JSON.stringify(result))
+        //     .setMimeType(ContentService.MimeType.JSON);
+        // }
+        //
+        // PASSO 3: Salve e faça uma NOVA IMPLANTAÇÃO ("Implantar" > "Gerenciar implantações", selecione a sua e clique em "Editar", depois mude a versão para "Nova versão" e clique em "Implantar").
         const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
-        const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
+        
+        const originalEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
+        const googleSheetEstoqueUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalEstoqueUrl)}`;
 
         // Variáveis para Patrimônio
         let allItems = [];
@@ -240,49 +273,112 @@
         // Variáveis para Estoque
         let allEstoqueItems = [];
 
-        // Elementos do DOM
+        // Elementos do DOM - Globais
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
         
-        // Elementos das Abas
+        // Elementos do DOM - Abas
         let tabPatrimonio, tabEstoque, tabTotalItens;
         let contentPatrimonio, contentEstoque, contentTotalItens;
         
-        // Elementos do Estoque
-        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
+        // Elementos do DOM - Estoque
+        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl;
 
-        // Elementos do Total de Itens (MODIFICADO)
-        let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
+        // Elementos do DOM - Relatório de Itens (Aba)
+        let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, filtroTotalFornecedorEl;
+        
+        // Elementos do DOM - Filtros Locais (Unificados)
+        let filtroLocalBuscaEl, filtroLocalEstadoEl, filtroLocalFornecedorEl, filtroLocalLocalEl, filtroLocalUnidadeEl;
 
+        // --- FUNÇÕES DE UTILIDADE E FORMATAÇÃO (DEFINIDAS PRIMEIRO) ---
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        function normalizeString(str) {
+            if (!str) return '';
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        
+        function normalizeDescription(str) {
+            if (!str) return '';
+            // Remove parênteses e seu conteúdo, espaços extras e converte para minúsculas
+            return str.toLowerCase().replace(/\s*\(.*\)\s*/g, '').trim();
+        }
+        
+        function capitalizeWords(str) {
+            if (!str) return "";
+            return str.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+        }
+
+        function getServiceKey(serviceName) {
+            const name = (serviceName || '').toLowerCase().trim();
+            if (name.includes('conselho') || name === 'ct') return 'conselho';
+            if (name.includes('cras')) return 'cras';
+            if (name.includes('creas')) return 'creas';
+            if (name.includes('externa')) return 'externa';
+            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
+            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo';
+            return 'item';
+        }
+
+        function formatUnitName(item, includeType = false) {
+            let nomeUnidade = item.unit_condition;
+            let prefix = '';
+            const idPrefix = (item.id || '').split('_')[0];
+
+            switch(idPrefix) {
+                case 'creas': prefix = 'CREAS '; break;
+                case 'conselho': prefix = 'CT '; break;
+                case 'externa': return nomeUnidade;
+                case 'cras':
+                    if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
+                        prefix = 'CRAS ';
+                    }
+                    break;
+                case 'centro_pop':
+                case 'abrigo':
+                    return nomeUnidade;
+            }
+            return `${prefix}${nomeUnidade}`;
+        }
+
+        function agruparItens(items) {
+            if (!items || items.length === 0) return [];
+            const agrupados = items.reduce((acc, item) => {
+                // Chave de agrupamento baseada na descrição normalizada e outros atributos
+                const normalizedDescKey = normalizeDescription(item.description);
+                const key = `${normalizedDescKey}-${item.state}-${item.unit_condition}-${item.location}-${item.supplier || 'N/A'}`;
+                
+                if (acc[key]) {
+                    acc[key].quantity += parseInt(item.quantity, 10);
+                } else {
+                    acc[key] = {...item, quantity: parseInt(item.quantity, 10) };
+                }
+                return acc;
+            }, {});
+            return Object.values(agrupados);
+        }
 
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
-
-        async function fetchAndParseCsv(url) { 
-            if (!url || url.startsWith('URL_DA_SUA_PLANILHA')) {
-                console.warn(`URL da planilha não configurada: ${url}`);
-                return [];
-            }
+        async function fetchAndParseData(url, isJson) {
             const response = await fetch(url);
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
             }
 
-            if (url.includes('script.google.com/macros/s/')) {
-                const data = await response.json();
-                if (data && data.error) {
-                    throw new Error(`Erro do Apps Script: ${data.error}`);
-                }
-                return data;
+            if (isJson) {
+                return await response.json();
             } else {
-                const blob = await response.blob();
-                const csvText = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.onerror = e => reject(e);
-                    reader.readAsText(blob, 'UTF-8'); 
-                });
+                const csvText = await response.text();
                 return parseCsvData(csvText);
             }
         }
@@ -311,28 +407,12 @@
             return data;
         }
 
-        const capitalizeWords = (str) => {
-            if (!str) return "";
-            return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
-        };
-
-        function getServiceKey(serviceName) {
-            const name = (serviceName || '').toLowerCase().trim();
-            if (name.includes('conselho') || name === 'ct') return 'conselho';
-            if (name.includes('cras')) return 'cras';
-            if (name.includes('creas')) return 'creas';
-            if (name.includes('externa')) return 'externa';
-            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
-            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo';
-            return 'item';
-        }
-
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
                 let originalState = row.Estado || 'Regular';
                 let finalState = originalState;
-                const observationText = (row['Observação'] || '').toLowerCase();
+                const observationText = (row['Observação'] || row['Observacao'] || '').toLowerCase();
                 const normalizedState = normalizeString(originalState);
 
                 const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
@@ -351,31 +431,63 @@
                 return {
                     id: `${serviceKey}_${index}`,
                     type: row.Tipo || 'N/A',
-                    description: row['Descrição'] || 'N/A',
+                    description: row['Descrição'] || row['Descricao'] || 'N/A',
                     unit_condition: standardizedUnitName,
                     quantity: parseInt(row.Quantidade, 10) || 1,
-                    location: row['Localização'] || 'N/A',
+                    location: row['Localização'] || row['Localizacao'] || 'N/A',
                     state: finalState,
                     donation_source: processedDonationSource,
-                    observation: row['Observação'] || '',
+                    observation: row['Observação'] || row['Observacao'] || '',
                     supplier: processedSupplier,
                     originalStateWasNew: originalState === 'Novo'
                 };
             });
         }
-
-        function normalizeString(str) {
-            if (!str) return '';
-            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        function getFilteredItems(sourceData) {
+            const servico = filtroServicoEl.value;
+            const unidade = filtroUnidadeEl.value;
+            const estado = filtroEstadoEl.value;
+            const doacao = filtroDoacaoEl.value;
+            const busca = filtroBuscaEl.value.toLowerCase();
+            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
+            return sourceData.filter(item => {
+                const matchServico = !servico || item.id.startsWith(`${servico}_`);
+                const matchUnidade = !unidade || item.unit_condition === unidade;
+                const matchEstado = !estado || item.state === estado;
+                const source = normalizeString(item.donation_source);
+                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
+                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
+            });
         }
-
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), delay);
-            };
+        
+        function updateFilterOptions() {
+            const selectedServico = filtroServicoEl.value;
+            const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
+            unidadesDoServico.sort((a,b) => a.localeCompare(b));
+            filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
+            if (selectedServico) {
+                filtroUnidadeEl.disabled = false;
+                unidadesDoServico.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u;
+                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
+                    option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
+                    filtroUnidadeEl.appendChild(option);
+                });
+            } else {
+                filtroUnidadeEl.disabled = true;
+            }
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s;
+                filtroEstadoEl.appendChild(option);
+            });
         }
 
         const stateColors = {
@@ -385,44 +497,7 @@
             'Avariado': { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
         };
 
-        function agruparItens(items) {
-            if (!items || items.length === 0) return [];
-            const agrupados = items.reduce((acc, item) => {
-                const isDefective = item.state === 'Avariado';
-                const key = isDefective 
-                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}`
-                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
-                
-                if (acc[key]) {
-                    acc[key].quantity += parseInt(item.quantity, 10);
-                } else {
-                    acc[key] = {...item, quantity: parseInt(item.quantity, 10) };
-                }
-                return acc;
-            }, {});
-            return Object.values(agrupados);
-        }
-
-        function formatUnitName(item, includeType = false) {
-            let nomeUnidade = item.unit_condition;
-            let prefix = '';
-            const idPrefix = (item.id || '').split('_')[0];
-
-            switch(idPrefix) {
-                case 'creas': prefix = 'CREAS '; break;
-                case 'conselho': prefix = 'CT '; break;
-                case 'externa': return nomeUnidade;
-                case 'cras':
-                    if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
-                        prefix = 'CRAS ';
-                    }
-                    break;
-                case 'centro_pop':
-                case 'abrigo':
-                    return nomeUnidade;
-            }
-            return `${prefix}${nomeUnidade}`;
-        }
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
 
         function generateRanking(dados, filterStates) {
             if (!dados || dados.length === 0) return [];
@@ -578,88 +653,130 @@
                 </div>`;
             paginationControlsEl.innerHTML = paginationHTML;
         }
-
-        function getFilteredItems(sourceData) {
-            const servico = filtroServicoEl.value;
-            const unidade = filtroUnidadeEl.value;
-            const estado = filtroEstadoEl.value;
-            const doacao = filtroDoacaoEl.value;
-            const busca = filtroBuscaEl.value.toLowerCase();
-            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
-            return sourceData.filter(item => {
-                const matchServico = !servico || item.id.startsWith(`${servico}_`);
-                const matchUnidade = !unidade || item.unit_condition === unidade;
-                const matchEstado = !estado || item.state === estado;
-                const source = normalizeString(item.donation_source);
-                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
-                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
-                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
-            });
+        
+        function populateLocalFilters(data) {
+            const populateSelect = (element, values) => {
+                if (!element) return;
+                const currentValue = element.value;
+                element.innerHTML = '<option value="">Todos</option>';
+                [...new Set(values)].filter(Boolean).sort().forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val; option.textContent = val;
+                    element.appendChild(option);
+                });
+                element.value = currentValue;
+            };
+            populateSelect(filtroLocalUnidadeEl, data.map(i => formatUnitName(i, true)));
+            populateSelect(filtroLocalEstadoEl, data.map(i => i.state));
+            populateSelect(filtroLocalFornecedorEl, data.map(i => i.supplier));
+            populateSelect(filtroLocalLocalEl, data.map(i => i.location));
         }
 
-        function updateFilterOptions() {
-            const selectedServico = filtroServicoEl.value;
-            const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
-            unidadesDoServico.sort((a,b) => a.localeCompare(b));
-            filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            if (selectedServico) {
-                filtroUnidadeEl.disabled = false;
-                unidadesDoServico.forEach(u => {
-                    const option = document.createElement('option');
-                    option.value = u;
-                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
-                    option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
-                    filtroUnidadeEl.appendChild(option);
-                });
-            } else {
-                filtroUnidadeEl.disabled = true;
-            }
-            const allStates = [...new Set(allItems.map(item => item.state))];
-            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
-            filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
-            sortedStates.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s;
-                option.textContent = s;
-                filtroEstadoEl.appendChild(option);
-            });
+        function applyLocalFilters(data) {
+            if (!filtroLocalBuscaEl) return data; 
+            const busca = filtroLocalBuscaEl.value.toLowerCase();
+            const unidade = filtroLocalUnidadeEl.value;
+            const estado = filtroLocalEstadoEl.value;
+            const fornecedor = filtroLocalFornecedorEl.value;
+            const local = filtroLocalLocalEl.value;
+            return data.filter(item => 
+                (!busca || item.description.toLowerCase().includes(busca)) &&
+                (!unidade || formatUnitName(item, true) === unidade) &&
+                (!estado || item.state === estado) &&
+                (!fornecedor || item.supplier === fornecedor) &&
+                (!local || item.location === local)
+            );
         }
 
         function renderApp() {
-            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
-            const currentFilteredData = getFilteredItems(dadosOriginais);
-            const filteredAndGroupedItems = agruparItens(currentFilteredData);
+            const localFiltersState = {
+                busca: filtroLocalBuscaEl ? filtroLocalBuscaEl.value : '',
+                unidade: filtroLocalUnidadeEl ? filtroLocalUnidadeEl.value : '',
+                estado: filtroLocalEstadoEl ? filtroLocalEstadoEl.value : '',
+                fornecedor: filtroLocalFornecedorEl ? filtroLocalFornecedorEl.value : '',
+                local: filtroLocalLocalEl ? filtroLocalLocalEl.value : ''
+            };
+
+            if (estadoChartInstance) { estadoChartInstance.destroy(); }
+            
             const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
+            
+            const localFiltersHTML = `
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4 mt-8">Filtros Detalhados</h2>
+                    <div class="card p-4 md:p-6 mb-8">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                            <div>
+                                <label for="filtro-local-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição</label>
+                                <input type="text" id="filtro-local-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                             <div>
+                                <label for="filtro-local-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
+                                <select id="filtro-local-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todas</option></select>
+                            </div>
+                            <div>
+                                <label for="filtro-local-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
+                                <select id="filtro-local-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
+                            </div>
+                            <div>
+                                <label for="filtro-local-fornecedor" class="block text-sm font-medium text-slate-600 mb-1">Fornecedor</label>
+                                <select id="filtro-local-fornecedor" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
+                            </div>
+                            <div>
+                                <label for="filtro-local-local" class="block text-sm font-medium text-slate-600 mb-1">Localização</label>
+                                <select id="filtro-local-local" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
+                            </div>
+                        </div>
+                    </div>`;
 
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
-            } else if (visaoAtiva === 'unidade') {
-                const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-                const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
-                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-4 text-center"><h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card p-6"><h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3><div class="text-gray-600 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+            } else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
+                let dataParaVisao = getFilteredItems(dadosOriginais);
+                let tituloPrincipal = visaoAtiva === 'unidade' ? tituloDaVisao : 'Resumo Geral do Inventário';
+                let headerHTML = visaoAtiva === 'resumo' 
+                    ? `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-gray-800">${tituloPrincipal}</h2><div class="flex gap-2"><button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-6"><h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div>`
+                    : `<div><h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloPrincipal}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-4 text-center"><h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 mt-2">${dadosOriginais.filter(item => item.donation_source).reduce((sum, item) => sum + item.quantity, 0)}</p></div></div><div class="lg:col-span-3 card p-6"><h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3><div class="text-gray-600 space-y-2">${GerarRelatorioUnidade(dadosOriginais)}</div></div></div>`;
+
+                mainContentAreaEl.innerHTML = `${headerHTML}${localFiltersHTML}<h2 class="text-2xl font-bold text-slate-800 mb-6 mt-2">Inventário Detalhado</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                
                 updateDynamicDOMReferences();
+                if (visaoAtiva === 'resumo') {
+                    document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
+                }
+                
+                populateLocalFilters(dataParaVisao);
+                
+                if (filtroLocalBuscaEl) filtroLocalBuscaEl.value = localFiltersState.busca;
+                if (filtroLocalUnidadeEl) filtroLocalUnidadeEl.value = localFiltersState.unidade;
+                if (filtroLocalEstadoEl) filtroLocalEstadoEl.value = localFiltersState.estado;
+                if (filtroLocalFornecedorEl) filtroLocalFornecedorEl.value = localFiltersState.fornecedor;
+                if (filtroLocalLocalEl) filtroLocalLocalEl.value = localFiltersState.local;
+                
+                let itemsParaTabela = applyLocalFilters(dataParaVisao);
+                let filteredAndGroupedItems = agruparItens(itemsParaTabela);
+                
+                filteredAndGroupedItems.sort((a, b) => {
+                    const unitCompare = formatUnitName(a, true).localeCompare(formatUnitName(b, true));
+                    if (unitCompare !== 0) return unitCompare;
+                    const locationCompare = a.location.localeCompare(b.location);
+                    if (locationCompare !== 0) return locationCompare;
+                    return a.description.localeCompare(b.description);
+                });
+                
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
-                updateCharts(currentFilteredData);
-            } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-gray-800">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-6"><h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
-                updateDynamicDOMReferences();
-                document.getElementById('export-btn').addEventListener('click', handleExport);
-                document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
-                const filteredAllItems = getFilteredItems(allItems);
-                const groupedAllItems = agruparItens(filteredAllItems);
-                renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
-                updateCharts(filteredAllItems);
-                if (filtroEstadoEl.value === 'Novo') {
-                    const rankingData = generateRanking(filteredAllItems, ['Novo']);
-                    renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
-                } else {
-                    const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado']);
-                    renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-50', text: 'text-red-600'});
+                updateCharts(itemsParaTabela);
+                
+                if (visaoAtiva === 'resumo') {
+                     if (filtroEstadoEl.value === 'Novo') {
+                        renderRanking(generateRanking(itemsParaTabela, ['Novo']), 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
+                    } else {
+                        renderRanking(generateRanking(itemsParaTabela, ['Regular', 'Avariado']), 'Top 5 - Unidades para atenção', { bg: 'bg-red-50', text: 'text-red-600'});
+                    }
                 }
             }
             renderSummaryCards();
         }
-
+        
         // --- LÓGICA PARA ESTOQUE ---
         function renderEstoque(items) {
             mainContentEstoqueEl.innerHTML = '';
@@ -686,58 +803,21 @@
             mainContentEstoqueEl.innerHTML = tableHTML;
         }
         
-        function handleExportEstoque() {
-            if (allEstoqueItems.length === 0) return;
-            const headers = Object.keys(allEstoqueItems[0] || {});
-            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `relatorio_estoque.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- LÓGICA PARA TOTAL DE ITENS (REFEITA) ---
-
+        // --- LÓGICA PARA RELATÓRIO DE ITENS (ABA) ---
         function populateTotalItensFilters() {
-            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl) return;
-
-            // Popula filtro de Categoria
-            const categorias = [...new Set(allItems.map(item => item.type))]
-                .filter(type => type && type !== 'N/A')
-                .sort((a, b) => a.localeCompare(b));
-            filtroTotalCategoriaEl.innerHTML = '<option value="">Todas</option>';
-            categorias.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                filtroTotalCategoriaEl.appendChild(option);
-            });
-
-            // Popula filtro de Unidade
-            const unidades = [...new Set(allItems.map(item => formatUnitName(item, true)))]
-                .sort((a, b) => a.localeCompare(b));
-            filtroTotalUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            unidades.forEach(u => {
-                const option = document.createElement('option');
-                option.value = u;
-                option.textContent = u;
-                filtroTotalUnidadeEl.appendChild(option);
-            });
-            
-            // Popula filtro de Estado
-            const allStates = [...new Set(allItems.map(item => item.state))];
-            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
-            filtroTotalEstadoEl.innerHTML = '<option value="">Todos</option>';
-            sortedStates.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s;
-                option.textContent = s;
-                filtroTotalEstadoEl.appendChild(option);
-            });
+            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl || !filtroTotalFornecedorEl) return;
+            const populateSelect = (element, values) => {
+                element.innerHTML = '<option value="">Todas</option>';
+                values.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val; option.textContent = val;
+                    element.appendChild(option);
+                });
+            };
+            populateSelect(filtroTotalCategoriaEl, [...new Set(allItems.map(i => i.type))].filter(Boolean).sort());
+            populateSelect(filtroTotalUnidadeEl, [...new Set(allItems.map(i => formatUnitName(i, true)))].filter(Boolean).sort());
+            populateSelect(filtroTotalEstadoEl, ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allItems.some(i => i.state === s)));
+            populateSelect(filtroTotalFornecedorEl, [...new Set(allItems.map(i => i.supplier))].filter(Boolean).sort());
         }
 
         function renderTotalItens() {
@@ -749,104 +829,54 @@
             const searchTerm = filtroTotalItemEl.value.toLowerCase();
             const selectedUnidade = filtroTotalUnidadeEl.value;
             const selectedEstado = filtroTotalEstadoEl.value;
+            const selectedFornecedor = filtroTotalFornecedorEl.value;
 
-            // 1. Filtra os dados com base em todos os filtros
-            let filteredData = allItems;
-            if (selectedCategoria) {
-                filteredData = filteredData.filter(item => item.type === selectedCategoria);
-            }
-            if (selectedUnidade) {
-                filteredData = filteredData.filter(item => formatUnitName(item, true) === selectedUnidade);
-            }
-            if (selectedEstado) {
-                filteredData = filteredData.filter(item => item.state === selectedEstado);
-            }
-            if (searchTerm) {
-                filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
-            }
+            let filteredData = allItems.filter(item => 
+                (!selectedCategoria || item.type === selectedCategoria) &&
+                (!selectedUnidade || formatUnitName(item, true) === selectedUnidade) &&
+                (!selectedEstado || item.state === selectedEstado) &&
+                (!selectedFornecedor || item.supplier === selectedFornecedor) &&
+                (!searchTerm || item.description.toLowerCase().includes(searchTerm))
+            );
 
-            // 2. Agrupa os dados filtrados por descrição para obter os totais
             const groupedItems = {};
-            
             filteredData.forEach(item => {
                 const desc = item.description;
                 if (!desc || desc === 'N/A') return;
-
                 if (!groupedItems[desc]) {
-                    groupedItems[desc] = {
-                        total: 0,
-                        type: item.type,
-                        locations: {} // Objeto para agrupar por local
-                    };
+                    groupedItems[desc] = { total: 0, type: item.type, locations: {} };
                 }
-                
                 groupedItems[desc].total += item.quantity;
-                const unitName = formatUnitName(item, true);
-                const locationKey = `${unitName} - ${item.location || 'N/D'}`;
-
+                const locationKey = `${formatUnitName(item, true)} - ${item.location || 'N/D'}`;
                 groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
             });
             
             const uniqueItemCount = Object.keys(groupedItems).length;
             const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
 
-            // 3. Renderiza o resumo
-            if (uniqueItemCount > 0) {
-                 summaryContainer.innerHTML = `
-                    <div class="card p-4 bg-slate-50 border border-slate-200">
-                        <div class="flex flex-wrap justify-between items-center gap-4">
-                            <p class="text-slate-600 font-medium">
-                                Exibindo <span class="font-bold text-blue-600">${uniqueItemCount}</span> tipo(s) de item.
-                            </p>
-                            <div class="text-right">
-                                <p class="text-sm text-slate-500">Quantidade Total nos Itens Filtrados</p>
-                                <p class="text-2xl font-bold text-slate-800">${grandTotalQuantity}</p>
-                            </div>
-                        </div>
-                    </div>`;
-            } else {
-                summaryContainer.innerHTML = ''; // Limpa o resumo se não houver resultados
-            }
+            summaryContainer.innerHTML = uniqueItemCount > 0 ? `
+                <div class="card p-4 bg-slate-50 border border-slate-200"><div class="flex flex-wrap justify-between items-center gap-4">
+                    <p class="text-slate-600 font-medium">Exibindo <span class="font-bold text-blue-600">${uniqueItemCount}</span> tipo(s) de item.</p>
+                    <div class="text-right"><p class="text-sm text-slate-500">Quantidade Total</p><p class="text-2xl font-bold text-slate-800">${grandTotalQuantity}</p></div>
+                </div></div>` : '';
 
-            // 4. Renderiza os resultados
             if (uniqueItemCount === 0) {
-                container.innerHTML = `<div class="text-center p-10 bg-white rounded-lg shadow-sm border col-span-full"><p class="text-lg text-gray-500">Nenhum item encontrado com os filtros selecionados.</p></div>`;
+                container.innerHTML = `<div class="text-center p-10 bg-white rounded-lg shadow-sm border col-span-full"><p class="text-lg text-gray-500">Nenhum item encontrado.</p></div>`;
                 return;
             }
 
-            container.innerHTML = Object.entries(groupedItems)
-                .sort((a, b) => a[0].localeCompare(b[0]))
-                .map(([desc, data]) => {
-                    const locationsHTML = Object.entries(data.locations)
-                        .sort((a, b) => a[0].localeCompare(b[0])) // Ordena os locais alfabeticamente
-                        .map(([locationKey, quantity]) => `
-                            <li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-50">
-                                <span class="truncate pr-2">${locationKey}</span>
-                                <span class="font-medium text-slate-600 flex-shrink-0">${quantity}</span>
-                            </li>
-                        `).join('');
-
-                    return `
-                        <div class="card p-4 flex flex-col">
-                            <div class="flex-grow">
-                                <div class="flex justify-between items-start">
-                                    <h3 class="font-semibold text-slate-800 text-base md:text-lg pr-2">${desc}</h3>
-                                    <div class="text-right flex-shrink-0">
-                                        <p class="text-xs text-slate-500">Total</p>
-                                        <p class="text-2xl font-bold text-blue-600">${data.total}</p>
-                                    </div>
-                                </div>
-                                <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">${data.type}</p>
-                            </div>
-                            <div class="mt-4 border-t pt-3">
-                                <p class="text-xs font-medium text-slate-400 uppercase mb-2">Distribuição</p>
-                                <ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+            container.innerHTML = Object.entries(groupedItems).sort((a, b) => a[0].localeCompare(b[0])).map(([desc, data]) => {
+                const locationsHTML = Object.entries(data.locations).sort((a, b) => a[0].localeCompare(b[0])).map(([locationKey, quantity]) => `
+                    <li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-50">
+                        <span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-600 flex-shrink-0">${quantity}</span>
+                    </li>`).join('');
+                return `<div class="card p-4 flex flex-col"><div class="flex-grow"><div class="flex justify-between items-start">
+                    <h3 class="font-semibold text-slate-800 text-base md:text-lg pr-2">${desc}</h3>
+                    <div class="text-right flex-shrink-0"><p class="text-xs text-slate-500">Total</p><p class="text-2xl font-bold text-blue-600">${data.total}</p></div>
+                    </div><p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">${data.type}</p></div>
+                    <div class="mt-4 border-t pt-3"><p class="text-xs font-medium text-slate-400 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
+            }).join('');
         }
-
 
         // --- HANDLERS DE EVENTOS ---
         function handleFilterChange() { 
@@ -858,12 +888,13 @@
             const selectedService = this.value;
             filtroUnidadeEl.value = '';
             updateFilterOptions();
-            if (selectedService) {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`;
-            } else {
+            mainContentAreaEl.innerHTML = selectedService 
+                ? `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, selecione uma <strong>Unidade</strong>.</p></div>`
+                : `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Resumo Geral</strong>.</p></div>`;
+            if (!selectedService) {
                 visaoAtiva = 'boasVindas';
                 dadosOriginais = [];
-                renderApp();
+                renderSummaryCards();
             }
         }
 
@@ -892,7 +923,11 @@
                 visaoAtiva = 'resumo';
                 currentPage = 1;
                 filtroServicoEl.value = '';
-                updateFilterOptions();
+                filtroUnidadeEl.value = '';
+                filtroUnidadeEl.disabled = true;
+                filtroEstadoEl.value = '';
+                filtroBuscaEl.value = '';
+                filtroDoacaoEl.value = '';
                 renderApp();
             }, 50);
         }
@@ -909,6 +944,7 @@
             filtroBuscaEl.value = '';
             filtroDoacaoEl.value = '';
             renderApp();
+            renderSummaryCards();
         }
 
         function handlePageChange(event) {
@@ -919,33 +955,23 @@
             }
         }
 
-        function handleExport() {
-            const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
-            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
-                `"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
-                item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`,
-                `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`
-            ]);
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `relatorio_inventario.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
         // --- INICIALIZAÇÃO DA APLICAÇÃO ---
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
             paginationControlsEl = document.getElementById('pagination-controls');
             estadoChartCanvasEl = document.getElementById('estadoChart');
             rankingListEl = document.getElementById('ranking-atencao');
+            
+            // Filtros locais (unificados)
+            filtroLocalBuscaEl = document.getElementById('filtro-local-busca');
+            filtroLocalUnidadeEl = document.getElementById('filtro-local-unidade');
+            filtroLocalEstadoEl = document.getElementById('filtro-local-estado');
+            filtroLocalFornecedorEl = document.getElementById('filtro-local-fornecedor');
+            filtroLocalLocalEl = document.getElementById('filtro-local-local');
         }
 
         function initApp() {
-            // Referências do DOM - Patrimônio
+            // Referências do DOM - Globais
             filtroServicoEl = document.getElementById('filtro-servico');
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
@@ -967,15 +993,15 @@
             mainContentEstoqueEl = document.getElementById('main-content-estoque');
             filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
             filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
-            exportEstoqueBtn = document.getElementById('export-estoque-btn');
             
-            // Referências do DOM - Total de Itens (MODIFICADO)
+            // Referências do DOM - Relatório de Itens (Aba)
             filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
             filtroTotalItemEl = document.getElementById('filtro-total-item');
             filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
             filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
+            filtroTotalFornecedorEl = document.getElementById('filtro-total-fornecedor');
 
-            // Event Listeners - Patrimônio
+            // Event Listeners - Filtros Globais
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
@@ -992,19 +1018,30 @@
             // Event Listeners - Estoque
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
-            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
-
-            // Event Listeners - Total de Itens (MODIFICADO)
+            
+            // Event Listeners - Relatório de Itens (Aba)
             filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
             filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
             filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
             filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
+            filtroTotalFornecedorEl.addEventListener('change', renderTotalItens);
+            
+            // Event Delegation para filtros locais
+            mainContentAreaEl.addEventListener('input', debounce(e => {
+                if (e.target.id && e.target.id.startsWith('filtro-local-')) {
+                    handleFilterChange();
+                }
+            }, 400));
+            mainContentAreaEl.addEventListener('change', e => {
+                if (e.target.id && e.target.id.startsWith('filtro-local-')) {
+                    handleFilterChange();
+                }
+            });
 
             updateFilterOptions();
         }
 
         async function switchTab(tabName) {
-            // Desativa todas as abas e esconde todos os conteúdos
             [tabPatrimonio, tabEstoque, tabTotalItens].forEach(tab => tab.classList.remove('active'));
             [contentPatrimonio, contentEstoque, contentTotalItens].forEach(content => content.classList.add('hidden'));
 
@@ -1015,20 +1052,23 @@
                 tabEstoque.classList.add('active');
                 contentEstoque.classList.remove('hidden');
                 if (allEstoqueItems.length === 0) {
-                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do estoque...</p></div>`;
+                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados...</p></div>`;
                     try {
-                        const estoqueData = await fetchAndParseCsv(googleSheetEstoqueUrl);
-                        allEstoqueItems = estoqueData;
+                        allEstoqueItems = await fetchAndParseData(googleSheetEstoqueUrl, false); // false indica que esperamos CSV
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
                          console.error('Erro ao carregar dados do estoque:', error);
-                         mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                         mainContentEstoqueEl.innerHTML = `<div class="text-center p-8 md:p-20 bg-white rounded-lg shadow-md border">
+                            <p class="text-xl font-bold text-red-600">Erro ao Carregar Estoque</p>
+                            <p class="text-slate-600 mt-4">Não foi possível carregar os dados da planilha de estoque.</p>
+                            <p class="text-sm text-slate-500 mt-2">Verifique se o link da planilha está correto e se a planilha está publicada para a web.</p>
+                            <p class="text-xs text-slate-400 mt-4">Erro original: ${error.message}</p>
+                         </div>`;
                     }
                 }
             } else if (tabName === 'total-itens') {
                 tabTotalItens.classList.add('active');
                 contentTotalItens.classList.remove('hidden');
-                // Popula os filtros e renderiza o estado inicial
                 populateTotalItensFilters();
                 renderTotalItens();
             }
@@ -1038,14 +1078,20 @@
             const loadingEl = document.getElementById('main-content-area');
             loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do patrimônio...</p></div>`;
             try {
-                const patrimonioData = await fetchAndParseCsv(googleSheetPatrimonioUrl);
-                const now = new Date();
-                const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                const updateEl = document.getElementById('last-update-time');
-                if (updateEl) updateEl.textContent = `Dados atualizados em: ${formattedDate}`;
+                const patrimonioResponse = await fetchAndParseData(googleSheetPatrimonioUrl, true);
+                
+                const patrimonioData = patrimonioResponse.content || patrimonioResponse;
+                const lastUpdated = patrimonioResponse.lastUpdated;
+
+                if (lastUpdated) {
+                    const lastUpdatedDate = new Date(lastUpdated);
+                    const formattedDate = lastUpdatedDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const updateEl = document.getElementById('last-update-time');
+                    if (updateEl) updateEl.textContent = `Dados da planilha atualizados em: ${formattedDate}`;
+                }
                 
                 if (!patrimonioData || patrimonioData.length === 0) {
-                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique se a planilha está pública e contém dados.");
+                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique a planilha e o Apps Script.");
                 }
                 
                 allItems = formatSheetData(patrimonioData);
