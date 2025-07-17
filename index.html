@@ -1,356 +1,304 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Aplica o tema escuro/claro no carregamento inicial para evitar flash
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
     <style>
         body {
-            background-color: #f8f9fa;
             font-family: 'Inter', sans-serif;
         }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-       .chart-container {
+        .chart-container {
             position: relative;
             width: 100%;
-            max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
             height: 350px;
-            max-height: 400px;
         }
-       .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        /* Estilos para as Abas */
+        .tab-button {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 600;
         }
-       .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        .tab-button.active {
+            color: #4f46e5; /* Indigo-600 */
+            border-bottom-color: #4f46e5;
         }
-       .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-       .tooltip .tooltip-text {
-            visibility: hidden;
-            width: 200px;
-            background-color: #334155;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.8rem;
-            font-weight: 400;
-        }
-       .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
+        .dark .tab-button.active {
+            color: #818cf8; /* Indigo-400 */
+            border-bottom-color: #818cf8;
         }
         .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
+            border: 5px solid #e5e7eb; /* Gray 200 */
+            border-top: 5px solid #4f46e5; /* Indigo 600 */
             border-radius: 50%;
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
             margin: auto;
         }
+        .dark .loader {
+             border: 5px solid #374151; /* Gray 700 */
+             border-top: 5px solid #818cf8; /* Indigo 400 */
+        }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Estilos para as Abas */
-        .tab-button {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            color: #475569;
-        }
-        .tab-button.active {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-        }
     </style>
 </head>
-<body class="antialiased text-slate-700">
-    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 antialiased transition-colors duration-300">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
         
-        <header class="mb-4 text-right">
-             <p id="last-update-time" class="text-sm text-slate-400 mt-2"></p>
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">Painel Unificado</h1>
+                <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">Visão consolidada do patrimônio e estoque.</p>
+                <p id="last-update-time" class="text-xs text-slate-400 dark:text-slate-500 mt-2"></p>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
+                <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </button>
         </header>
 
+        <!-- BANNER FIXO -->
+        <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mb-8 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
+
         <!-- ABAS DE NAVEGAÇÃO -->
-        <nav class="border-b border-slate-200 mb-8">
-            <div class="flex flex-wrap">
-                <button id="tab-patrimonio" class="tab-button active">Painel de Patrimônio</button>
-                <button id="tab-estoque" class="tab-button">Controle de Estoque</button>
-                <button id="tab-total-itens" class="tab-button">Relatório de Itens</button>
+        <nav class="border-b border-slate-200 dark:border-slate-700 mb-8">
+            <div class="flex flex-wrap -mb-px text-sm font-medium text-center text-slate-500 dark:text-slate-400">
+                <button id="tab-dashboard" class="tab-button active">DASHBOARD</button>
+                <button id="tab-patrimonio" class="tab-button">PATRIMÔNIO DETALHADO</button>
+                <button id="tab-estoque" class="tab-button">ESTOQUE</button>
+                <button id="tab-total-itens" class="tab-button">TOTAL DE ITENS</button>
             </div>
         </nav>
 
-        <!-- Conteúdo da Aba de Patrimônio -->
-        <div id="content-patrimonio">
-            <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mb-8 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
+        <!-- Conteúdo da Aba Dashboard (NOVO) -->
+        <div id="content-dashboard">
+            <section id="summary-section" class="mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6" id="summary-cards">
+                    <!-- Cards de resumo serão renderizados aqui -->
+                </div>
+            </section>
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">VISÃO GERAL DO PATRIMÔNIO</h3>
+                    <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-            <div class="card p-4 md:p-6 mb-8">
+        <!-- Conteúdo da Aba de Patrimônio -->
+        <div id="content-patrimonio" class="hidden">
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                     <div>
-                        <label for="filtro-servico" class="block text-sm font-medium text-slate-600 mb-1">Tipo de Unidade</label>
-                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todos</option>
-                            <option value="conselho">Conselho Tutelar</option>
+                        <label for="filtro-servico" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Tipo de Unidade</label>
+                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                            <option value="">TODOS</option>
+                            <option value="conselho">CONSELHO</option>
                             <option value="cras">CRAS</option>
                             <option value="creas">CREAS</option>
-                            <option value="externa">Unidade Externa</option>
-                            <option value="centro_pop">Centro Pop</option>
-                            <option value="abrigo">Abrigo</option>
+                            <option value="externa">UNIDADE EXTERNA</option>
+                            <option value="centro_pop">CENTRO POP</option>
+                            <option value="abrigo">ABRIGO</option>
+                            <option value="sede">SEDE</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
-                        <select id="filtro-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled>
-                            <option value="">Todas</option>
+                        <label for="filtro-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label>
+                        <select id="filtro-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400" disabled>
+                            <option value="">TODAS</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todos</option>
+                        <label for="filtro-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label>
+                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                            <option value="">TODOS</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 mb-1">Origem</label>
-                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todas</option>
-                            <option value="sim">Apenas Doações</option>
-                            <option value="nao">Apenas Próprios</option>
+                        <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Origem</label>
+                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                            <option value="">TODAS</option>
+                            <option value="sim">APENAS DOAÇÕES</option>
+                            <option value="nao">APENAS PRÓPRIOS</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar Item</label>
-                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label for="filtro-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar Item</label>
+                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
                     </div>
                 </div>
                 <div class="w-full md:w-auto mt-4">
-                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg text-base hover:bg-blue-700 transition-colors">Ver Resumo Geral</button>
+                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg text-base hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow">VER INVENTÁRIO COMPLETO</button>
                 </div>
             </div>
-            <section id="summary-section" class="mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6" id="summary-cards"></div>
-            </section>
             <main id="main-content-area" class="mt-8"></main>
         </div>
 
         <!-- Conteúdo da Aba de Estoque -->
         <div id="content-estoque" class="hidden">
-            <div class="card p-4 md:p-6 mb-8">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                      <div>
-                        <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 mb-1">Filtrar por Unidade</label>
-                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todas as Unidades</option>
+                        <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Unidade</label>
+                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">TODAS AS UNIDADES</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar no Estoque</label>
-                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar no Estoque</label>
+                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                         <button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">EXPORTAR ESTOQUE</button>
                     </div>
                  </div>
             </div>
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">TOP 10 ITENS EM ESTOQUE</h3>
+                     <button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="estoqueBarChart"></canvas>
+                </div>
+            </div>
             <main id="main-content-estoque" class="mt-8">
-                <!-- A tabela de estoque será renderizada aqui -->
             </main>
         </div>
         
-        <!-- Conteúdo da Aba Relatório de Itens -->
+        <!-- Conteúdo da Aba Total de Itens -->
         <div id="content-total-itens" class="hidden">
-             <div class="card p-4 md:p-6 mb-8">
-                <div class="mb-4">
-                    <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição do Item</label>
-                    <input type="text" id="filtro-total-item" placeholder="Digite para buscar um item, ex: Cadeira, Mesa, Computador..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base">
-                </div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                        <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 mb-1">Categoria (Tipo)</label>
-                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todas</option>
+                        <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Categoria (Tipo)</label>
+                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">TODAS</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
-                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todas</option>
+                        <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar por Descrição</label>
+                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label>
+                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">TODAS</option>
                         </select>
                     </div>
                     <div>
-                        <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todas</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="filtro-total-fornecedor" class="block text-sm font-medium text-slate-600 mb-1">Fornecedor</label>
-                        <select id="filtro-total-fornecedor" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todos</option>
+                        <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label>
+                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">TODOS</option>
                         </select>
                     </div>
                 </div>
             </div>
-
             <div id="total-itens-summary" class="mb-6"></div>
-            
             <main id="main-content-total-itens" class="mt-8">
-                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                </div>
             </main>
         </div>
 
-
-        <footer class="text-center mt-8 text-sm text-gray-500">
+        <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400">
             <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         </footer>
-
     </div>
 
     <script type="text/javascript">
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
         const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
-        
-        const originalEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
-        const googleSheetEstoqueUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalEstoqueUrl)}`;
+        const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
-        // Variáveis para Patrimônio
         let allItems = [];
         let dadosOriginais = []; 
-        let visaoAtiva = 'boasVindas';
-        let tituloDaVisao = 'Bem-vindo!';
+        let visaoAtiva = 'dashboard'; // Alterado para iniciar no Dashboard
+        let tituloDaVisao = 'Dashboard';
         let currentPage = 1;
         const itemsPerPage = 20;
-        let estadoChartInstance;
-
-        // Variáveis para Estoque
+        let estadoChartInstance, dashboardChartInstance, estoqueChartInstance;
         let allEstoqueItems = [];
 
-        // Elementos do DOM - Globais
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
-        
-        // Elementos do DOM - Abas
-        let tabPatrimonio, tabEstoque, tabTotalItens;
-        let contentPatrimonio, contentEstoque, contentTotalItens;
-        
-        // Elementos do DOM - Estoque
-        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl;
+        let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens;
+        let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens;
+        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
+        let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
 
-        // Elementos do DOM - Relatório de Itens (Aba)
-        let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, filtroTotalFornecedorEl;
-        
-        // Elementos do DOM - Filtros Locais (Unificados)
-        let filtroLocalBuscaEl, filtroLocalEstadoEl, filtroLocalFornecedorEl, filtroLocalLocalEl, filtroLocalUnidadeEl;
+        // --- LÓGICA DE TEMA (DARK MODE) ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
 
-        // --- FUNÇÕES DE UTILIDADE E FORMATAÇÃO (DEFINIDAS PRIMEIRO) ---
-
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), delay);
-            };
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            lightIcon.classList.remove('hidden');
+        } else {
+            darkIcon.classList.remove('hidden');
         }
 
-        function normalizeString(str) {
-            if (!str) return '';
-            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-        
-        function normalizeDescription(str) {
-            if (!str) return '';
-            // Remove parênteses e seu conteúdo, espaços extras e converte para minúsculas
-            return str.toLowerCase().replace(/\s*\(.*\)\s*/g, '').trim();
-        }
-        
-        function capitalizeWords(str) {
-            if (!str) return "";
-            return str.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
-        }
-
-        function getServiceKey(serviceName) {
-            const name = (serviceName || '').toLowerCase().trim();
-            if (name.includes('conselho') || name === 'ct') return 'conselho';
-            if (name.includes('cras')) return 'cras';
-            if (name.includes('creas')) return 'creas';
-            if (name.includes('externa')) return 'externa';
-            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
-            if (name.includes('abrigo') || name === 'abrigo') return 'abrigo';
-            return 'item';
-        }
-
-        function formatUnitName(item, includeType = false) {
-            let nomeUnidade = item.unit_condition;
-            let prefix = '';
-            const idPrefix = (item.id || '').split('_')[0];
-
-            switch(idPrefix) {
-                case 'creas': prefix = 'CREAS '; break;
-                case 'conselho': prefix = 'CT '; break;
-                case 'externa': return nomeUnidade;
-                case 'cras':
-                    if (!nomeUnidade.toUpperCase().startsWith('CRAS ')) {
-                        prefix = 'CRAS ';
-                    }
-                    break;
-                case 'centro_pop':
-                case 'abrigo':
-                    return nomeUnidade;
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            darkIcon.classList.toggle('hidden');
+            lightIcon.classList.toggle('hidden');
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
             }
-            return `${prefix}${nomeUnidade}`;
-        }
-
-        function agruparItens(items) {
-            if (!items || items.length === 0) return [];
-            const agrupados = items.reduce((acc, item) => {
-                // Chave de agrupamento baseada na descrição normalizada e outros atributos
-                const normalizedDescKey = normalizeDescription(item.description);
-                const key = `${normalizedDescKey}-${item.state}-${item.unit_condition}-${item.location}-${item.supplier || 'N/A'}`;
-                
-                if (acc[key]) {
-                    acc[key].quantity += parseInt(item.quantity, 10);
-                } else {
-                    acc[key] = {...item, quantity: parseInt(item.quantity, 10) };
-                }
-                return acc;
-            }, {});
-            return Object.values(agrupados);
-        }
+            // Redesenha gráficos ao mudar o tema
+            if(visaoAtiva === 'dashboard') renderDashboard();
+            if (visaoAtiva === 'resumo' || visaoAtiva === 'unidade') renderApp();
+            if(contentEstoque && !contentEstoque.classList.contains('hidden')) renderEstoque(allEstoqueItems);
+        });
 
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
-        async function fetchAndParseData(url, isJson) {
+        async function fetchAndParseCsv(url) { 
+            if (!url || url.startsWith('URL_DA_SUA_PLANILHA')) {
+                console.warn(`URL da planilha não configurada: ${url}`);
+                return [];
+            }
             const response = await fetch(url);
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
             }
 
-            if (isJson) {
+            if (url.includes('script.google.com/macros/s/')) {
                 const data = await response.json();
                 if (data && data.error) {
                     throw new Error(`Erro do Apps Script: ${data.error}`);
                 }
                 return data;
             } else {
-                const csvText = await response.text();
+                const blob = await response.blob();
+                const csvText = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = e => reject(e);
+                    reader.readAsText(blob, 'UTF-8'); 
+                });
                 return parseCsvData(csvText);
             }
         }
@@ -379,141 +327,190 @@
             return data;
         }
 
+        const capitalizeWords = (str) => {
+            if (!str) return "";
+            return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
+        };
+
+        function getServiceKey(serviceName) {
+            const name = (serviceName || '').toLowerCase().trim();
+            if (name.includes('conselho') || name === 'ct') return 'conselho';
+            if (name.includes('cras')) return 'cras';
+            if (name.includes('creas')) return 'creas';
+            if (name.includes('externa')) return 'externa';
+            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
+            if (name.includes('abrigo')) return 'abrigo';
+            if (name.includes('sede')) return 'sede';
+            return 'item';
+        }
+        
+        function cleanDuplicatedString(str) {
+            if (typeof str !== 'string' || str.length < 2 || str.length % 2 !== 0) {
+                return str;
+            }
+            const half = str.length / 2;
+            const firstHalf = str.substring(0, half);
+            const secondHalf = str.substring(half);
+            if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                return firstHalf;
+            }
+            return str;
+        }
+
         function formatSheetData(sheetData) {
             return sheetData.map((row, index) => {
                 const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
                 let originalState = row.Estado || 'Regular';
                 let finalState = originalState;
-                const observationText = (row['Observação'] || row['Observacao'] || '').toLowerCase();
+                const observationTextRaw = (row['Observação'] || '').toLowerCase();
                 const normalizedState = normalizeString(originalState);
 
                 const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
-                const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationText);
+                const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationTextRaw);
 
                 if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
                     finalState = 'Avariado';
                 }
 
                 const serviceKey = getServiceKey(row.Tipo);
+                
+                const rawObservation = (row['Observação'] || '').trim();
+                const cleanedObservation = cleanDuplicatedString(rawObservation);
+                const processedObservation = (cleanedObservation === '-' || normalizeString(cleanedObservation) === 'n/a') ? '' : cleanedObservation;
+
                 const rawDonationSource = (row['Origem da Doação'] || '').trim();
                 const processedDonationSource = (rawDonationSource === '-' || normalizeString(rawDonationSource) === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
+                
                 const rawSupplier = (row.Fornecedor || '').trim();
-                const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a' || rawSupplier === '') ? '' : rawSupplier;
+                const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a') ? '' : rawSupplier;
 
                 return {
                     id: `${serviceKey}_${index}`,
                     type: row.Tipo || 'N/A',
-                    description: row['Descrição'] || row['Descricao'] || 'N/A',
+                    description: row['Descrição'] || 'N/A',
                     unit_condition: standardizedUnitName,
                     quantity: parseInt(row.Quantidade, 10) || 1,
-                    location: row['Localização'] || row['Localizacao'] || 'N/A',
+                    location: row['Localização'] || 'N/A',
                     state: finalState,
                     donation_source: processedDonationSource,
-                    observation: row['Observação'] || row['Observacao'] || '',
+                    observation: processedObservation,
                     supplier: processedSupplier,
                     originalStateWasNew: originalState === 'Novo'
                 };
             });
         }
-        
-        function getFilteredItems(sourceData) {
-            const servico = filtroServicoEl.value;
-            const unidade = filtroUnidadeEl.value;
-            const estado = filtroEstadoEl.value;
-            const doacao = filtroDoacaoEl.value;
-            const busca = filtroBuscaEl.value.toLowerCase();
-            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
-            return sourceData.filter(item => {
-                const matchServico = !servico || item.id.startsWith(`${servico}_`);
-                const matchUnidade = !unidade || item.unit_condition === unidade;
-                const matchEstado = !estado || item.state === estado;
-                const source = normalizeString(item.donation_source);
-                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
-                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
-                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
-            });
+
+        function normalizeString(str) {
+            if (!str) return '';
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         }
-        
-        function updateFilterOptions() {
-            const selectedServico = filtroServicoEl.value;
-            const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
-            unidadesDoServico.sort((a,b) => a.localeCompare(b));
-            filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            if (selectedServico) {
-                filtroUnidadeEl.disabled = false;
-                unidadesDoServico.forEach(u => {
-                    const option = document.createElement('option');
-                    option.value = u;
-                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
-                    option.textContent = itemExemplo ? formatUnitName(itemExemplo) : u;
-                    filtroUnidadeEl.appendChild(option);
-                });
-            } else {
-                filtroUnidadeEl.disabled = true;
-            }
-            const allStates = [...new Set(allItems.map(item => item.state))];
-            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
-            filtroEstadoEl.innerHTML = '<option value="">Todos</option>';
-            sortedStates.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s;
-                option.textContent = s;
-                filtroEstadoEl.appendChild(option);
-            });
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
         }
 
         const stateColors = {
-            'Novo': { bg: 'bg-green-100', text: 'text-green-800', hex: '#16a34a' },
-            'Bom': { bg: 'bg-blue-100', text: 'text-blue-800', hex: '#2563eb' },
-            'Regular': { bg: 'bg-yellow-100', text: 'text-yellow-800', hex: '#facc15' },
-            'Avariado': { bg: 'bg-red-100', text: 'text-red-800', hex: '#dc2626' }
+            'Novo': { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300', hex: '#16a34a' },
+            'Bom': { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-300', hex: '#2563eb' },
+            'Regular': { bg: 'bg-yellow-100 dark:bg-yellow-900/50', text: 'text-yellow-800 dark:text-yellow-300', hex: '#facc15' },
+            'Avariado': { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300', hex: '#dc2626' }
         };
 
-        // --- FUNÇÕES DE RENDERIZAÇÃO ---
-
-        function generateRanking(dados, filterStates) {
-            if (!dados || dados.length === 0) return [];
-            const filteredItems = dados.filter(item => filterStates.includes(item.state));
-            const unitCounts = filteredItems.reduce((acc, item) => {
-                const displayName = formatUnitName(item);
-                acc[displayName] = (acc[displayName] || 0) + parseInt(item.quantity, 10);
+        function agruparItens(items) {
+            if (!items || items.length === 0) return [];
+            const agrupados = items.reduce((acc, item) => {
+                const isDefective = item.state === 'Avariado';
+                const key = isDefective 
+                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}`
+                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
+                
+                if (acc[key]) {
+                    acc[key].quantity += parseInt(item.quantity, 10);
+                } else {
+                    acc[key] = {...item, quantity: parseInt(item.quantity, 10) };
+                }
                 return acc;
             }, {});
-            const ranking = Object.entries(unitCounts).map(([nome, quantidade]) => ({ nome, quantidade }));
-            ranking.sort((a, b) => b.quantidade - a.quantidade);
-            return ranking.slice(0, 5);
+            return Object.values(agrupados);
         }
 
-        function GerarConfigGraficoEstado(dados, titulo = 'Itens por Estado de Conservação') {
-            if (!dados || dados.length === 0) return null;
-            const stateCounts = dados.reduce((acc, item) => {
-                acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
-                return acc;
-            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
+        function formatUnitName(item, includeType = false) {
+            let nomeUnidade = item.unit_condition;
+            const idPrefix = (item.id || '').split('_')[0];
+            const lowerCaseName = nomeUnidade.toLowerCase();
 
-            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
-            const colors = stateOrder.map(state => stateColors[state]?.hex || '#cccccc');
+            // Specific logic for CTs
+            if (item.type === 'CT') {
+                 return `CT ${nomeUnidade}`;
+            }
 
-            return {
-                type: 'bar',
-                data: {
-                    labels: stateOrder,
-                    datasets: [{
-                        label: 'Quantidade',
-                        data: stateOrder.map(state => stateCounts[state] || 0),
-                        backgroundColor: colors
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: titulo, font: { size: 16 } }
+            let prefix = '';
+            switch(idPrefix) {
+                case 'creas': prefix = 'CREAS '; break;
+                case 'cras':
+                    if (!lowerCaseName.startsWith('cras ')) {
+                        prefix = 'CRAS ';
+                    }
+                    break;
+                case 'externa':
+                case 'centro_pop':
+                case 'abrigo':
+                case 'sede':
+                case 'conselho': // For other "Conselho" types like CMAS, CMDI
+                    return nomeUnidade;
+            }
+            return `${prefix}${nomeUnidade}`;
+        }
+
+        function GerarConfigGrafico(type, data, options) {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const defaultOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: isDarkMode ? '#cbd5e1' : '#334155'
+                        }
                     },
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    title: {
+                        display: true,
+                        font: { size: 16 },
+                        color: isDarkMode ? '#cbd5e1' : '#334155'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { 
+                            precision: 0,
+                            color: isDarkMode ? '#94a3b8' : '#64748b'
+                        },
+                        grid: {
+                            color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: isDarkMode ? '#94a3b8' : '#64748b'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
                 }
             };
+            
+            if (type === 'doughnut' || type === 'pie') {
+                delete defaultOptions.scales;
+            }
+            
+            return { type, data, options: { ...defaultOptions, ...options } };
         }
 
         function GerarRelatorioUnidade(dados) {
@@ -538,58 +535,32 @@
             return reportLines.join('<br>');
         }
 
-        function renderSummaryCards() {
-            const filtered = getFilteredItems(allItems);
-            const totalItems = filtered.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const attentionItems = filtered.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const newItems = filtered.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const goodItems = filtered.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const totalDonations = filtered.filter(item => {
+        function renderSummaryCards(containerId, data) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            
+            const totalItems = data.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const attentionItems = data.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const newItems = data.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const goodItems = data.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = data.filter(item => {
                 const source = normalizeString(item.donation_source);
                 return item.donation_source && !['proprio', 'proprios'].includes(source);
             }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
-            summaryCardsContainerEl.innerHTML = `
-                <div class="card p-5 flex items-center space-x-4"><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800">${totalItems}</p></div></div>
-                <div class="card p-5 flex items-center space-x-4"><div class="bg-red-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800">${attentionItems}</p></div></div>
-                <div class="card p-5 flex items-center space-x-4"><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800">${newItems}</p></div></div>
-                <div class="card p-5 flex items-center space-x-4"><div class="bg-sky-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800">${goodItems}</p></div></div>
-                <div class="card p-5 flex items-center space-x-4"><div class="bg-purple-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800">${totalDonations}</p></div></div>
+            container.innerHTML = `
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>
             `;
-        }
-
-        function updateCharts(dataForChart) {
-            const chartData = GerarConfigGraficoEstado(dataForChart, 'Distribuição de Itens por Estado');
-            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
-            if (estadoChartCanvasEl) {
-                if (!chartData) {
-                    estadoChartCanvasEl.parentNode.innerHTML = '<p class="text-center text-slate-500 py-4">Sem dados para o gráfico.</p>';
-                } else {
-                    estadoChartInstance = new Chart(estadoChartCanvasEl.getContext('2d'), chartData);
-                }
-            }
-        }
-
-        function renderRanking(data, title, colorClass) {
-            const rankingCardTitle = document.getElementById('ranking-card-title');
-            if (!rankingListEl || !rankingCardTitle) return;
-            rankingCardTitle.textContent = title;
-            if (data.length === 0) {
-                rankingListEl.innerHTML = `<li class="text-center text-slate-500 py-4">Nenhum item encontrado.</li>`;
-            } else {
-                rankingListEl.innerHTML = data.map((unidade, index) => `
-                    <li class="flex justify-between items-center p-3 rounded-lg ${index === 0 ? colorClass.bg : 'bg-slate-50'}">
-                        <span class="font-medium text-slate-700">${index + 1}. ${unidade.nome}</span>
-                        <span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span>
-                    </li>
-                `).join('');
-            }
         }
 
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
             if (itemsToDisplay.length === 0) {
-                tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
+                tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
@@ -598,15 +569,30 @@
                 const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
                 const color = stateColors[item.state] || stateColors['Regular'];
                 const unitDisplayName = formatUnitName(item, true);
-                const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold' : color.text;
+                const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold dark:text-red-400' : color.text;
                 const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
+
+                const observationText = item.observation || '';
+                const supplierText = item.supplier || '';
+                const finalSupplierText = (observationText && supplierText && normalizeString(observationText) === normalizeString(supplierText)) 
+                    ? 'N/A' 
+                    : (supplierText || 'N/A');
+
                 tableHTML += `
-                    <tr class="bg-white border-b hover:bg-slate-50">
-                        <td class="px-6 py-4">${item.type}</td><td class="px-6 py-4 font-medium text-slate-900">${item.description}</td><td class="px-6 py-4">${unitDisplayName}</td><td class="px-6 py-4 text-center">${item.quantity}</td><td class="px-6 py-4">${item.location}</td>
-                        <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">${stateDisplayName}</span></td>
+                    <tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <td class="px-6 py-4">${item.type}</td>
+                        <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">${item.description}</td>
+                        <td class="px-6 py-4">${unitDisplayName}</td>
+                        <td class="px-6 py-4 text-center">${item.quantity}</td>
+                        <td class="px-6 py-4">${item.location}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">
+                                ${stateDisplayName}
+                            </span>
+                        </td>
                         <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
-                        <td class="px-6 py-4">${item.observation ? `<div class="tooltip">${String(item.observation).substring(0, 30)}${String(item.observation).length > 30 ? '...' : ''}<span class="tooltip-text">${item.observation}</span></div>` : 'N/A'}</td>
-                        <td class="px-6 py-4">${item.supplier || 'N/A'}</td>
+                        <td class="px-6 py-4">${observationText ? `<div class="tooltip">${String(observationText).substring(0, 30)}${String(observationText).length > 30 ? '...' : ''}<span class="tooltip-text">${observationText}</span></div>` : 'N/A'}</td>
+                        <td class="px-6 py-4">${finalSupplierText}</td>
                     </tr>`;
             });
             tableBodyEl.innerHTML = tableHTML;
@@ -618,149 +604,148 @@
             paginationControlsEl.innerHTML = '';
             if (!enablePagination || totalPages <= 1) return;
             let paginationHTML = `
-                <span class="text-sm text-slate-600">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span>
+                <span class="text-sm text-slate-600 dark:text-slate-400">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span>
                 <div class="inline-flex rounded-md shadow-sm" role="group">
-                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
+                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
                 </div>`;
             paginationControlsEl.innerHTML = paginationHTML;
         }
-        
-        function populateLocalFilters(data) {
-            const populateSelect = (element, values) => {
-                if (!element) return;
-                const currentValue = element.value;
-                element.innerHTML = '<option value="">Todos</option>';
-                [...new Set(values)].filter(Boolean).sort().forEach(val => {
-                    const option = document.createElement('option');
-                    option.value = val; option.textContent = val;
-                    element.appendChild(option);
-                });
-                element.value = currentValue;
-            };
-            populateSelect(filtroLocalUnidadeEl, data.map(i => formatUnitName(i, true)));
-            populateSelect(filtroLocalEstadoEl, data.map(i => i.state));
-            populateSelect(filtroLocalFornecedorEl, data.map(i => i.supplier));
-            populateSelect(filtroLocalLocalEl, data.map(i => i.location));
+
+        function getFilteredItems(sourceData) {
+            const servico = filtroServicoEl.value;
+            const unidade = filtroUnidadeEl.value;
+            const estado = filtroEstadoEl.value;
+            const doacao = filtroDoacaoEl.value;
+            const busca = filtroBuscaEl.value.toLowerCase();
+            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
+            return sourceData.filter(item => {
+                const matchServico = !servico || item.id.startsWith(`${servico}_`);
+                const matchUnidade = !unidade || item.unit_condition === unidade;
+                const matchEstado = !estado || item.state === estado;
+                const source = normalizeString(item.donation_source);
+                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
+                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
+            });
         }
 
-        function applyLocalFilters(data) {
-            if (!filtroLocalBuscaEl) return data; 
-            const busca = filtroLocalBuscaEl.value.toLowerCase();
-            const unidade = filtroLocalUnidadeEl.value;
-            const estado = filtroLocalEstadoEl.value;
-            const fornecedor = filtroLocalFornecedorEl.value;
-            const local = filtroLocalLocalEl.value;
-            return data.filter(item => 
-                (!busca || item.description.toLowerCase().includes(busca)) &&
-                (!unidade || formatUnitName(item, true) === unidade) &&
-                (!estado || item.state === estado) &&
-                (!fornecedor || item.supplier === fornecedor) &&
-                (!local || item.location === local)
-            );
+        function updateFilterOptions() {
+            const selectedServico = filtroServicoEl.value;
+            const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
+            unidadesDoServico.sort((a,b) => a.localeCompare(b));
+            filtroUnidadeEl.innerHTML = '<option value="">TODAS</option>';
+            if (selectedServico) {
+                filtroUnidadeEl.disabled = false;
+                unidadesDoServico.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u;
+                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
+                    option.textContent = itemExemplo ? formatUnitName(itemExemplo, true).toUpperCase() : u.toUpperCase();
+                    filtroUnidadeEl.appendChild(option);
+                });
+            } else {
+                filtroUnidadeEl.disabled = true;
+            }
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroEstadoEl.innerHTML = '<option value="">TODOS</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s.toUpperCase();
+                filtroEstadoEl.appendChild(option);
+            });
+        }
+
+        function renderRanking(data, title, colorClass) {
+            const rankingCardTitle = document.getElementById('ranking-card-title');
+            if (!rankingListEl || !rankingCardTitle) return;
+
+            rankingCardTitle.textContent = title;
+
+            if (data.length === 0) {
+                rankingListEl.innerHTML = `<li class="text-center text-slate-500 dark:text-slate-400 py-4">Nenhum item encontrado.</li>`;
+            } else {
+                rankingListEl.innerHTML = data.map((unidade, index) => `
+                    <li class="flex justify-between items-center p-3 rounded-lg ${index === 0 ? colorClass.bg : 'bg-slate-100 dark:bg-slate-700'}">
+                        <span class="font-medium text-slate-700 dark:text-slate-200">${index + 1}. ${unidade.nome}</span>
+                        <span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span>
+                    </li>
+                `).join('');
+            }
         }
 
         function renderApp() {
-            const localFiltersState = {
-                busca: filtroLocalBuscaEl ? filtroLocalBuscaEl.value : '',
-                unidade: filtroLocalUnidadeEl ? filtroLocalUnidadeEl.value : '',
-                estado: filtroLocalEstadoEl ? filtroLocalEstadoEl.value : '',
-                fornecedor: filtroLocalFornecedorEl ? filtroLocalFornecedorEl.value : '',
-                local: filtroLocalLocalEl ? filtroLocalLocalEl.value : ''
-            };
-
-            if (estadoChartInstance) { estadoChartInstance.destroy(); }
-            
-            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
-            
-            const localFiltersHTML = `
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4 mt-8">Filtros Detalhados</h2>
-                    <div class="card p-4 md:p-6 mb-8">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                            <div>
-                                <label for="filtro-local-busca" class="block text-sm font-medium text-slate-600 mb-1">Buscar por Descrição</label>
-                                <input type="text" id="filtro-local-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                             <div>
-                                <label for="filtro-local-unidade" class="block text-sm font-medium text-slate-600 mb-1">Unidade</label>
-                                <select id="filtro-local-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todas</option></select>
-                            </div>
-                            <div>
-                                <label for="filtro-local-estado" class="block text-sm font-medium text-slate-600 mb-1">Estado</label>
-                                <select id="filtro-local-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
-                            </div>
-                            <div>
-                                <label for="filtro-local-fornecedor" class="block text-sm font-medium text-slate-600 mb-1">Fornecedor</label>
-                                <select id="filtro-local-fornecedor" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
-                            </div>
-                            <div>
-                                <label for="filtro-local-local" class="block text-sm font-medium text-slate-600 mb-1">Localização</label>
-                                <select id="filtro-local-local" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><option value="">Todos</option></select>
-                            </div>
-                        </div>
-                    </div>`;
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
+            const currentFilteredData = getFilteredItems(dadosOriginais);
+            const filteredAndGroupedItems = agruparItens(currentFilteredData);
+            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
 
             if (visaoAtiva === 'boasVindas') {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Resumo Geral</strong> para uma visão completa.</p></div>`;
-            } else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
-                let dataParaVisao = getFilteredItems(dadosOriginais);
-                let tituloPrincipal = visaoAtiva === 'unidade' ? tituloDaVisao : 'Resumo Geral do Inventário';
-                let headerHTML = visaoAtiva === 'resumo' 
-                    ? `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-gray-800">${tituloPrincipal}</h2><div class="flex gap-2"><button id="back-to-selection-btn" class="px-4 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card p-4"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-6"><h3 id="ranking-card-title" class="text-xl font-bold text-gray-700 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div>`
-                    : `<div><h2 class="text-3xl font-bold text-gray-800 mb-6">${tituloPrincipal}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card p-4 h-full"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card p-4 text-center"><h3 class="text-lg font-semibold text-purple-800">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 mt-2">${dadosOriginais.filter(item => item.donation_source).reduce((sum, item) => sum + item.quantity, 0)}</p></div></div><div class="lg:col-span-3 card p-6"><h3 class="text-xl font-bold text-gray-700 mb-4">Relatório Descritivo da Unidade</h3><div class="text-gray-600 space-y-2">${GerarRelatorioUnidade(dadosOriginais)}</div></div></div>`;
-
-                mainContentAreaEl.innerHTML = `${headerHTML}${localFiltersHTML}<h2 class="text-2xl font-bold text-slate-800 mb-6 mt-2">Inventário Detalhado</h2><div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
-                
+                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão completa.</p></div>`;
+            } else if (visaoAtiva === 'unidade') {
+                const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
-                if (visaoAtiva === 'resumo') {
-                    document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
-                }
-                
-                populateLocalFilters(dataParaVisao);
-                
-                if (filtroLocalBuscaEl) filtroLocalBuscaEl.value = localFiltersState.busca;
-                if (filtroLocalUnidadeEl) filtroLocalUnidadeEl.value = localFiltersState.unidade;
-                if (filtroLocalEstadoEl) filtroLocalEstadoEl.value = localFiltersState.estado;
-                if (filtroLocalFornecedorEl) filtroLocalFornecedorEl.value = localFiltersState.fornecedor;
-                if (filtroLocalLocalEl) filtroLocalLocalEl.value = localFiltersState.local;
-                
-                let itemsParaTabela = applyLocalFilters(dataParaVisao);
-                let filteredAndGroupedItems = agruparItens(itemsParaTabela);
-                
-                filteredAndGroupedItems.sort((a, b) => {
-                    const unitCompare = formatUnitName(a, true).localeCompare(formatUnitName(b, true));
-                    if (unitCompare !== 0) return unitCompare;
-                    const locationCompare = a.location.localeCompare(b.location);
-                    if (locationCompare !== 0) return locationCompare;
-                    return a.description.localeCompare(b.description);
-                });
-                
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
-                updateCharts(itemsParaTabela);
-                
-                if (visaoAtiva === 'resumo') {
-                     if (filtroEstadoEl.value === 'Novo') {
-                        renderRanking(generateRanking(itemsParaTabela, ['Novo']), 'Top 5 - Unidades com itens novos', { bg: 'bg-green-50', text: 'text-green-700'});
-                    } else {
-                        renderRanking(generateRanking(itemsParaTabela, ['Regular', 'Avariado']), 'Top 5 - Unidades para atenção', { bg: 'bg-red-50', text: 'text-red-600'});
-                    }
+                const chartCanvas = document.getElementById('estadoChart');
+                if(chartCanvas) {
+                    const chartData = GerarConfigGrafico('bar', {
+                        labels: ['Novo', 'Bom', 'Regular', 'Avariado'],
+                        datasets: [{
+                            label: 'Quantidade',
+                            data: ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => currentFilteredData.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0)),
+                            backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626']
+                        }]
+                    }, { plugins: { title: { text: 'Distribuição por Estado' } } });
+                    if (estadoChartInstance) estadoChartInstance.destroy();
+                    estadoChartInstance = new Chart(chartCanvas, chartData);
+                }
+            } else if (visaoAtiva === 'resumo') {
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md"><h3 id="ranking-card-title" class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                updateDynamicDOMReferences();
+                document.getElementById('export-btn').addEventListener('click', handleExport);
+                document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
+                const filteredAllItems = getFilteredItems(allItems);
+                const groupedAllItems = agruparItens(filteredAllItems);
+                renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
+                const chartCanvas = document.getElementById('estadoChart');
+                if(chartCanvas) {
+                     const chartData = GerarConfigGrafico('bar', {
+                        labels: ['Novo', 'Bom', 'Regular', 'Avariado'],
+                        datasets: [{
+                            label: 'Quantidade',
+                            data: ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => filteredAllItems.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0)),
+                            backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626']
+                        }]
+                    }, { plugins: { title: { text: 'Distribuição por Estado' } } });
+                    if (estadoChartInstance) estadoChartInstance.destroy();
+                    estadoChartInstance = new Chart(chartCanvas, chartData);
+                }
+                if (filtroEstadoEl.value === 'Novo') {
+                    const rankingData = generateRanking(filteredAllItems, ['Novo']);
+                    renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300'});
+                } else {
+                    const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado']);
+                    renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300'});
                 }
             }
-            renderSummaryCards();
         }
         
         // --- LÓGICA PARA ESTOQUE ---
         function renderEstoque(items) {
             mainContentEstoqueEl.innerHTML = '';
             if (items.length === 0) {
-                mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Nenhum item de estoque encontrado.</p></div>`;
+                mainContentEstoqueEl.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Nenhum item de estoque encontrado.</p></div>`;
                 return;
             }
             const unidadesEstoque = [...new Set(items.map(item => item.Unidade || 'N/A'))].sort();
-            filtroEstoqueUnidadeEl.innerHTML = '<option value="">Todas as Unidades</option>';
+            filtroEstoqueUnidadeEl.innerHTML = '<option value="">TODAS AS UNIDADES</option>';
             unidadesEstoque.forEach(u => {
                 const option = document.createElement('option');
-                option.value = u; option.textContent = u;
+                option.value = u; option.textContent = u.toUpperCase();
                 filtroEstoqueUnidadeEl.appendChild(option);
             });
             const busca = filtroEstoqueBuscaEl.value.toLowerCase();
@@ -771,25 +756,78 @@
                 return matchUnidade && matchBusca;
             });
             const headers = Object.keys(filteredItems[0] || {}); 
-            const tableHTML = `<div class="card p-0 overflow-x-auto"><table class="w-full text-sm text-left text-slate-500"><thead class="text-xs text-slate-700 uppercase bg-slate-100"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white border-b hover:bg-slate-50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+            const tableHTML = `<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
             mainContentEstoqueEl.innerHTML = tableHTML;
+
+            // Renderiza o gráfico de estoque
+            const estoqueData = filteredItems.reduce((acc, item) => {
+                const desc = item.Item || 'N/D';
+                const qty = parseInt(item.Quantidade, 10) || 0;
+                acc[desc] = (acc[desc] || 0) + qty;
+                return acc;
+            }, {});
+            const top10 = Object.entries(estoqueData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            
+            const chartCanvas = document.getElementById('estoqueBarChart');
+            if(chartCanvas) {
+                const chartData = GerarConfigGrafico('bar', {
+                    labels: top10.map(item => item[0]),
+                    datasets: [{
+                        label: 'Quantidade',
+                        data: top10.map(item => item[1]),
+                        backgroundColor: '#36a2eb'
+                    }]
+                }, { indexAxis: 'y', plugins: { title: { text: 'TOP 10 ITENS EM ESTOQUE' } } });
+                if (estoqueChartInstance) estoqueChartInstance.destroy();
+                estoqueChartInstance = new Chart(chartCanvas, chartData);
+            }
         }
         
-        // --- LÓGICA PARA RELATÓRIO DE ITENS (ABA) ---
+        function handleExportEstoque() {
+            if (allEstoqueItems.length === 0) return;
+            const headers = Object.keys(allEstoqueItems[0] || {});
+            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_estoque.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- LÓGICA PARA TOTAL DE ITENS ---
         function populateTotalItensFilters() {
-            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl || !filtroTotalFornecedorEl) return;
-            const populateSelect = (element, values) => {
-                element.innerHTML = '<option value="">Todas</option>';
-                values.forEach(val => {
-                    const option = document.createElement('option');
-                    option.value = val; option.textContent = val;
-                    element.appendChild(option);
-                });
-            };
-            populateSelect(filtroTotalCategoriaEl, [...new Set(allItems.map(i => i.type))].filter(Boolean).sort());
-            populateSelect(filtroTotalUnidadeEl, [...new Set(allItems.map(i => formatUnitName(i, true)))].filter(Boolean).sort());
-            populateSelect(filtroTotalEstadoEl, ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allItems.some(i => i.state === s)));
-            populateSelect(filtroTotalFornecedorEl, [...new Set(allItems.map(i => i.supplier))].filter(Boolean).sort());
+            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl) return;
+
+            const categorias = [...new Set(allItems.map(item => item.type))].filter(type => type && type !== 'N/A').sort((a, b) => a.localeCompare(b));
+            filtroTotalCategoriaEl.innerHTML = '<option value="">TODAS</option>';
+            categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat.toUpperCase();
+                filtroTotalCategoriaEl.appendChild(option);
+            });
+
+            const unidades = [...new Set(allItems.map(item => formatUnitName(item, true)))].sort((a, b) => a.localeCompare(b));
+            filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>';
+            unidades.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = u.toUpperCase();
+                filtroTotalUnidadeEl.appendChild(option);
+            });
+            
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroTotalEstadoEl.innerHTML = '<option value="">TODOS</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s.toUpperCase();
+                filtroTotalEstadoEl.appendChild(option);
+            });
         }
 
         function renderTotalItens() {
@@ -801,15 +839,12 @@
             const searchTerm = filtroTotalItemEl.value.toLowerCase();
             const selectedUnidade = filtroTotalUnidadeEl.value;
             const selectedEstado = filtroTotalEstadoEl.value;
-            const selectedFornecedor = filtroTotalFornecedorEl.value;
 
-            let filteredData = allItems.filter(item => 
-                (!selectedCategoria || item.type === selectedCategoria) &&
-                (!selectedUnidade || formatUnitName(item, true) === selectedUnidade) &&
-                (!selectedEstado || item.state === selectedEstado) &&
-                (!selectedFornecedor || item.supplier === selectedFornecedor) &&
-                (!searchTerm || item.description.toLowerCase().includes(searchTerm))
-            );
+            let filteredData = allItems;
+            if (selectedCategoria) filteredData = filteredData.filter(item => item.type === selectedCategoria);
+            if (selectedUnidade) filteredData = filteredData.filter(item => formatUnitName(item, true) === selectedUnidade);
+            if (selectedEstado) filteredData = filteredData.filter(item => item.state === selectedEstado);
+            if (searchTerm) filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
 
             const groupedItems = {};
             filteredData.forEach(item => {
@@ -819,35 +854,67 @@
                     groupedItems[desc] = { total: 0, type: item.type, locations: {} };
                 }
                 groupedItems[desc].total += item.quantity;
-                const locationKey = `${formatUnitName(item, true)} - ${item.location || 'N/D'}`;
+                const unitName = formatUnitName(item, true);
+                const locationKey = `${unitName} - ${item.location || 'N/D'}`;
                 groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
             });
             
             const uniqueItemCount = Object.keys(groupedItems).length;
             const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
 
-            summaryContainer.innerHTML = uniqueItemCount > 0 ? `
-                <div class="card p-4 bg-slate-50 border border-slate-200"><div class="flex flex-wrap justify-between items-center gap-4">
-                    <p class="text-slate-600 font-medium">Exibindo <span class="font-bold text-blue-600">${uniqueItemCount}</span> tipo(s) de item.</p>
-                    <div class="text-right"><p class="text-sm text-slate-500">Quantidade Total</p><p class="text-2xl font-bold text-slate-800">${grandTotalQuantity}</p></div>
-                </div></div>` : '';
+            if (uniqueItemCount > 0) {
+                 summaryContainer.innerHTML = `
+                    <div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700">
+                        <div class="flex flex-wrap justify-between items-center gap-4">
+                            <p class="text-slate-600 dark:text-slate-300 font-medium">
+                                Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.
+                            </p>
+                            <div class="text-right">
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Quantidade Total</p>
+                                <p class="text-2xl font-bold text-slate-800 dark:text-white">${grandTotalQuantity}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } else {
+                summaryContainer.innerHTML = '';
+            }
 
             if (uniqueItemCount === 0) {
-                container.innerHTML = `<div class="text-center p-10 bg-white rounded-lg shadow-sm border col-span-full"><p class="text-lg text-gray-500">Nenhum item encontrado.</p></div>`;
+                container.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 col-span-full"><p class="text-lg text-slate-600 dark:text-slate-300">Nenhum item encontrado com os filtros selecionados.</p></div>`;
                 return;
             }
 
-            container.innerHTML = Object.entries(groupedItems).sort((a, b) => a[0].localeCompare(b[0])).map(([desc, data]) => {
-                const locationsHTML = Object.entries(data.locations).sort((a, b) => a[0].localeCompare(b[0])).map(([locationKey, quantity]) => `
-                    <li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-50">
-                        <span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-600 flex-shrink-0">${quantity}</span>
-                    </li>`).join('');
-                return `<div class="card p-4 flex flex-col"><div class="flex-grow"><div class="flex justify-between items-start">
-                    <h3 class="font-semibold text-slate-800 text-base md:text-lg pr-2">${desc}</h3>
-                    <div class="text-right flex-shrink-0"><p class="text-xs text-slate-500">Total</p><p class="text-2xl font-bold text-blue-600">${data.total}</p></div>
-                    </div><p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">${data.type}</p></div>
-                    <div class="mt-4 border-t pt-3"><p class="text-xs font-medium text-slate-400 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
-            }).join('');
+            container.innerHTML = Object.entries(groupedItems)
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map(([desc, data]) => {
+                    const locationsHTML = Object.entries(data.locations)
+                        .sort((a, b) => a[0].localeCompare(b[0]))
+                        .map(([locationKey, quantity]) => `
+                            <li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-100 dark:bg-slate-700">
+                                <span class="truncate pr-2">${locationKey}</span>
+                                <span class="font-medium text-slate-700 dark:text-slate-200 flex-shrink-0">${quantity}</span>
+                            </li>
+                        `).join('');
+
+                    return `
+                        <div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md">
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-start">
+                                    <h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3>
+                                    <div class="text-right flex-shrink-0">
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Total</p>
+                                        <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${data.total}</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide mb-2">${data.type}</p>
+                            </div>
+                            <div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-3">
+                                <p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase mb-2">Distribuição</p>
+                                <ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
         }
 
         // --- HANDLERS DE EVENTOS ---
@@ -860,13 +927,12 @@
             const selectedService = this.value;
             filtroUnidadeEl.value = '';
             updateFilterOptions();
-            mainContentAreaEl.innerHTML = selectedService 
-                ? `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Agora, selecione uma <strong>Unidade</strong>.</p></div>`
-                : `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-gray-600">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Resumo Geral</strong>.</p></div>`;
-            if (!selectedService) {
+            if (selectedService) {
+                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Agora, por favor, selecione uma <strong>Unidade</strong> específica na lista acima.</p></div>`;
+            } else {
                 visaoAtiva = 'boasVindas';
                 dadosOriginais = [];
-                renderSummaryCards();
+                renderApp();
             }
         }
 
@@ -888,39 +954,20 @@
         }
 
         function handleResumoClick() {
-            if (allItems.length === 0) {
-                 mainContentAreaEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">Os dados do resumo geral não estão disponíveis. Verifique a fonte de dados.</p></div>`;
-                 return;
-            }
-            mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando resumo geral...</p></div>`;
+            mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando inventário completo...</p></div>`;
             setTimeout(() => {
                 dadosOriginais = allItems;
-                tituloDaVisao = 'Resumo Geral do Inventário';
+                tituloDaVisao = 'Inventário Geral Completo';
                 visaoAtiva = 'resumo';
                 currentPage = 1;
                 filtroServicoEl.value = '';
-                filtroUnidadeEl.value = '';
-                filtroUnidadeEl.disabled = true;
-                filtroEstadoEl.value = '';
-                filtroBuscaEl.value = '';
-                filtroDoacaoEl.value = '';
+                updateFilterOptions();
                 renderApp();
             }, 50);
         }
 
         function handleVoltar() {
-            visaoAtiva = 'boasVindas';
-            tituloDaVisao = 'Bem-vindo!';
-            dadosOriginais = [];
-            currentPage = 1;
-            filtroServicoEl.value = '';
-            filtroUnidadeEl.innerHTML = '<option value="">Todas</option>';
-            filtroUnidadeEl.disabled = true;
-            filtroEstadoEl.value = '';
-            filtroBuscaEl.value = '';
-            filtroDoacaoEl.value = '';
-            renderApp();
-            renderSummaryCards();
+            switchTab('dashboard');
         }
 
         function handlePageChange(event) {
@@ -931,23 +978,42 @@
             }
         }
 
+        function handleExport() {
+            const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
+            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [
+                `"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`,
+                item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`,
+                `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`
+            ]);
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_inventario.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportChart(chartId) {
+            const canvas = document.getElementById(chartId);
+            if(canvas) {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${chartId}.png`;
+                link.click();
+            }
+        }
+
         // --- INICIALIZAÇÃO DA APLICAÇÃO ---
         function updateDynamicDOMReferences() {
             tableBodyEl = document.getElementById('inventory-table-body');
             paginationControlsEl = document.getElementById('pagination-controls');
             estadoChartCanvasEl = document.getElementById('estadoChart');
             rankingListEl = document.getElementById('ranking-atencao');
-            
-            // Filtros locais (unificados)
-            filtroLocalBuscaEl = document.getElementById('filtro-local-busca');
-            filtroLocalUnidadeEl = document.getElementById('filtro-local-unidade');
-            filtroLocalEstadoEl = document.getElementById('filtro-local-estado');
-            filtroLocalFornecedorEl = document.getElementById('filtro-local-fornecedor');
-            filtroLocalLocalEl = document.getElementById('filtro-local-local');
         }
 
         function initApp() {
-            // Referências do DOM - Globais
             filtroServicoEl = document.getElementById('filtro-servico');
             filtroUnidadeEl = document.getElementById('filtro-unidade');
             filtroEstadoEl = document.getElementById('filtro-estado');
@@ -957,27 +1023,26 @@
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
 
-            // Referências do DOM - Abas
+            tabDashboard = document.getElementById('tab-dashboard');
             tabPatrimonio = document.getElementById('tab-patrimonio');
             tabEstoque = document.getElementById('tab-estoque');
             tabTotalItens = document.getElementById('tab-total-itens');
+            
+            contentDashboard = document.getElementById('content-dashboard');
             contentPatrimonio = document.getElementById('content-patrimonio');
             contentEstoque = document.getElementById('content-estoque');
             contentTotalItens = document.getElementById('content-total-itens');
 
-            // Referências do DOM - Estoque
             mainContentEstoqueEl = document.getElementById('main-content-estoque');
             filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
             filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
+            exportEstoqueBtn = document.getElementById('export-estoque-btn');
             
-            // Referências do DOM - Relatório de Itens (Aba)
             filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
             filtroTotalItemEl = document.getElementById('filtro-total-item');
             filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
             filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
-            filtroTotalFornecedorEl = document.getElementById('filtro-total-fornecedor');
 
-            // Event Listeners - Filtros Globais
             filtroServicoEl.addEventListener('change', handleServicoChange);
             filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
             filtroEstadoEl.addEventListener('change', handleFilterChange);
@@ -986,61 +1051,90 @@
             verResumoGeralBtn.addEventListener('click', handleResumoClick);
             document.addEventListener('click', function(event) { if (event.target && event.target.dataset.page) { handlePageChange(event); } });
             
-            // Event Listeners - Abas
+            tabDashboard.addEventListener('click', () => switchTab('dashboard'));
             tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
             tabEstoque.addEventListener('click', () => switchTab('estoque'));
             tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
             
-            // Event Listeners - Estoque
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
-            
-            // Event Listeners - Relatório de Itens (Aba)
+            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
+
             filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
             filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
             filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
             filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
-            filtroTotalFornecedorEl.addEventListener('change', renderTotalItens);
+
+            updateFilterOptions();
+        }
+
+        function renderDashboard() {
+            renderSummaryCards('summary-cards', allItems);
+            const chartCanvas = document.getElementById('dashboardChart');
+            if(!chartCanvas) return;
+
+            const stateCounts = allItems.reduce((acc, item) => {
+                acc[item.state] = (acc[item.state] || 0) + item.quantity;
+                return acc;
+            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
             
-            // Event Delegation para filtros locais
-            mainContentAreaEl.addEventListener('input', debounce(e => {
-                if (e.target.id && e.target.id.startsWith('filtro-local-')) {
-                    handleFilterChange();
-                }
-            }, 400));
-            mainContentAreaEl.addEventListener('change', e => {
-                if (e.target.id && e.target.id.startsWith('filtro-local-')) {
-                    handleFilterChange();
+            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
+            const chartData = GerarConfigGrafico('doughnut', {
+                labels: stateOrder,
+                datasets: [{
+                    label: 'Quantidade',
+                    data: stateOrder.map(state => stateCounts[state]),
+                    backgroundColor: stateOrder.map(state => stateColors[state]?.hex || '#cccccc'),
+                    hoverOffset: 4
+                }]
+            }, { 
+                plugins: { title: { text: 'Itens por Estado de Conservação' } },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const estado = dashboardChartInstance.data.labels[elements[0].index];
+                        switchTab('patrimonio');
+                        filtroEstadoEl.value = estado;
+                        handleResumoClick();
+                    }
                 }
             });
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+            dashboardChartInstance = new Chart(chartCanvas, chartData);
         }
 
         async function switchTab(tabName) {
-            [tabPatrimonio, tabEstoque, tabTotalItens].forEach(tab => tab.classList.remove('active'));
-            [contentPatrimonio, contentEstoque, contentTotalItens].forEach(content => content.classList.add('hidden'));
+            [tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens].forEach(tab => tab.classList.remove('active'));
+            [contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens].forEach(content => content.classList.add('hidden'));
 
-            if (tabName === 'patrimonio') {
+            if (tabName === 'dashboard') {
+                visaoAtiva = 'dashboard';
+                tabDashboard.classList.add('active');
+                contentDashboard.classList.remove('hidden');
+                renderDashboard();
+            } else if (tabName === 'patrimonio') {
+                visaoAtiva = 'boasVindas';
                 tabPatrimonio.classList.add('active');
                 contentPatrimonio.classList.remove('hidden');
+                renderApp();
             } else if (tabName === 'estoque') {
+                visaoAtiva = 'estoque';
                 tabEstoque.classList.add('active');
                 contentEstoque.classList.remove('hidden');
                 if (allEstoqueItems.length === 0) {
-                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados...</p></div>`;
+                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando dados do estoque...</p></div>`;
                     try {
-                        allEstoqueItems = await fetchAndParseData(googleSheetEstoqueUrl, false); // false indica que esperamos CSV
+                        const estoqueData = await fetchAndParseCsv(googleSheetEstoqueUrl);
+                        allEstoqueItems = estoqueData;
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
                          console.error('Erro ao carregar dados do estoque:', error);
-                         mainContentEstoqueEl.innerHTML = `<div class="text-center p-8 md:p-20 bg-white rounded-lg shadow-md border">
-                            <p class="text-xl font-bold text-red-600">Erro ao Carregar Estoque</p>
-                            <p class="text-slate-600 mt-4">Não foi possível carregar os dados da planilha de estoque.</p>
-                            <p class="text-sm text-slate-500 mt-2">Verifique se o link da planilha está correto e se a planilha está publicada para a web.</p>
-                            <p class="text-xs text-slate-400 mt-4">Erro original: ${error.message}</p>
-                         </div>`;
+                         mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
                     }
+                } else {
+                    renderEstoque(allEstoqueItems);
                 }
             } else if (tabName === 'total-itens') {
+                visaoAtiva = 'total-itens';
                 tabTotalItens.classList.add('active');
                 contentTotalItens.classList.remove('hidden');
                 populateTotalItensFilters();
@@ -1049,42 +1143,120 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Inicializa a estrutura da aplicação e os ouvintes de evento
-            initApp();
-
-            const loadingEl = document.getElementById('main-content-area');
-            loadingEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-gray-600">Carregando dados do patrimônio...</p></div>`;
+            const loadingContainer = document.querySelector('.container');
+            loadingContainer.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando dados do painel...</p></div>`;
             
-            // 2. Tenta carregar os dados principais do patrimônio
             try {
-                const patrimonioResponse = await fetchAndParseData(googleSheetPatrimonioUrl, true);
+                const responseData = await fetchAndParseCsv(googleSheetPatrimonioUrl);
                 
-                const patrimonioData = Array.isArray(patrimonioResponse) ? patrimonioResponse : patrimonioResponse.content;
-                
-                if (!patrimonioData || patrimonioData.length === 0) {
-                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique se o nome da aba no script está correto e se a planilha contém dados.");
+                let patrimonioData;
+                if (Array.isArray(responseData)) {
+                    patrimonioData = responseData;
+                } else if (typeof responseData === 'object' && responseData !== null) {
+                    patrimonioData = Object.values(responseData).find(value => Array.isArray(value));
+                }
+
+                if (!patrimonioData || !Array.isArray(patrimonioData) || patrimonioData.length === 0) {
+                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique se a planilha está pública, contém dados e se o formato da resposta do script está correto.");
                 }
                 
                 allItems = formatSheetData(patrimonioData);
                 
-                // 3. Com os dados carregados, popula os filtros e a visualização inicial
-                updateFilterOptions();
-                populateTotalItensFilters();
-                handleResumoClick(); 
-
+                // Recarrega o HTML original do body e então inicializa o app
+                document.body.innerHTML = `
+                    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+                        <header class="flex justify-between items-center mb-8">
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">Painel Unificado</h1>
+                                <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">Visão consolidada do patrimônio e estoque.</p>
+                                <p id="last-update-time" class="text-xs text-slate-400 dark:text-slate-500 mt-2"></p>
+                            </div>
+                            <button id="theme-toggle" class="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
+                                <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                                <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            </button>
+                        </header>
+                        <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mb-8 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
+                        <nav class="border-b border-slate-200 dark:border-slate-700 mb-8">
+                            <div class="flex flex-wrap -mb-px text-sm font-medium text-center text-slate-500 dark:text-slate-400">
+                                <button id="tab-dashboard" class="tab-button active">Dashboard</button>
+                                <button id="tab-patrimonio" class="tab-button">Patrimônio Detalhado</button>
+                                <button id="tab-estoque" class="tab-button">Estoque</button>
+                                <button id="tab-total-itens" class="tab-button">Total de Itens</button>
+                            </div>
+                        </nav>
+                        <div id="content-dashboard">
+                            <section id="summary-section" class="mb-8">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6" id="summary-cards"></div>
+                            </section>
+                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Visão Geral do Patrimônio</h3>
+                                    <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button>
+                                </div>
+                                <div class="chart-container"><canvas id="dashboardChart"></canvas></div>
+                            </div>
+                        </div>
+                        <div id="content-patrimonio" class="hidden">
+                             <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                                    <div><label for="filtro-servico" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Tipo de Unidade</label><select id="filtro-servico" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todos</option><option value="conselho">Conselho</option><option value="cras">CRAS</option><option value="creas">CREAS</option><option value="externa">Unidade Externa</option><option value="centro_pop">Centro Pop</option><option value="abrigo">Abrigo</option><option value="sede">SEDE</option></select></div>
+                                    <div><label for="filtro-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label><select id="filtro-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400" disabled><option value="">Todas</option></select></div>
+                                    <div><label for="filtro-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label><select id="filtro-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todos</option></select></div>
+                                    <div><label for="filtro-doacao" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Origem</label><select id="filtro-doacao" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todas</option><option value="sim">Apenas Doações</option><option value="nao">Apenas Próprios</option></select></div>
+                                    <div><label for="filtro-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar Item</label><input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"></div>
+                                </div>
+                                <div class="w-full md:w-auto mt-4"><button id="ver-resumo-geral-btn" class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg text-base hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow">Ver Inventário Completo</button></div>
+                            </div>
+                            <main id="main-content-area" class="mt-8"></main>
+                        </div>
+                        <div id="content-estoque" class="hidden">
+                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                                    <div><label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Unidade</label><select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas as Unidades</option></select></div>
+                                    <div><label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar no Estoque</label><input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></div>
+                                    <div><button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Estoque</button></div>
+                                </div>
+                            </div>
+                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                                <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold text-slate-800 dark:text-white">Top 10 Itens em Estoque</h3><button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button></div>
+                                <div class="chart-container"><canvas id="estoqueBarChart"></canvas></div>
+                            </div>
+                            <main id="main-content-estoque" class="mt-8"></main>
+                        </div>
+                        <div id="content-total-itens" class="hidden">
+                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div><label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Categoria (Tipo)</label><select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas</option></select></div>
+                                    <div><label for="filtro-total-item" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar por Descrição</label><input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></div>
+                                    <div><label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label><select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas</option></select></div>
+                                    <div><label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label><select id="filtro-total-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todos</option></select></div>
+                                </div>
+                            </div>
+                            <div id="total-itens-summary" class="mb-6"></div>
+                            <main id="main-content-total-itens" class="mt-8"><div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div></main>
+                        </div>
+                        <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400"><p>Painel desenvolvido por: Jurandy & Colaboradores</p></footer>
+                    </div>
+                `;
+                
                 const now = new Date();
                 const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                const updateEl = document.getElementById('last-update-time');
-                if (updateEl) updateEl.textContent = `Dados carregados em: ${formattedDate}`;
-
+                document.getElementById('last-update-time').textContent = `Dados atualizados em: ${formattedDate}`;
+                
+                initApp();
+                switchTab('dashboard');
 
             } catch (error) {
-                console.error('Erro ao inicializar o painel de patrimônio:', error);
-                // 4. Se a carga falhar, exibe o erro mas mantém o app funcional
-                loadingEl.innerHTML = `<div class="text-center p-20 bg-white rounded-lg shadow-md border"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
-                
-                // Atualiza os cards de resumo para refletir a ausência de dados
-                renderSummaryCards();
+                console.error('Erro ao inicializar o painel:', error);
+                document.body.innerHTML = `
+                    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+                        <div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
+                            <p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p>
+                            <p class="text-sm text-slate-500 mt-2">${error.message}</p>
+                        </div>
+                    </div>
+                `;
             }
         });
     </script>
