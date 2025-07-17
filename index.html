@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Inventário Unificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -98,7 +98,7 @@
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white">VISÃO GERAL DO PATRIMÔNIO</h3>
                     <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container" data-chart-name="dashboardChart">
                     <canvas id="dashboardChart"></canvas>
                 </div>
             </div>
@@ -177,7 +177,7 @@
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white">TOP 10 ITENS EM ESTOQUE</h3>
                      <button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container" data-chart-name="estoqueBarChart">
                     <canvas id="estoqueBarChart"></canvas>
                 </div>
             </div>
@@ -273,36 +273,64 @@
             if(contentEstoque && !contentEstoque.classList.contains('hidden')) renderEstoque(allEstoqueItems);
         });
 
-        // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
-        async function fetchAndParseCsv(url) { 
-            if (!url || url.startsWith('URL_DA_SUA_PLANILHA')) {
-                console.warn(`URL da planilha não configurada: ${url}`);
-                return [];
+        // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (COM CACHE) ---
+        const setWithExpiry = (key, value, ttl) => {
+            const now = new Date();
+            const item = { value: value, expiry: now.getTime() + ttl };
+            localStorage.setItem(key, JSON.stringify(item));
+        };
+
+        const getWithExpiry = (key) => {
+            const itemStr = localStorage.getItem(key);
+            if (!itemStr) return null;
+            const item = JSON.parse(itemStr);
+            const now = new Date();
+            if (now.getTime() > item.expiry) {
+                localStorage.removeItem(key);
+                return null;
             }
-            const response = await fetch(url);
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Falha ao carregar dados da URL: ${url}. Resposta: ${errorText}`);
+            return item.value;
+        };
+        
+        async function fetchAndProcessData(url, cacheKey, ttl = 300000) { // 5 minutos de cache
+            const cachedData = getWithExpiry(cacheKey);
+            if (cachedData) {
+                console.log(`Dados de ${cacheKey} carregados do cache.`);
+                return cachedData;
             }
 
-            if (url.includes('script.google.com/macros/s/')) {
-                const data = await response.json();
-                if (data && data.error) {
-                    throw new Error(`Erro do Apps Script: ${data.error}`);
-                }
-                return data;
-            } else {
-                const blob = await response.blob();
-                const csvText = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.onerror = e => reject(e);
-                    reader.readAsText(blob, 'UTF-8'); 
-                });
-                return parseCsvData(csvText);
+            console.log(`Buscando novos dados para ${cacheKey}...`);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Falha ao carregar dados da URL: ${url}.`);
             }
+
+            let data;
+            if (url.includes('script.google.com/macros/s/')) {
+                data = await response.json();
+                if (data && data.error) throw new Error(`Erro do Apps Script: ${data.error}`);
+            } else {
+                const csvText = await response.text();
+                data = parseCsvData(csvText);
+            }
+            
+            // FIX: More robustly find the data array in the response
+            let dataArray;
+            if (Array.isArray(data)) {
+                dataArray = data;
+            } else if (typeof data === 'object' && data !== null) {
+                // Find the first property that is an array and use it.
+                dataArray = Object.values(data).find(value => Array.isArray(value));
+            }
+
+            if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
+                 throw new Error("A API retornou dados vazios ou em formato inesperado.");
+            }
+
+            setWithExpiry(cacheKey, dataArray, ttl);
+            return dataArray;
         }
-        
+
         function parseCsvData(csvText) {
             const lines = csvText.trim().split(/\r\n|\n/);
             if (lines.length < 2) return [];
@@ -334,7 +362,7 @@
 
         function getServiceKey(serviceName) {
             const name = (serviceName || '').toLowerCase().trim();
-            if (name.includes('conselho') || name === 'ct') return 'conselho';
+            if (name === 'conselho' || name === 'ct') return 'conselho';
             if (name.includes('cras')) return 'cras';
             if (name.includes('creas')) return 'creas';
             if (name.includes('externa')) return 'externa';
@@ -657,7 +685,7 @@
                 filtroEstadoEl.appendChild(option);
             });
         }
-
+        
         function renderRanking(data, title, colorClass) {
             const rankingCardTitle = document.getElementById('ranking-card-title');
             if (!rankingListEl || !rankingCardTitle) return;
@@ -1123,7 +1151,7 @@
                 if (allEstoqueItems.length === 0) {
                     mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando dados do estoque...</p></div>`;
                     try {
-                        const estoqueData = await fetchAndParseCsv(googleSheetEstoqueUrl);
+                        const estoqueData = await fetchAndProcessData(googleSheetEstoqueUrl, 'estoqueCache');
                         allEstoqueItems = estoqueData;
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
@@ -1147,14 +1175,7 @@
             loadingContainer.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando dados do painel...</p></div>`;
             
             try {
-                const responseData = await fetchAndParseCsv(googleSheetPatrimonioUrl);
-                
-                let patrimonioData;
-                if (Array.isArray(responseData)) {
-                    patrimonioData = responseData;
-                } else if (typeof responseData === 'object' && responseData !== null) {
-                    patrimonioData = Object.values(responseData).find(value => Array.isArray(value));
-                }
+                const patrimonioData = await fetchAndProcessData(googleSheetPatrimonioUrl, 'patrimonioCache');
 
                 if (!patrimonioData || !Array.isArray(patrimonioData) || patrimonioData.length === 0) {
                     throw new Error("Nenhum dado de patrimônio foi processado. Verifique se a planilha está pública, contém dados e se o formato da resposta do script está correto.");
@@ -1194,7 +1215,7 @@
                                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Visão Geral do Patrimônio</h3>
                                     <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button>
                                 </div>
-                                <div class="chart-container"><canvas id="dashboardChart"></canvas></div>
+                                <div class="chart-container" data-chart-name="dashboardChart"><canvas id="dashboardChart"></canvas></div>
                             </div>
                         </div>
                         <div id="content-patrimonio" class="hidden">
@@ -1220,7 +1241,7 @@
                             </div>
                             <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
                                 <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold text-slate-800 dark:text-white">Top 10 Itens em Estoque</h3><button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button></div>
-                                <div class="chart-container"><canvas id="estoqueBarChart"></canvas></div>
+                                <div class="chart-container" data-chart-name="estoqueBarChart"><canvas id="estoqueBarChart"></canvas></div>
                             </div>
                             <main id="main-content-estoque" class="mt-8"></main>
                         </div>
