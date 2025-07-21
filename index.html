@@ -56,6 +56,40 @@
              border-top: 5px solid #818cf8; /* Indigo 400 */
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Estilo para Tooltips */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: #1f2937; /* Gray 800 */
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            word-wrap: break-word;
+        }
+        .dark .tooltip .tooltip-text {
+            background-color: #f9fafb; /* Gray 50 */
+            color: #1f2937;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 antialiased transition-colors duration-300">
@@ -86,11 +120,11 @@
             </div>
         </nav>
 
-        <!-- Conteúdo da Aba Dashboard (NOVO) -->
+        <!-- Conteúdo da Aba Dashboard -->
         <div id="content-dashboard">
             <section id="summary-section" class="mb-8">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6" id="summary-cards">
-                    <!-- Cards de resumo serão renderizados aqui -->
+                    <!-- Loader será inserido aqui via JS -->
                 </div>
             </section>
             <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
@@ -150,7 +184,9 @@
                     <button id="ver-resumo-geral-btn" class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg text-base hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow">VER INVENTÁRIO COMPLETO</button>
                 </div>
             </div>
-            <main id="main-content-area" class="mt-8"></main>
+            <main id="main-content-area" class="mt-8">
+                <!-- Conteúdo dinâmico da aba patrimônio será inserido aqui -->
+            </main>
         </div>
 
         <!-- Conteúdo da Aba de Estoque -->
@@ -182,6 +218,7 @@
                 </div>
             </div>
             <main id="main-content-estoque" class="mt-8">
+                <!-- Conteúdo dinâmico da aba estoque será inserido aqui -->
             </main>
         </div>
         
@@ -216,6 +253,7 @@
             <div id="total-itens-summary" class="mb-6"></div>
             <main id="main-content-total-itens" class="mt-8">
                 <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Conteúdo dinâmico da aba total de itens será inserido aqui -->
                 </div>
             </main>
         </div>
@@ -232,52 +270,63 @@
 
         let allItems = [];
         let dadosOriginais = []; 
-        let visaoAtiva = 'dashboard'; // Alterado para iniciar no Dashboard
+        let visaoAtiva = 'dashboard';
         let tituloDaVisao = 'Dashboard';
         let currentPage = 1;
         const itemsPerPage = 20;
         let estadoChartInstance, dashboardChartInstance, estoqueChartInstance;
         let allEstoqueItems = [];
 
+        // --- Referências de Elementos do DOM ---
         let filtroServicoEl, filtroUnidadeEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
-        let tableBodyEl, paginationControlsEl, estadoChartCanvasEl, rankingListEl;
+        let tableBodyEl, paginationControlsEl;
         let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens;
         let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens;
         let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
         let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
+        let themeToggleBtn, darkIcon, lightIcon;
 
         // --- LÓGICA DE TEMA (DARK MODE) ---
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const darkIcon = document.getElementById('theme-toggle-dark-icon');
-        const lightIcon = document.getElementById('theme-toggle-light-icon');
+        function setupTheme() {
+            themeToggleBtn = document.getElementById('theme-toggle');
+            darkIcon = document.getElementById('theme-toggle-dark-icon');
+            lightIcon = document.getElementById('theme-toggle-light-icon');
 
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            lightIcon.classList.remove('hidden');
-        } else {
-            darkIcon.classList.remove('hidden');
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                lightIcon.classList.remove('hidden');
+            } else {
+                darkIcon.classList.remove('hidden');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                darkIcon.classList.toggle('hidden');
+                lightIcon.classList.toggle('hidden');
+                if (document.documentElement.classList.contains('dark')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+                redrawAllCharts();
+            });
         }
 
-        themeToggleBtn.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            darkIcon.classList.toggle('hidden');
-            lightIcon.classList.toggle('hidden');
-            if (document.documentElement.classList.contains('dark')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
-            // Redesenha gráficos ao mudar o tema
-            if(visaoAtiva === 'dashboard') renderDashboard();
-            if (visaoAtiva === 'resumo' || visaoAtiva === 'unidade') renderApp();
-            if(contentEstoque && !contentEstoque.classList.contains('hidden')) renderEstoque(allEstoqueItems);
-        });
-
+        function redrawAllCharts() {
+            if(visaoAtiva === 'dashboard' && allItems.length > 0) renderDashboard();
+            if ((visaoAtiva === 'resumo' || visaoAtiva === 'unidade') && mainContentAreaEl.innerHTML) renderApp();
+            if(visaoAtiva === 'estoque' && allEstoqueItems.length > 0) renderEstoque(allEstoqueItems);
+        }
+        
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS (COM CACHE) ---
         const setWithExpiry = (key, value, ttl) => {
             const now = new Date();
             const item = { value: value, expiry: now.getTime() + ttl };
-            localStorage.setItem(key, JSON.stringify(item));
+            try {
+                localStorage.setItem(key, JSON.stringify(item));
+            } catch (e) {
+                console.error("Error saving to localStorage", e);
+            }
         };
 
         const getWithExpiry = (key) => {
@@ -302,33 +351,37 @@
             console.log(`Buscando novos dados para ${cacheKey}...`);
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error(`Falha ao carregar dados da URL: ${url}.`);
+                throw new Error(`Falha ao carregar dados da URL: ${url}. Status: ${response.status}`);
             }
 
             let data;
             if (url.includes('script.google.com/macros/s/')) {
-                data = await response.json();
-                if (data && data.error) throw new Error(`Erro do Apps Script: ${data.error}`);
+                const rawData = await response.json();
+                console.log("Dados brutos recebidos da API de patrimônio:", rawData); 
+
+                if (rawData && rawData.error) {
+                    throw new Error(`Erro retornado pelo Apps Script: ${rawData.error}`);
+                }
+
+                // CORREÇÃO: Lida com o formato de resposta antigo ({content: [...]}) e o novo ([...])
+                if (Array.isArray(rawData)) {
+                    data = rawData; // Formato novo/otimizado
+                    console.log("Formato de dados novo (array direto) detectado.");
+                } else if (rawData && Array.isArray(rawData.content)) {
+                    data = rawData.content; // Formato antigo
+                    console.log("Formato de dados antigo (objeto com 'content') detectado.");
+                } else {
+                    // Se não for nenhum dos formatos esperados, lança o erro.
+                    throw new Error("A API do patrimônio não retornou um array de dados válido.");
+                }
+
             } else {
                 const csvText = await response.text();
                 data = parseCsvData(csvText);
             }
             
-            // FIX: More robustly find the data array in the response
-            let dataArray;
-            if (Array.isArray(data)) {
-                dataArray = data;
-            } else if (typeof data === 'object' && data !== null) {
-                // Find the first property that is an array and use it.
-                dataArray = Object.values(data).find(value => Array.isArray(value));
-            }
-
-            if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) {
-                 throw new Error("A API retornou dados vazios ou em formato inesperado.");
-            }
-
-            setWithExpiry(cacheKey, dataArray, ttl);
-            return dataArray;
+            setWithExpiry(cacheKey, data, ttl);
+            return data;
         }
 
         function parseCsvData(csvText) {
@@ -355,6 +408,7 @@
             return data;
         }
 
+        // --- FUNÇÕES UTILITÁRIAS ---
         const capitalizeWords = (str) => {
             if (!str) return "";
             return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
@@ -472,7 +526,6 @@
             const idPrefix = (item.id || '').split('_')[0];
             const lowerCaseName = nomeUnidade.toLowerCase();
 
-            // Specific logic for CTs
             if (item.type === 'CT') {
                  return `CT ${nomeUnidade}`;
             }
@@ -489,12 +542,13 @@
                 case 'centro_pop':
                 case 'abrigo':
                 case 'sede':
-                case 'conselho': // For other "Conselho" types like CMAS, CMDI
+                case 'conselho':
                     return nomeUnidade;
             }
             return `${prefix}${nomeUnidade}`;
         }
 
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
         function GerarConfigGrafico(type, data, options) {
             const isDarkMode = document.documentElement.classList.contains('dark');
             const defaultOptions = {
@@ -555,8 +609,8 @@
             if (avariadosDetalhes.length > 0) {
                 const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Total de ${totalAvariados} itens que precisam de atenção:`);
-                const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description} (Local: ${item.location}, Estado: ${item.state})</li>`).join('');
-                reportLines.push(`<ul>${listaAvariados}</ul>`);
+                const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description} (Local: ${item.location})</li>`).join('');
+                reportLines.push(`<ul class="list-disc list-inside">${listaAvariados}</ul>`);
             } else {
                 reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`);
             }
@@ -577,11 +631,11 @@
             }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
 
             container.innerHTML = `
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>
             `;
         }
 
@@ -652,13 +706,15 @@
                 const matchUnidade = !unidade || item.unit_condition === unidade;
                 const matchEstado = !estado || item.state === estado;
                 const source = normalizeString(item.donation_source);
-                const matchDoacao = !doacao || (doacao === 'sim' && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && ['proprio', 'proprios'].includes(source));
+                const matchDoacao = !doacao || (doacao === 'sim' && item.donation_source && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && (!item.donation_source || ['proprio', 'proprios'].includes(source)));
                 const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
                 return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
 
         function updateFilterOptions() {
+            if(!allItems || allItems.length === 0) return;
+
             const selectedServico = filtroServicoEl.value;
             const unidadesDoServico = [...new Set(allItems.filter(item => !selectedServico || item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
             unidadesDoServico.sort((a,b) => a.localeCompare(b));
@@ -686,8 +742,23 @@
             });
         }
         
-        function renderRanking(data, title, colorClass) {
-            const rankingCardTitle = document.getElementById('ranking-card-title');
+        function generateRanking(data, states) {
+            const counts = data
+                .filter(item => states.includes(item.state))
+                .reduce((acc, item) => {
+                    const unitName = formatUnitName(item, true);
+                    acc[unitName] = (acc[unitName] || 0) + item.quantity;
+                    return acc;
+                }, {});
+
+            return Object.entries(counts)
+                .map(([nome, quantidade]) => ({ nome, quantidade }))
+                .sort((a, b) => b.quantidade - a.quantidade)
+                .slice(0, 5);
+        }
+
+        function renderRanking(data, title, colorClass, rankingListEl) {
+            const rankingCardTitle = rankingListEl.previousElementSibling;
             if (!rankingListEl || !rankingCardTitle) return;
 
             rankingCardTitle.textContent = title;
@@ -711,11 +782,11 @@
             const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
 
             if (visaoAtiva === 'boasVindas') {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão completa.</p></div>`;
+                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
                 const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
-                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md rounded-lg"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
                 const chartCanvas = document.getElementById('estadoChart');
@@ -732,7 +803,7 @@
                     estadoChartInstance = new Chart(chartCanvas, chartData);
                 }
             } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md"><h3 id="ranking-card-title" class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul id="ranking-atencao" class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 document.getElementById('export-btn').addEventListener('click', handleExport);
                 document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
@@ -752,17 +823,17 @@
                     if (estadoChartInstance) estadoChartInstance.destroy();
                     estadoChartInstance = new Chart(chartCanvas, chartData);
                 }
+                const rankingListEl = mainContentAreaEl.querySelector('ul');
                 if (filtroEstadoEl.value === 'Novo') {
                     const rankingData = generateRanking(filteredAllItems, ['Novo']);
-                    renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300'});
+                    renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300'}, rankingListEl);
                 } else {
                     const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado']);
-                    renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300'});
+                    renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300'}, rankingListEl);
                 }
             }
         }
         
-        // --- LÓGICA PARA ESTOQUE ---
         function renderEstoque(items) {
             mainContentEstoqueEl.innerHTML = '';
             if (items.length === 0) {
@@ -784,10 +855,9 @@
                 return matchUnidade && matchBusca;
             });
             const headers = Object.keys(filteredItems[0] || {}); 
-            const tableHTML = `<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+            const tableHTML = `<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
             mainContentEstoqueEl.innerHTML = tableHTML;
 
-            // Renderiza o gráfico de estoque
             const estoqueData = filteredItems.reduce((acc, item) => {
                 const desc = item.Item || 'N/D';
                 const qty = parseInt(item.Quantidade, 10) || 0;
@@ -811,23 +881,8 @@
             }
         }
         
-        function handleExportEstoque() {
-            if (allEstoqueItems.length === 0) return;
-            const headers = Object.keys(allEstoqueItems[0] || {});
-            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `relatorio_estoque.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- LÓGICA PARA TOTAL DE ITENS ---
         function populateTotalItensFilters() {
-            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl) return;
+            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl || !allItems || allItems.length === 0) return;
 
             const categorias = [...new Set(allItems.map(item => item.type))].filter(type => type && type !== 'N/A').sort((a, b) => a.localeCompare(b));
             filtroTotalCategoriaEl.innerHTML = '<option value="">TODAS</option>';
@@ -892,7 +947,7 @@
 
             if (uniqueItemCount > 0) {
                  summaryContainer.innerHTML = `
-                    <div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700">
+                    <div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
                         <div class="flex flex-wrap justify-between items-center gap-4">
                             <p class="text-slate-600 dark:text-slate-300 font-medium">
                                 Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.
@@ -925,7 +980,7 @@
                         `).join('');
 
                     return `
-                        <div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md">
+                        <div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md rounded-lg">
                             <div class="flex-grow">
                                 <div class="flex justify-between items-start">
                                     <h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3>
@@ -943,6 +998,40 @@
                         </div>
                     `;
                 }).join('');
+        }
+
+        function renderDashboard() {
+            renderSummaryCards('summary-cards', allItems);
+            const chartCanvas = document.getElementById('dashboardChart');
+            if(!chartCanvas) return;
+
+            const stateCounts = allItems.reduce((acc, item) => {
+                acc[item.state] = (acc[item.state] || 0) + item.quantity;
+                return acc;
+            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
+            
+            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
+            const chartData = GerarConfigGrafico('doughnut', {
+                labels: stateOrder,
+                datasets: [{
+                    label: 'Quantidade',
+                    data: stateOrder.map(state => stateCounts[state]),
+                    backgroundColor: stateOrder.map(state => stateColors[state]?.hex || '#cccccc'),
+                    hoverOffset: 4
+                }]
+            }, { 
+                plugins: { title: { text: 'Itens por Estado de Conservação' } },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const estado = dashboardChartInstance.data.labels[elements[0].index];
+                        switchTab('patrimonio');
+                        filtroEstadoEl.value = estado;
+                        handleResumoClick();
+                    }
+                }
+            });
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+            dashboardChartInstance = new Chart(chartCanvas, chartData);
         }
 
         // --- HANDLERS DE EVENTOS ---
@@ -1023,6 +1112,20 @@
             document.body.removeChild(link);
         }
 
+        function handleExportEstoque() {
+            if (allEstoqueItems.length === 0) return;
+            const headers = Object.keys(allEstoqueItems[0] || {});
+            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_estoque.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function exportChart(chartId) {
             const canvas = document.getElementById(chartId);
             if(canvas) {
@@ -1033,103 +1136,7 @@
             }
         }
 
-        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-        function updateDynamicDOMReferences() {
-            tableBodyEl = document.getElementById('inventory-table-body');
-            paginationControlsEl = document.getElementById('pagination-controls');
-            estadoChartCanvasEl = document.getElementById('estadoChart');
-            rankingListEl = document.getElementById('ranking-atencao');
-        }
-
-        function initApp() {
-            filtroServicoEl = document.getElementById('filtro-servico');
-            filtroUnidadeEl = document.getElementById('filtro-unidade');
-            filtroEstadoEl = document.getElementById('filtro-estado');
-            filtroBuscaEl = document.getElementById('filtro-busca');
-            filtroDoacaoEl = document.getElementById('filtro-doacao');
-            summaryCardsContainerEl = document.getElementById('summary-cards');
-            mainContentAreaEl = document.getElementById('main-content-area');
-            verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
-
-            tabDashboard = document.getElementById('tab-dashboard');
-            tabPatrimonio = document.getElementById('tab-patrimonio');
-            tabEstoque = document.getElementById('tab-estoque');
-            tabTotalItens = document.getElementById('tab-total-itens');
-            
-            contentDashboard = document.getElementById('content-dashboard');
-            contentPatrimonio = document.getElementById('content-patrimonio');
-            contentEstoque = document.getElementById('content-estoque');
-            contentTotalItens = document.getElementById('content-total-itens');
-
-            mainContentEstoqueEl = document.getElementById('main-content-estoque');
-            filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
-            filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
-            exportEstoqueBtn = document.getElementById('export-estoque-btn');
-            
-            filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
-            filtroTotalItemEl = document.getElementById('filtro-total-item');
-            filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
-            filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
-
-            filtroServicoEl.addEventListener('change', handleServicoChange);
-            filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
-            filtroEstadoEl.addEventListener('change', handleFilterChange);
-            filtroDoacaoEl.addEventListener('change', handleFilterChange);
-            filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
-            verResumoGeralBtn.addEventListener('click', handleResumoClick);
-            document.addEventListener('click', function(event) { if (event.target && event.target.dataset.page) { handlePageChange(event); } });
-            
-            tabDashboard.addEventListener('click', () => switchTab('dashboard'));
-            tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
-            tabEstoque.addEventListener('click', () => switchTab('estoque'));
-            tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
-            
-            filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
-            filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
-            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
-
-            filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
-            filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
-            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
-            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
-
-            updateFilterOptions();
-        }
-
-        function renderDashboard() {
-            renderSummaryCards('summary-cards', allItems);
-            const chartCanvas = document.getElementById('dashboardChart');
-            if(!chartCanvas) return;
-
-            const stateCounts = allItems.reduce((acc, item) => {
-                acc[item.state] = (acc[item.state] || 0) + item.quantity;
-                return acc;
-            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
-            
-            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
-            const chartData = GerarConfigGrafico('doughnut', {
-                labels: stateOrder,
-                datasets: [{
-                    label: 'Quantidade',
-                    data: stateOrder.map(state => stateCounts[state]),
-                    backgroundColor: stateOrder.map(state => stateColors[state]?.hex || '#cccccc'),
-                    hoverOffset: 4
-                }]
-            }, { 
-                plugins: { title: { text: 'Itens por Estado de Conservação' } },
-                onClick: (event, elements) => {
-                    if (elements.length > 0) {
-                        const estado = dashboardChartInstance.data.labels[elements[0].index];
-                        switchTab('patrimonio');
-                        filtroEstadoEl.value = estado;
-                        handleResumoClick();
-                    }
-                }
-            });
-            if (dashboardChartInstance) dashboardChartInstance.destroy();
-            dashboardChartInstance = new Chart(chartCanvas, chartData);
-        }
-
+        // --- CONTROLE DE ABAS E INICIALIZAÇÃO ---
         async function switchTab(tabName) {
             [tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens].forEach(tab => tab.classList.remove('active'));
             [contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens].forEach(content => content.classList.add('hidden'));
@@ -1138,7 +1145,7 @@
                 visaoAtiva = 'dashboard';
                 tabDashboard.classList.add('active');
                 contentDashboard.classList.remove('hidden');
-                renderDashboard();
+                if (allItems.length > 0) renderDashboard();
             } else if (tabName === 'patrimonio') {
                 visaoAtiva = 'boasVindas';
                 tabPatrimonio.classList.add('active');
@@ -1170,114 +1177,94 @@
             }
         }
 
+        function updateDynamicDOMReferences() {
+            tableBodyEl = document.getElementById('inventory-table-body');
+            paginationControlsEl = document.getElementById('pagination-controls');
+        }
+
+        function initApp() {
+            filtroServicoEl = document.getElementById('filtro-servico');
+            filtroUnidadeEl = document.getElementById('filtro-unidade');
+            filtroEstadoEl = document.getElementById('filtro-estado');
+            filtroBuscaEl = document.getElementById('filtro-busca');
+            filtroDoacaoEl = document.getElementById('filtro-doacao');
+            summaryCardsContainerEl = document.getElementById('summary-cards');
+            mainContentAreaEl = document.getElementById('main-content-area');
+            verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); 
+            tabDashboard = document.getElementById('tab-dashboard');
+            tabPatrimonio = document.getElementById('tab-patrimonio');
+            tabEstoque = document.getElementById('tab-estoque');
+            tabTotalItens = document.getElementById('tab-total-itens');
+            contentDashboard = document.getElementById('content-dashboard');
+            contentPatrimonio = document.getElementById('content-patrimonio');
+            contentEstoque = document.getElementById('content-estoque');
+            contentTotalItens = document.getElementById('content-total-itens');
+            mainContentEstoqueEl = document.getElementById('main-content-estoque');
+            filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
+            filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
+            exportEstoqueBtn = document.getElementById('export-estoque-btn');
+            filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
+            filtroTotalItemEl = document.getElementById('filtro-total-item');
+            filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
+            filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
+
+            filtroServicoEl.addEventListener('change', handleServicoChange);
+            filtroUnidadeEl.addEventListener('change', handleUnidadeChange);
+            filtroEstadoEl.addEventListener('change', handleFilterChange);
+            filtroDoacaoEl.addEventListener('change', handleFilterChange);
+            filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
+            verResumoGeralBtn.addEventListener('click', handleResumoClick);
+            document.addEventListener('click', function(event) { if (event.target && event.target.dataset.page) { handlePageChange(event); } });
+            tabDashboard.addEventListener('click', () => switchTab('dashboard'));
+            tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
+            tabEstoque.addEventListener('click', () => switchTab('estoque'));
+            tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
+            filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
+            filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
+            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
+            filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
+            filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
+            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
+            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
-            const loadingContainer = document.querySelector('.container');
-            loadingContainer.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">Carregando dados do painel...</p></div>`;
+            setupTheme(); 
+            initApp(); 
+
+            const loaderHTML = `<div class="text-center p-10 col-span-full"><div class="loader"></div><p class="mt-4 text-slate-600 dark:text-slate-300">Carregando dados...</p></div>`;
+            summaryCardsContainerEl.innerHTML = loaderHTML;
+            mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para começar.</p></div>`;
             
             try {
                 const patrimonioData = await fetchAndProcessData(googleSheetPatrimonioUrl, 'patrimonioCache');
-
-                if (!patrimonioData || !Array.isArray(patrimonioData) || patrimonioData.length === 0) {
-                    throw new Error("Nenhum dado de patrimônio foi processado. Verifique se a planilha está pública, contém dados e se o formato da resposta do script está correto.");
+                
+                if (!patrimonioData || !Array.isArray(patrimonioData)) {
+                    throw new Error("Nenhum dado de patrimônio foi retornado. Verifique a planilha e o script.");
                 }
                 
                 allItems = formatSheetData(patrimonioData);
                 
-                // Recarrega o HTML original do body e então inicializa o app
-                document.body.innerHTML = `
-                    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-                        <header class="flex justify-between items-center mb-8">
-                            <div>
-                                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">Painel Unificado</h1>
-                                <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">Visão consolidada do patrimônio e estoque.</p>
-                                <p id="last-update-time" class="text-xs text-slate-400 dark:text-slate-500 mt-2"></p>
-                            </div>
-                            <button id="theme-toggle" class="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-                                <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                                <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                            </button>
-                        </header>
-                        <img src="https://i.ibb.co/VWNnCH2w/99f63c64-a035-47c8-a8a5-bce7abbe205e.png" alt="Banner do Painel de Inventário" class="w-full h-auto rounded-lg mb-8 shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/1200x200/cccccc/333333?text=Banner+Indispon%C3%ADvel';">
-                        <nav class="border-b border-slate-200 dark:border-slate-700 mb-8">
-                            <div class="flex flex-wrap -mb-px text-sm font-medium text-center text-slate-500 dark:text-slate-400">
-                                <button id="tab-dashboard" class="tab-button active">Dashboard</button>
-                                <button id="tab-patrimonio" class="tab-button">Patrimônio Detalhado</button>
-                                <button id="tab-estoque" class="tab-button">Estoque</button>
-                                <button id="tab-total-itens" class="tab-button">Total de Itens</button>
-                            </div>
-                        </nav>
-                        <div id="content-dashboard">
-                            <section id="summary-section" class="mb-8">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6" id="summary-cards"></div>
-                            </section>
-                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Visão Geral do Patrimônio</h3>
-                                    <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button>
-                                </div>
-                                <div class="chart-container" data-chart-name="dashboardChart"><canvas id="dashboardChart"></canvas></div>
-                            </div>
-                        </div>
-                        <div id="content-patrimonio" class="hidden">
-                             <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                                    <div><label for="filtro-servico" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Tipo de Unidade</label><select id="filtro-servico" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todos</option><option value="conselho">Conselho</option><option value="cras">CRAS</option><option value="creas">CREAS</option><option value="externa">Unidade Externa</option><option value="centro_pop">Centro Pop</option><option value="abrigo">Abrigo</option><option value="sede">SEDE</option></select></div>
-                                    <div><label for="filtro-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label><select id="filtro-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400" disabled><option value="">Todas</option></select></div>
-                                    <div><label for="filtro-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label><select id="filtro-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todos</option></select></div>
-                                    <div><label for="filtro-doacao" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Origem</label><select id="filtro-doacao" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"><option value="">Todas</option><option value="sim">Apenas Doações</option><option value="nao">Apenas Próprios</option></select></div>
-                                    <div><label for="filtro-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar Item</label><input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400"></div>
-                                </div>
-                                <div class="w-full md:w-auto mt-4"><button id="ver-resumo-geral-btn" class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg text-base hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow">Ver Inventário Completo</button></div>
-                            </div>
-                            <main id="main-content-area" class="mt-8"></main>
-                        </div>
-                        <div id="content-estoque" class="hidden">
-                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-                                    <div><label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Unidade</label><select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas as Unidades</option></select></div>
-                                    <div><label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar no Estoque</label><input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></div>
-                                    <div><button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Estoque</button></div>
-                                </div>
-                            </div>
-                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                                <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold text-slate-800 dark:text-white">Top 10 Itens em Estoque</h3><button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">Exportar Gráfico</button></div>
-                                <div class="chart-container" data-chart-name="estoqueBarChart"><canvas id="estoqueBarChart"></canvas></div>
-                            </div>
-                            <main id="main-content-estoque" class="mt-8"></main>
-                        </div>
-                        <div id="content-total-itens" class="hidden">
-                            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <div><label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Categoria (Tipo)</label><select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas</option></select></div>
-                                    <div><label for="filtro-total-item" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar por Descrição</label><input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></div>
-                                    <div><label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label><select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todas</option></select></div>
-                                    <div><label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label><select id="filtro-total-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="">Todos</option></select></div>
-                                </div>
-                            </div>
-                            <div id="total-itens-summary" class="mb-6"></div>
-                            <main id="main-content-total-itens" class="mt-8"><div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div></main>
-                        </div>
-                        <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400"><p>Painel desenvolvido por: Jurandy & Colaboradores</p></footer>
-                    </div>
-                `;
+                updateFilterOptions();
+                switchTab('dashboard');
                 
                 const now = new Date();
                 const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                document.getElementById('last-update-time').textContent = `Dados atualizados em: ${formattedDate}`;
-                
-                initApp();
-                switchTab('dashboard');
+                const updateTimeEl = document.getElementById('last-update-time');
+                if (updateTimeEl) {
+                    updateTimeEl.textContent = `Dados atualizados em: ${formattedDate}`;
+                }
 
             } catch (error) {
-                console.error('Erro ao inicializar o painel:', error);
-                document.body.innerHTML = `
-                    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-                        <div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700">
-                            <p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o patrimônio.</p>
-                            <p class="text-sm text-slate-500 mt-2">${error.message}</p>
-                        </div>
-                    </div>
-                `;
+                console.error('Erro fatal ao inicializar o painel:', error);
+                const errorHTML = `
+                    <div class="text-center p-10 bg-red-100 dark:bg-red-900/50 rounded-lg border border-red-300 dark:border-red-700 col-span-full">
+                        <h2 class="text-xl font-bold text-red-800 dark:text-red-200">Erro ao Carregar Painel</h2>
+                        <p class="text-red-700 dark:text-red-300 mt-2">Não foi possível carregar os dados do patrimônio.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-4"><strong>Detalhes:</strong> ${error.message}</p>
+                    </div>`;
+                summaryCardsContainerEl.innerHTML = errorHTML;
+                document.getElementById('dashboardChart').parentElement.innerHTML = ''; // Remove o gráfico
             }
         });
     </script>
