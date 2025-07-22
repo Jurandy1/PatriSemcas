@@ -6,6 +6,7 @@
     <title>Painel de Inventário Unificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -90,7 +91,6 @@
             opacity: 1;
         }
 
-        /* --- ESTILOS PARA A JANELA MODAL --- */
         .modal-overlay {
             transition: opacity 0.3s ease;
         }
@@ -123,6 +123,7 @@
                 <button id="tab-patrimonio" class="tab-button">PATRIMÔNIO DETALHADO</button>
                 <button id="tab-estoque" class="tab-button">ESTOQUE</button>
                 <button id="tab-total-itens" class="tab-button">TOTAL DE ITENS</button>
+                <button id="tab-analise" class="tab-button">ANÁLISE DE NECESSIDADES</button>
             </div>
         </nav>
 
@@ -155,7 +156,6 @@
                             <option value="sede">SEDE</option>
                         </select>
                     </div>
-                    <!-- NOVO: Botão para abrir a modal de Unidades -->
                     <div>
                         <label for="open-unidade-modal-btn" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label>
                         <button id="open-unidade-modal-btn" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-left truncate disabled:opacity-50 disabled:cursor-not-allowed">
@@ -248,40 +248,54 @@
                 <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
             </main>
         </div>
+        
+        <div id="content-analise" class="hidden">
+            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+                <div class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Análise de Necessidades Essenciais</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Ferramenta para identificar a falta de itens essenciais (climatização e bebedouros) nas unidades.</p>
+                    </div>
+                    <button id="generate-pdf-btn" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Gerar Relatório PDF
+                    </button>
+                </div>
+                <!-- NOVO: Filtro para a análise -->
+                <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+                    <label for="analise-filter" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Necessidade</label>
+                    <select id="analise-filter" class="w-full max-w-xs p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="todos">Todas as Necessidades</option>
+                        <option value="bebedouro">Falta de Bebedouro</option>
+                        <option value="climatizacao">Falta de Climatização</option>
+                    </select>
+                </div>
+            </div>
+            <div id="analise-summary" class="mb-6"></div>
+            <main id="analise-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+            </main>
+        </div>
 
         <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400">
-            <p>Painel desenvolvido por: Jurandy </p>
+            <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         </footer>
     </div>
 
-    <!-- NOVO: Estrutura da Janela Modal para Seleção de Unidade -->
     <div id="unidade-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <!-- Overlay -->
         <div id="modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
-        
-        <!-- Conteúdo da Modal -->
         <div class="modal-container bg-white dark:bg-slate-800 w-full max-w-2xl rounded-lg shadow-2xl flex flex-col transform scale-95 opacity-0">
-            <!-- Cabeçalho -->
             <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
                 <h3 class="text-xl font-semibold text-slate-800 dark:text-white">Selecionar Unidade</h3>
                 <button id="close-modal-btn" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600 dark:text-slate-300"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            
-            <!-- Pesquisa -->
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                 <input type="text" id="unidade-search-input" placeholder="Pesquisar pelo nome da unidade..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
-            
-            <!-- Lista de Unidades -->
             <div class="p-4 overflow-y-auto flex-1">
-                <ul id="unidade-list-container" class="space-y-2">
-                    <!-- Itens da lista serão inseridos aqui via JS -->
-                </ul>
+                <ul id="unidade-list-container" class="space-y-2"></ul>
             </div>
-
-            <!-- Rodapé -->
             <div class="flex justify-end p-4 border-t border-slate-200 dark:border-slate-700">
                 <button id="clear-unidade-selection-btn" class="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500">Limpar Seleção</button>
             </div>
@@ -301,30 +315,33 @@
         const itemsPerPage = 20;
         let estadoChartInstance, dashboardChartInstance, estoqueChartInstance;
         let allEstoqueItems = [];
-        let selectedUnidadeValue = ''; // NOVO: Guarda o valor da unidade selecionada
+        let selectedUnidadeValue = '';
+        let analysisResults = [];
 
         // --- Referências de Elementos ---
         let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
         let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl;
-        let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens;
-        let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens;
+        let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise;
+        let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise;
         let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
         let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
         let themeToggleBtn, darkIcon, lightIcon;
-        // NOVO: Referências para a Modal
         let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
+        let generatePdfBtn, analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
 
         // --- LÓGICA DE TEMA (DARK MODE) ---
         function setupTheme() {
             themeToggleBtn = document.getElementById('theme-toggle');
             darkIcon = document.getElementById('theme-toggle-dark-icon');
             lightIcon = document.getElementById('theme-toggle-light-icon');
+
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 lightIcon.classList.remove('hidden');
             } else {
                 darkIcon.classList.remove('hidden');
             }
+
             themeToggleBtn.addEventListener('click', () => {
                 document.documentElement.classList.toggle('dark');
                 darkIcon.classList.toggle('hidden');
@@ -335,69 +352,1031 @@
         }
 
         function redrawAllCharts() {
-            if(visaoAtiva === 'dashboard' && allItems.length > 0) renderDashboard();
+            if (visaoAtiva === 'dashboard' && allItems.length > 0) renderDashboard();
             if ((visaoAtiva === 'resumo' || visaoAtiva === 'unidade') && mainContentAreaEl.innerHTML) renderApp();
-            if(visaoAtiva === 'estoque' && allEstoqueItems.length > 0) renderEstoque(allEstoqueItems);
+            if (visaoAtiva === 'estoque' && allEstoqueItems.length > 0) renderEstoque(allEstoqueItems);
         }
         
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
-        const setWithExpiry=(key,value,ttl)=>{const now=new Date();const item={value:value,expiry:now.getTime()+ttl};try{localStorage.setItem(key,JSON.stringify(item))}catch(e){console.error("Error saving to localStorage",e)}};
-        const getWithExpiry=key=>{const itemStr=localStorage.getItem(key);if(!itemStr)return null;const item=JSON.parse(itemStr);const now=new Date();if(now.getTime()>item.expiry){localStorage.removeItem(key);return null}return item.value};
-        async function fetchAndProcessData(url,cacheKey,ttl=3e5){const cachedData=getWithExpiry(cacheKey);if(cachedData)return cachedData;const response=await fetch(url);if(!response.ok)throw new Error(`Falha ao carregar dados: ${response.status}`);let data;if(url.includes("script.google.com/macros/s/")){const rawData=await response.json();if(rawData&&rawData.error)throw new Error(`Erro do Apps Script: ${rawData.error}`);data=Array.isArray(rawData)?rawData:rawData&&Array.isArray(rawData.content)?rawData.content:null;if(data===null)throw new Error("Formato de dados do patrimônio inválido.")}else{const csvText=await response.text();data=parseCsvData(csvText)}setWithExpiry(cacheKey,data,ttl);return data}
-        function parseCsvData(csvText){const lines=csvText.trim().split(/\r\n|\n/);if(lines.length<2)return[];const headerLine=lines[0];const delimiter=headerLine.includes(";")?";":",";const splitRegex=new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);const headers=headerLine.split(delimiter).map(h=>h.trim().replace(/^"|"$/g,""));const data=[];for(let i=1;i<lines.length;i++){if(lines[i].trim()==="")continue;const values=lines[i].split(splitRegex);const item={};for(let j=0;j<headers.length;j++){let value=values[j]?values[j].trim():"";if(value.startsWith('"')&&value.endsWith('"')){value=value.slice(1,-1)}item[headers[j]]=value}data.push(item)}return data}
-        const capitalizeWords=str=>{if(!str)return"";return str.toLowerCase().replace(/([^\s/]+)/g,word=>word.charAt(0).toUpperCase()+word.slice(1))};
-        function getServiceKey(serviceName){const name=(serviceName||"").toLowerCase().trim();if(name==="conselho"||name==="ct")return"conselho";if(name.includes("cras"))return"cras";if(name.includes("creas"))return"creas";if(name.includes("externa"))return"externa";if(name.includes("centro pop")||name==="centro pop")return"centro_pop";if(name.includes("abrigo"))return"abrigo";if(name.includes("sede"))return"sede";return"item"}
-        function cleanDuplicatedString(str){if(typeof str!=="string"||str.length<2||str.length%2!==0){return str}const half=str.length/2;const firstHalf=str.substring(0,half);const secondHalf=str.substring(half);if(firstHalf.toLowerCase()===secondHalf.toLowerCase()){return firstHalf}return str}
-        function formatSheetData(sheetData){return sheetData.map((row,index)=>{const standardizedUnitName=capitalizeWords((row.Unidade||"N/A").trim());let originalState=row.Estado||"Regular";let finalState=originalState;const observationTextRaw=(row["Observação"]||"").toLowerCase();const normalizedState=normalizeString(originalState);const isDamagedByState=/defeito|avaria|danificado|nao funciona/.test(normalizedState);const isDamagedByObs=/avariado|defeito|danificado|não funciona|nao funciona/.test(observationTextRaw);if(isDamagedByState||originalState==="Novo"&&isDamagedByObs){finalState="Avariado"}const serviceKey=getServiceKey(row.Tipo);const rawObservation=(row["Observação"]||"").trim();const cleanedObservation=cleanDuplicatedString(rawObservation);const processedObservation=cleanedObservation==="-"||normalizeString(cleanedObservation)==="n/a"?"":cleanedObservation;const rawDonationSource=(row["Origem da Doação"]||"").trim();const processedDonationSource=rawDonationSource==="-"||normalizeString(rawDonationSource)==="n/a"||rawDonationSource===""?"":rawDonationSource;const rawSupplier=(row.Fornecedor||"").trim();const processedSupplier=rawSupplier==="-"||normalizeString(rawSupplier)==="n/a"?"":rawSupplier;return{id:`${serviceKey}_${index}`,type:row.Tipo||"N/A",description:row["Descrição"]||"N/A",unit_condition:standardizedUnitName,quantity:parseInt(row.Quantidade,10)||1,location:row["Localização"]||"N/A",state:finalState,donation_source:processedDonationSource,observation:processedObservation,supplier:processedSupplier,originalStateWasNew:originalState==="Novo"}})}
-        function normalizeString(str){if(!str)return"";return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
-        function debounce(func,delay){let timeout;return function(...args){const context=this;clearTimeout(timeout);timeout=setTimeout(()=>func.apply(context,args),delay)}}
-        const stateColors={Novo:{bg:"bg-green-100 dark:bg-green-900/50",text:"text-green-800 dark:text-green-300",hex:"#16a34a"},Bom:{bg:"bg-blue-100 dark:bg-blue-900/50",text:"text-blue-800 dark:text-blue-300",hex:"#2563eb"},Regular:{bg:"bg-yellow-100 dark:bg-yellow-900/50",text:"text-yellow-800 dark:text-yellow-300",hex:"#facc15"},Avariado:{bg:"bg-red-100 dark:bg-red-900/50",text:"text-red-800 dark:text-red-300",hex:"#dc2626"}};
-        function agruparItens(items){if(!items||items.length===0)return[];const agrupados=items.reduce((acc,item)=>{const isDefective=item.state==="Avariado";const key=isDefective?`${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation)||"no-obs"}-${normalizeString(item.supplier)||"no-sup"}`:`${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;if(acc[key]){acc[key].quantity+=parseInt(item.quantity,10)}else{acc[key]={...item,quantity:parseInt(item.quantity,10)}}return acc},{});return Object.values(agrupados)}
-        function formatUnitName(item,includeType=false){let nomeUnidade=item.unit_condition;const idPrefix=(item.id||"").split("_")[0];const lowerCaseName=nomeUnidade.toLowerCase();if(item.type==="CT"){return`CT ${nomeUnidade}`}let prefix="";switch(idPrefix){case"creas":prefix="CREAS ";break;case"cras":if(!lowerCaseName.startsWith("cras ")){prefix="CRAS "}break;case"externa":case"centro_pop":case"abrigo":case"sede":case"conselho":return nomeUnidade}return`${prefix}${nomeUnidade}`}
+        const setWithExpiry = (key, value, ttl) => {
+            const now = new Date();
+            const item = { value: value, expiry: now.getTime() + ttl };
+            try {
+                localStorage.setItem(key, JSON.stringify(item));
+            } catch (e) {
+                console.error("Error saving to localStorage", e);
+            }
+        };
+
+        const getWithExpiry = (key) => {
+            const itemStr = localStorage.getItem(key);
+            if (!itemStr) return null;
+            const item = JSON.parse(itemStr);
+            const now = new Date();
+            if (now.getTime() > item.expiry) {
+                localStorage.removeItem(key);
+                return null;
+            }
+            return item.value;
+        };
+        
+        async function fetchAndProcessData(url, cacheKey, ttl = 300000) {
+            const cachedData = getWithExpiry(cacheKey);
+            if (cachedData) {
+                return cachedData;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Falha ao carregar dados: ${response.status}`);
+            }
+
+            let data;
+            if (url.includes('script.google.com/macros/s/')) {
+                const rawData = await response.json();
+                if (rawData && rawData.error) {
+                    throw new Error(`Erro do Apps Script: ${rawData.error}`);
+                }
+                data = Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null;
+                if (data === null) {
+                    throw new Error("Formato de dados do patrimônio inválido.");
+                }
+            } else {
+                const csvText = await response.text();
+                data = parseCsvData(csvText);
+            }
+            
+            setWithExpiry(cacheKey, data, ttl);
+            return data;
+        }
+
+        function parseCsvData(csvText) {
+            const lines = csvText.trim().split(/\r\n|\n/);
+            if (lines.length < 2) return [];
+            const headerLine = lines[0];
+            const delimiter = headerLine.includes(';') ? ';' : ',';
+            const splitRegex = new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`);
+            const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                const values = lines[i].split(splitRegex);
+                const item = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let value = values[j] ? values[j].trim() : '';
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        value = value.slice(1, -1);
+                    }
+                    item[headers[j]] = value;
+                }
+                data.push(item);
+            }
+            return data;
+        }
+
+        const capitalizeWords = (str) => {
+            if (!str) return "";
+            return str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1));
+        };
+
+        function getServiceKey(serviceName) {
+            const name = (serviceName || '').toLowerCase().trim();
+            if (name === 'conselho' || name === 'ct') return 'conselho';
+            if (name.includes('cras')) return 'cras';
+            if (name.includes('creas')) return 'creas';
+            if (name.includes('externa')) return 'externa';
+            if (name.includes('centro pop') || name === 'centro pop') return 'centro_pop';
+            if (name.includes('abrigo')) return 'abrigo';
+            if (name.includes('sede')) return 'sede';
+            return 'item';
+        }
+        
+        function cleanDuplicatedString(str) {
+            if (typeof str !== 'string' || str.length < 2 || str.length % 2 !== 0) {
+                return str;
+            }
+            const half = str.length / 2;
+            const firstHalf = str.substring(0, half);
+            const secondHalf = str.substring(half);
+            if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                return firstHalf;
+            }
+            return str;
+        }
+
+        function formatSheetData(sheetData) {
+            return sheetData.map((row, index) => {
+                const standardizedUnitName = capitalizeWords((row.Unidade || 'N/A').trim());
+                let originalState = row.Estado || 'Regular';
+                let finalState = originalState;
+                const observationTextRaw = (row['Observação'] || '').toLowerCase();
+                const normalizedState = normalizeString(originalState);
+                const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
+                const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationTextRaw);
+                if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
+                    finalState = 'Avariado';
+                }
+                const serviceKey = getServiceKey(row.Tipo);
+                const rawObservation = (row['Observação'] || '').trim();
+                const cleanedObservation = cleanDuplicatedString(rawObservation);
+                const processedObservation = (cleanedObservation === '-' || normalizeString(cleanedObservation) === 'n/a') ? '' : cleanedObservation;
+                const rawDonationSource = (row['Origem da Doação'] || '').trim();
+                const processedDonationSource = (rawDonationSource === '-' || normalizeString(rawDonationSource) === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
+                const rawSupplier = (row.Fornecedor || '').trim();
+                const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a') ? '' : rawSupplier;
+                return {
+                    id: `${serviceKey}_${index}`,
+                    type: row.Tipo || 'N/A',
+                    description: row['Descrição'] || 'N/A',
+                    unit_condition: standardizedUnitName,
+                    quantity: parseInt(row.Quantidade, 10) || 1,
+                    location: row['Localização'] || 'N/A',
+                    state: finalState,
+                    donation_source: processedDonationSource,
+                    observation: processedObservation,
+                    supplier: processedSupplier,
+                    originalStateWasNew: originalState === 'Novo'
+                };
+            });
+        }
+
+        function normalizeString(str) {
+            if (!str) return '';
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
+        const stateColors = {
+            'Novo': { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300', hex: '#16a34a' },
+            'Bom': { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-300', hex: '#2563eb' },
+            'Regular': { bg: 'bg-yellow-100 dark:bg-yellow-900/50', text: 'text-yellow-800 dark:text-yellow-300', hex: '#facc15' },
+            'Avariado': { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300', hex: '#dc2626' }
+        };
+
+        function agruparItens(items) {
+            if (!items || items.length === 0) return [];
+            const agrupados = items.reduce((acc, item) => {
+                const isDefective = item.state === 'Avariado';
+                const key = isDefective 
+                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}`
+                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
+                if (acc[key]) {
+                    acc[key].quantity += parseInt(item.quantity, 10);
+                } else {
+                    acc[key] = {...item, quantity: parseInt(item.quantity, 10) };
+                }
+                return acc;
+            }, {});
+            return Object.values(agrupados);
+        }
+
+        function formatUnitName(item, includeType = false) {
+            let nomeUnidade = item.unit_condition;
+            const idPrefix = (item.id || '').split('_')[0];
+            const lowerCaseName = nomeUnidade.toLowerCase();
+            if (item.type === 'CT') {
+                 return `CT ${nomeUnidade}`;
+            }
+            let prefix = '';
+            switch(idPrefix) {
+                case 'creas': prefix = 'CREAS '; break;
+                case 'cras':
+                    if (!lowerCaseName.startsWith('cras ')) {
+                        prefix = 'CRAS ';
+                    }
+                    break;
+                case 'externa':
+                case 'centro_pop':
+                case 'abrigo':
+                case 'sede':
+                case 'conselho':
+                    return nomeUnidade;
+            }
+            return `${prefix}${nomeUnidade}`;
+        }
         
         // --- FUNÇÕES DE RENDERIZAÇÃO ---
-        function GerarConfigGrafico(type,data,options){const isDarkMode=document.documentElement.classList.contains("dark");const defaultOptions={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:isDarkMode?"#cbd5e1":"#334155"}},title:{display:true,font:{size:16},color:isDarkMode?"#cbd5e1":"#334155"}},scales:{y:{beginAtZero:true,ticks:{precision:0,color:isDarkMode?"#94a3b8":"#64748b"},grid:{color:isDarkMode?"rgba(255, 255, 255, 0.1)":"rgba(0, 0, 0, 0.1)"}},x:{ticks:{color:isDarkMode?"#94a3b8":"#64748b"},grid:{display:false}}}};if(type==="doughnut"||type==="pie"){delete defaultOptions.scales}return{type,data,options:{...defaultOptions,...options}}}
-        function GerarRelatorioUnidade(dados){if(!dados||dados.length===0)return"Nenhum dado disponível para gerar o relatório.";const stateCounts=dados.reduce((acc,item)=>{acc[item.state]=(acc[item.state]||0)+parseInt(item.quantity,10);return acc},{Novo:0,Bom:0,Regular:0,Avariado:0});const totalUnitItems=Object.values(stateCounts).reduce((sum,count)=>sum+count,0);let reportLines=[];reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);reportLines.push(`A situação geral é: <strong>${stateCounts.Novo||0}</strong> novos, <strong>${stateCounts.Bom||0}</strong> bons, <strong>${stateCounts.Regular||0}</strong> regulares e <strong>${stateCounts.Avariado||0}</strong> avariados.`);const avariadosDetalhes=dados.filter(item=>item.state==="Avariado");if(avariadosDetalhes.length>0){const totalAvariados=avariadosDetalhes.reduce((sum,item)=>sum+item.quantity,0);reportLines.push(`<br><strong>Ponto de Atenção:</strong> Total de ${totalAvariados} itens que precisam de atenção:`);const listaAvariados=agruparItens(avariadosDetalhes).map(item=>`<li>${item.quantity}x ${item.description} (Local: ${item.location})</li>`).join("");reportLines.push(`<ul class="list-disc list-inside">${listaAvariados}</ul>`)}else{reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`)}return reportLines.join("<br>")}
-        function renderSummaryCards(containerId,data){const container=document.getElementById(containerId);if(!container)return;const totalItems=data.reduce((sum,item)=>sum+parseInt(item.quantity,10),0);const attentionItems=data.filter(item=>item.state==="Avariado").reduce((sum,item)=>sum+parseInt(item.quantity,10),0);const newItems=data.filter(item=>item.state==="Novo").reduce((sum,item)=>sum+parseInt(item.quantity,10),0);const goodItems=data.filter(item=>item.state==="Bom").reduce((sum,item)=>sum+parseInt(item.quantity,10),0);const totalDonations=data.filter(item=>{const source=normalizeString(item.donation_source);return item.donation_source&&!["proprio","proprios"].includes(source)}).reduce((sum,item)=>sum+parseInt(item.quantity,10),0);container.innerHTML=`<div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div><div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div><div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div><div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div><div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>`}
-        function renderTable(itemsToDisplay,totalItemsCount,enablePagination=true){if(!tableBodyEl)return;if(itemsToDisplay.length===0){tableBodyEl.innerHTML=`<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhum item encontrado com os filtros aplicados.</td></tr>`;renderPagination(0,0,enablePagination);return}let tableHTML="";itemsToDisplay.forEach(item=>{const isNewButDefective=item.originalStateWasNew&&item.state==="Avariado";const color=stateColors[item.state]||stateColors["Regular"];const unitDisplayName=formatUnitName(item,true);const stateTextClass=isNewButDefective?"text-red-600 font-semibold dark:text-red-400":color.text;const stateDisplayName=isNewButDefective?`Novo (Avariado)`:item.state;const observationText=item.observation||"";const supplierText=item.supplier||"";const finalSupplierText=observationText&&supplierText&&normalizeString(observationText)===normalizeString(supplierText)?"N/A":supplierText||"N/A";tableHTML+=`<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"><td class="px-6 py-4">${item.type}</td><td class="px-6 py-4 font-medium text-slate-900 dark:text-white">${item.description}</td><td class="px-6 py-4">${unitDisplayName}</td><td class="px-6 py-4 text-center">${item.quantity}</td><td class="px-6 py-4">${item.location}</td><td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">${stateDisplayName}</span></td><td class="px-6 py-4">${item.donation_source||"N/A"}</td><td class="px-6 py-4">${observationText?`<div class="tooltip">${String(observationText).substring(0,30)}${String(observationText).length>30?"...":""}<span class="tooltip-text">${observationText}</span></div>`:"N/A"}</td><td class="px-6 py-4">${finalSupplierText}</td></tr>`});tableBodyEl.innerHTML=tableHTML;renderPagination(totalItemsCount,Math.ceil(totalItemsCount/itemsPerPage),enablePagination)}
-        function renderPagination(totalItems,totalPages,enablePagination){if(!paginationControlsEl)return;paginationControlsEl.innerHTML="";if(!enablePagination||totalPages<=1)return;let paginationHTML=`<span class="text-sm text-slate-600 dark:text-slate-400">Mostrando ${Math.min((currentPage-1)*itemsPerPage+1,totalItems)} a ${Math.min(currentPage*itemsPerPage,totalItems)} de ${totalItems} itens</span><div class="inline-flex rounded-md shadow-sm" role="group"><button type="button" data-page="${currentPage-1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage===1?"disabled":""}>Anterior</button><button type="button" data-page="${currentPage+1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage===totalPages?"disabled":""}>Próximo</button></div>`;paginationControlsEl.innerHTML=paginationHTML}
-        function getFilteredItems(sourceData){const servico=filtroServicoEl.value;const unidade=selectedUnidadeValue;const estado=filtroEstadoEl.value;const doacao=filtroDoacaoEl.value;const busca=filtroBuscaEl.value.toLowerCase();if(!servico&&!unidade&&!estado&&!busca&&!doacao)return sourceData;return sourceData.filter(item=>{const matchServico=!servico||item.id.startsWith(`${servico}_`);const matchUnidade=!unidade||item.unit_condition===unidade;const matchEstado=!estado||item.state===estado;const source=normalizeString(item.donation_source);const matchDoacao=!doacao||doacao==="sim"&&item.donation_source&&!["proprio","proprios"].includes(source)||doacao==="nao"&&(!item.donation_source||["proprio","proprios"].includes(source));const matchBusca=!busca||item.description.toLowerCase().includes(busca)||item.type.toLowerCase().includes(busca)||item.location.toLowerCase().includes(busca)||item.observation&&item.observation.toLowerCase().includes(busca);return matchServico&&matchUnidade&&matchEstado&&matchDoacao&&matchBusca})}
-        function updateFilterOptions(){if(!allItems||allItems.length===0)return;const allStates=[...new Set(allItems.map(item=>item.state))];const sortedStates=["Novo","Bom","Regular","Avariado"].filter(s=>allStates.includes(s));filtroEstadoEl.innerHTML='<option value="">TODOS</option>';sortedStates.forEach(s=>{const option=document.createElement("option");option.value=s;option.textContent=s.toUpperCase();filtroEstadoEl.appendChild(option)})}
-        function generateRanking(data,states){const counts=data.filter(item=>states.includes(item.state)).reduce((acc,item)=>{const unitName=formatUnitName(item,true);acc[unitName]=(acc[unitName]||0)+item.quantity;return acc},{});return Object.entries(counts).map(([nome,quantidade])=>({nome,quantidade})).sort((a,b)=>b.quantidade-a.quantidade).slice(0,5)}
-        function renderRanking(data,title,colorClass,rankingListEl){const rankingCardTitle=rankingListEl.previousElementSibling;if(!rankingListEl||!rankingCardTitle)return;rankingCardTitle.textContent=title;if(data.length===0){rankingListEl.innerHTML=`<li class="text-center text-slate-500 dark:text-slate-400 py-4">Nenhum item encontrado.</li>`}else{rankingListEl.innerHTML=data.map((unidade,index)=>`<li class="flex justify-between items-center p-3 rounded-lg ${index===0?colorClass.bg:"bg-slate-100 dark:bg-slate-700"}"><span class="font-medium text-slate-700 dark:text-slate-200">${index+1}. ${unidade.nome}</span><span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span></li>`).join("")}}
-        function renderApp(){if(estadoChartInstance){estadoChartInstance.destroy();estadoChartInstance=null}const currentFilteredData=getFilteredItems(dadosOriginais);const filteredAndGroupedItems=agruparItens(currentFilteredData);const tableHeadersHTML=`<thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;if(visaoAtiva==="boasVindas"){mainContentAreaEl.innerHTML=`<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`}else if(visaoAtiva==="unidade"){const totalDoacoes=currentFilteredData.filter(item=>{const source=normalizeString(item.donation_source);return item.donation_source&&!["proprio","proprios"].includes(source)}).reduce((sum,item)=>sum+parseInt(item.quantity,10),0);const descriptiveReportContent=GerarRelatorioUnidade(currentFilteredData);mainContentAreaEl.innerHTML=`<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md rounded-lg"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;updateDynamicDOMReferences();renderTable(filteredAndGroupedItems.slice((currentPage-1)*itemsPerPage,currentPage*itemsPerPage),filteredAndGroupedItems.length,true);const chartCanvas=document.getElementById("estadoChart");if(chartCanvas){const chartData=GerarConfigGrafico("bar",{labels:["Novo","Bom","Regular","Avariado"],datasets:[{label:"Quantidade",data:["Novo","Bom","Regular","Avariado"].map(state=>currentFilteredData.filter(i=>i.state===state).reduce((sum,i)=>sum+i.quantity,0)),backgroundColor:["#16a34a","#2563eb","#facc15","#dc2626"]}]},{plugins:{title:{text:"Distribuição por Estado"}}});if(estadoChartInstance)estadoChartInstance.destroy();estadoChartInstance=new Chart(chartCanvas,chartData)}}else if(visaoAtiva==="resumo"){mainContentAreaEl.innerHTML=`<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;updateDynamicDOMReferences();document.getElementById("export-btn").addEventListener("click",handleExport);document.getElementById("back-to-selection-btn").addEventListener("click",handleVoltar);const filteredAllItems=getFilteredItems(allItems);const groupedAllItems=agruparItens(filteredAllItems);renderTable(groupedAllItems.slice((currentPage-1)*itemsPerPage,currentPage*itemsPerPage),groupedAllItems.length,true);const chartCanvas=document.getElementById("estadoChart");if(chartCanvas){const chartData=GerarConfigGrafico("bar",{labels:["Novo","Bom","Regular","Avariado"],datasets:[{label:"Quantidade",data:["Novo","Bom","Regular","Avariado"].map(state=>filteredAllItems.filter(i=>i.state===state).reduce((sum,i)=>sum+i.quantity,0)),backgroundColor:["#16a34a","#2563eb","#facc15","#dc2626"]}]},{plugins:{title:{text:"Distribuição por Estado"}}});if(estadoChartInstance)estadoChartInstance.destroy();estadoChartInstance=new Chart(chartCanvas,chartData)}const rankingListEl=mainContentAreaEl.querySelector("ul");if(filtroEstadoEl.value==="Novo"){const rankingData=generateRanking(filteredAllItems,["Novo"]);renderRanking(rankingData,"Top 5 - Unidades com itens novos",{bg:"bg-green-100 dark:bg-green-900/50",text:"text-green-800 dark:text-green-300"},rankingListEl)}else{const rankingData=generateRanking(filteredAllItems,["Regular","Avariado"]);renderRanking(rankingData,"Top 5 - Unidades para atenção",{bg:"bg-red-100 dark:bg-red-900/50",text:"text-red-800 dark:text-red-300"},rankingListEl)}}}
-        function renderEstoque(items){mainContentEstoqueEl.innerHTML="";if(items.length===0){mainContentEstoqueEl.innerHTML=`<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Nenhum item de estoque encontrado.</p></div>`;return}const unidadesEstoque=[...new Set(items.map(item=>item.Unidade||"N/A"))].sort();filtroEstoqueUnidadeEl.innerHTML='<option value="">TODAS AS UNIDADES</option>';unidadesEstoque.forEach(u=>{const option=document.createElement("option");option.value=u;option.textContent=u.toUpperCase();filtroEstoqueUnidadeEl.appendChild(option)});const busca=filtroEstoqueBuscaEl.value.toLowerCase();const unidade=filtroEstoqueUnidadeEl.value;const filteredItems=items.filter(item=>{const matchUnidade=!unidade||item.Unidade===unidade;const matchBusca=!busca||(item.Item||"").toLowerCase().includes(busca)||(item.Fornecedor||"").toLowerCase().includes(busca);return matchUnidade&&matchBusca});const headers=Object.keys(filteredItems[0]||{});const tableHTML=`<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h=>`<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join("")}</tr></thead><tbody>${filteredItems.map(item=>`<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h=>`<td class="px-6 py-4">${item[h]||""}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;mainContentEstoqueEl.innerHTML=tableHTML;const estoqueData=filteredItems.reduce((acc,item)=>{const desc=item.Item||"N/D";const qty=parseInt(item.Quantidade,10)||0;acc[desc]=(acc[desc]||0)+qty;return acc},{});const top10=Object.entries(estoqueData).sort((a,b)=>b[1]-a[1]).slice(0,10);const chartCanvas=document.getElementById("estoqueBarChart");if(chartCanvas){const chartData=GerarConfigGrafico("bar",{labels:top10.map(item=>item[0]),datasets:[{label:"Quantidade",data:top10.map(item=>item[1]),backgroundColor:"#36a2eb"}]},{indexAxis:"y",plugins:{title:{text:"TOP 10 ITENS EM ESTOQUE"}}});if(estoqueChartInstance)estoqueChartInstance.destroy();estoqueChartInstance=new Chart(chartCanvas,chartData)}}
-        function populateTotalItensFilters(){if(!filtroTotalCategoriaEl||!filtroTotalUnidadeEl||!filtroTotalEstadoEl||!allItems||allItems.length===0)return;const categorias=[...new Set(allItems.map(item=>item.type))].filter(type=>type&&type!=="N/A").sort((a,b)=>a.localeCompare(b));filtroTotalCategoriaEl.innerHTML='<option value="">TODAS</option>';categorias.forEach(cat=>{const option=document.createElement("option");option.value=cat;option.textContent=cat.toUpperCase();filtroTotalCategoriaEl.appendChild(option)});const unidades=[...new Set(allItems.map(item=>formatUnitName(item,true)))].sort((a,b)=>a.localeCompare(b));filtroTotalUnidadeEl.innerHTML='<option value="">TODAS</option>';unidades.forEach(u=>{const option=document.createElement("option");option.value=u;option.textContent=u.toUpperCase();filtroTotalUnidadeEl.appendChild(option)});const allStates=[...new Set(allItems.map(item=>item.state))];const sortedStates=["Novo","Bom","Regular","Avariado"].filter(s=>allStates.includes(s));filtroTotalEstadoEl.innerHTML='<option value="">TODOS</option>';sortedStates.forEach(s=>{const option=document.createElement("option");option.value=s;option.textContent=s.toUpperCase();filtroTotalEstadoEl.appendChild(option)})}
-        function renderTotalItens(){const container=document.getElementById("total-itens-results");const summaryContainer=document.getElementById("total-itens-summary");if(!container||!summaryContainer)return;const selectedCategoria=filtroTotalCategoriaEl.value;const searchTerm=filtroTotalItemEl.value.toLowerCase();const selectedUnidade=filtroTotalUnidadeEl.value;const selectedEstado=filtroTotalEstadoEl.value;let filteredData=allItems;if(selectedCategoria)filteredData=filteredData.filter(item=>item.type===selectedCategoria);if(selectedUnidade)filteredData=filteredData.filter(item=>formatUnitName(item,true)===selectedUnidade);if(selectedEstado)filteredData=filteredData.filter(item=>item.state===selectedEstado);if(searchTerm)filteredData=filteredData.filter(item=>item.description.toLowerCase().includes(searchTerm));const groupedItems={};filteredData.forEach(item=>{const desc=item.description;if(!desc||desc==="N/A")return;if(!groupedItems[desc]){groupedItems[desc]={total:0,type:item.type,locations:{}}}groupedItems[desc].total+=item.quantity;const unitName=formatUnitName(item,true);const locationKey=`${unitName} - ${item.location||"N/D"}`;groupedItems[desc].locations[locationKey]=(groupedItems[desc].locations[locationKey]||0)+item.quantity});const uniqueItemCount=Object.keys(groupedItems).length;const grandTotalQuantity=Object.values(groupedItems).reduce((sum,item)=>sum+item.total,0);if(uniqueItemCount>0){summaryContainer.innerHTML=`<div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg"><div class="flex flex-wrap justify-between items-center gap-4"><p class="text-slate-600 dark:text-slate-300 font-medium">Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.</p><div class="text-right"><p class="text-sm text-slate-500 dark:text-slate-400">Quantidade Total</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${grandTotalQuantity}</p></div></div></div>`}else{summaryContainer.innerHTML=""}if(uniqueItemCount===0){container.innerHTML=`<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 col-span-full"><p class="text-lg text-slate-600 dark:text-slate-300">Nenhum item encontrado com os filtros selecionados.</p></div>`;return}container.innerHTML=Object.entries(groupedItems).sort((a,b)=>a[0].localeCompare(b[0])).map(([desc,data])=>{const locationsHTML=Object.entries(data.locations).sort((a,b)=>a[0].localeCompare(b[0])).map(([locationKey,quantity])=>`<li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-100 dark:bg-slate-700"><span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-700 dark:text-slate-200 flex-shrink-0">${quantity}</span></li>`).join("");return`<div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md rounded-lg"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3><div class="text-right flex-shrink-0"><p class="text-xs text-slate-500 dark:text-slate-400">Total</p><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${data.total}</p></div></div><p class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide mb-2">${data.type}</p></div><div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-3"><p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`}).join("")}
-        function renderDashboard(){renderSummaryCards("summary-cards",allItems);const chartCanvas=document.getElementById("dashboardChart");if(!chartCanvas)return;const stateCounts=allItems.reduce((acc,item)=>{acc[item.state]=(acc[item.state]||0)+item.quantity;return acc},{Novo:0,Bom:0,Regular:0,Avariado:0});const stateOrder=["Novo","Bom","Regular","Avariado"];const chartData=GerarConfigGrafico("doughnut",{labels:stateOrder,datasets:[{label:"Quantidade",data:stateOrder.map(state=>stateCounts[state]),backgroundColor:stateOrder.map(state=>stateColors[state]?.hex||"#cccccc"),hoverOffset:4}]},{plugins:{title:{text:"Itens por Estado de Conservação"}},onClick:(event,elements)=>{if(elements.length>0){const estado=dashboardChartInstance.data.labels[elements[0].index];switchTab("patrimonio");filtroEstadoEl.value=estado;handleResumoClick()}}});if(dashboardChartInstance)dashboardChartInstance.destroy();dashboardChartInstance=new Chart(chartCanvas,chartData)}
-        
+        function GerarConfigGrafico(type, data, options) {
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const defaultOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: isDarkMode ? '#cbd5e1' : '#334155'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        font: { size: 16 },
+                        color: isDarkMode ? '#cbd5e1' : '#334155'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { 
+                            precision: 0,
+                            color: isDarkMode ? '#94a3b8' : '#64748b'
+                        },
+                        grid: {
+                            color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: isDarkMode ? '#94a3b8' : '#64748b'
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            };
+            if (type === 'doughnut' || type === 'pie') {
+                delete defaultOptions.scales;
+            }
+            return { type, data, options: { ...defaultOptions, ...options } };
+        }
+
+        function GerarRelatorioUnidade(dados) {
+            if (!dados || dados.length === 0) return "Nenhum dado disponível para gerar o relatório.";
+            const stateCounts = dados.reduce((acc, item) => {
+                acc[item.state] = (acc[item.state] || 0) + parseInt(item.quantity, 10);
+                return acc;
+            }, {Novo: 0, Bom: 0, Regular: 0, Avariado: 0});
+            const totalUnitItems = Object.values(stateCounts).reduce((sum, count) => sum + count, 0);
+            let reportLines = [];
+            reportLines.push(`A unidade possui um total de <strong>${totalUnitItems}</strong> itens (considerando o filtro atual).`);
+            reportLines.push(`A situação geral é: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`);
+            const avariadosDetalhes = dados.filter(item => item.state === 'Avariado');
+            if (avariadosDetalhes.length > 0) {
+                const totalAvariados = avariadosDetalhes.reduce((sum, item) => sum + item.quantity, 0);
+                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Total de ${totalAvariados} itens que precisam de atenção:`);
+                const listaAvariados = agruparItens(avariadosDetalhes).map(item => `<li>${item.quantity}x ${item.description} (Local: ${item.location})</li>`).join('');
+                reportLines.push(`<ul class="list-disc list-inside">${listaAvariados}</ul>`);
+            } else {
+                reportLines.push(`<br><strong>Ponto de Atenção:</strong> Nenhum item avariado foi registrado (considerando o filtro atual).`);
+            }
+            return reportLines.join('<br>');
+        }
+
+        function renderSummaryCards(containerId, data) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const totalItems = data.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const attentionItems = data.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const newItems = data.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const goodItems = data.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+            const totalDonations = data.filter(item => {
+                const source = normalizeString(item.donation_source);
+                return item.donation_source && !['proprio', 'proprios'].includes(source);
+            }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+
+            container.innerHTML = `
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div>
+                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>
+            `;
+        }
+
+        function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
+            if (!tableBodyEl) return;
+            if (itemsToDisplay.length === 0) {
+                tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500 dark:text-slate-400">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
+                renderPagination(0, 0, enablePagination);
+                return;
+            }
+            let tableHTML = '';
+            itemsToDisplay.forEach(item => {
+                const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
+                const color = stateColors[item.state] || stateColors['Regular'];
+                const unitDisplayName = formatUnitName(item, true);
+                const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold dark:text-red-400' : color.text;
+                const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
+                const observationText = item.observation || '';
+                const supplierText = item.supplier || '';
+                const finalSupplierText = (observationText && supplierText && normalizeString(observationText) === normalizeString(supplierText)) ? 'N/A' : (supplierText || 'N/A');
+                tableHTML += `
+                    <tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <td class="px-6 py-4">${item.type}</td>
+                        <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">${item.description}</td>
+                        <td class="px-6 py-4">${unitDisplayName}</td>
+                        <td class="px-6 py-4 text-center">${item.quantity}</td>
+                        <td class="px-6 py-4">${item.location}</td>
+                        <td class="px-6 py-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color.bg} ${stateTextClass}">${stateDisplayName}</span></td>
+                        <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
+                        <td class="px-6 py-4">${observationText ? `<div class="tooltip">${String(observationText).substring(0, 30)}${String(observationText).length > 30 ? '...' : ''}<span class="tooltip-text">${observationText}</span></div>` : 'N/A'}</td>
+                        <td class="px-6 py-4">${finalSupplierText}</td>
+                    </tr>`;
+            });
+            tableBodyEl.innerHTML = tableHTML;
+            renderPagination(totalItemsCount, Math.ceil(totalItemsCount / itemsPerPage), enablePagination);
+        }
+
+        function renderPagination(totalItems, totalPages, enablePagination) {
+            if (!paginationControlsEl) return;
+            paginationControlsEl.innerHTML = '';
+            if (!enablePagination || totalPages <= 1) return;
+            paginationControlsEl.innerHTML = `
+                <span class="text-sm text-slate-600 dark:text-slate-400">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span>
+                <div class="inline-flex rounded-md shadow-sm" role="group">
+                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
+                </div>`;
+        }
+
+        function getFilteredItems(sourceData) {
+            const servico = filtroServicoEl.value;
+            const unidade = selectedUnidadeValue;
+            const estado = filtroEstadoEl.value;
+            const doacao = filtroDoacaoEl.value;
+            const busca = filtroBuscaEl.value.toLowerCase();
+            if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
+            return sourceData.filter(item => {
+                const matchServico = !servico || item.id.startsWith(`${servico}_`);
+                const matchUnidade = !unidade || item.unit_condition === unidade;
+                const matchEstado = !estado || item.state === estado;
+                const source = normalizeString(item.donation_source);
+                const matchDoacao = !doacao || (doacao === 'sim' && item.donation_source && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && (!item.donation_source || ['proprio', 'proprios'].includes(source)));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
+                return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
+            });
+        }
+
+        function updateFilterOptions() {
+            if (!allItems || allItems.length === 0) return;
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroEstadoEl.innerHTML = '<option value="">TODOS</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s.toUpperCase();
+                filtroEstadoEl.appendChild(option);
+            });
+        }
+
+        function generateRanking(data, states) {
+            const counts = data.filter(item => states.includes(item.state)).reduce((acc, item) => {
+                const unitName = formatUnitName(item, true);
+                acc[unitName] = (acc[unitName] || 0) + item.quantity;
+                return acc;
+            }, {});
+            return Object.entries(counts).map(([nome, quantidade]) => ({ nome, quantidade })).sort((a, b) => b.quantidade - a.quantidade).slice(0, 5);
+        }
+
+        function renderRanking(data, title, colorClass, rankingListEl) {
+            const rankingCardTitle = rankingListEl.previousElementSibling;
+            if (!rankingListEl || !rankingCardTitle) return;
+            rankingCardTitle.textContent = title;
+            if (data.length === 0) {
+                rankingListEl.innerHTML = `<li class="text-center text-slate-500 dark:text-slate-400 py-4">Nenhum item encontrado.</li>`;
+            } else {
+                rankingListEl.innerHTML = data.map((unidade, index) => `
+                    <li class="flex justify-between items-center p-3 rounded-lg ${index === 0 ? colorClass.bg : 'bg-slate-100 dark:bg-slate-700'}">
+                        <span class="font-medium text-slate-700 dark:text-slate-200">${index + 1}. ${unidade.nome}</span>
+                        <span class="font-bold ${colorClass.text}">${unidade.quantidade} itens</span>
+                    </li>`).join('');
+            }
+        }
+
+        function renderApp() {
+            if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
+            const currentFilteredData = getFilteredItems(dadosOriginais);
+            const filteredAndGroupedItems = agruparItens(currentFilteredData);
+            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
+            if (visaoAtiva === 'boasVindas') {
+                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`;
+            } else if (visaoAtiva === 'unidade') {
+                const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
+                const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md rounded-lg"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                updateDynamicDOMReferences();
+                renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
+                const chartCanvas = document.getElementById('estadoChart');
+                if (chartCanvas) {
+                    const chartData = GerarConfigGrafico('bar', { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ label: 'Quantidade', data: ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => currentFilteredData.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0)), backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626'] }] }, { plugins: { title: { text: 'Distribuição por Estado' } } });
+                    if (estadoChartInstance) estadoChartInstance.destroy();
+                    estadoChartInstance = new Chart(chartCanvas, chartData);
+                }
+            } else if (visaoAtiva === 'resumo') {
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                updateDynamicDOMReferences();
+                document.getElementById('export-btn').addEventListener('click', handleExport);
+                document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
+                const filteredAllItems = getFilteredItems(allItems);
+                const groupedAllItems = agruparItens(filteredAllItems);
+                renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
+                const chartCanvas = document.getElementById('estadoChart');
+                if (chartCanvas) {
+                    const chartData = GerarConfigGrafico('bar', { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ label: 'Quantidade', data: ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => filteredAllItems.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0)), backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626'] }] }, { plugins: { title: { text: 'Distribuição por Estado' } } });
+                    if (estadoChartInstance) estadoChartInstance.destroy();
+                    estadoChartInstance = new Chart(chartCanvas, chartData);
+                }
+                const rankingListEl = mainContentAreaEl.querySelector('ul');
+                if (filtroEstadoEl.value === 'Novo') {
+                    const rankingData = generateRanking(filteredAllItems, ['Novo']);
+                    renderRanking(rankingData, 'Top 5 - Unidades com itens novos', { bg: 'bg-green-100 dark:bg-green-900/50', text: 'text-green-800 dark:text-green-300' }, rankingListEl);
+                } else {
+                    const rankingData = generateRanking(filteredAllItems, ['Regular', 'Avariado']);
+                    renderRanking(rankingData, 'Top 5 - Unidades para atenção', { bg: 'bg-red-100 dark:bg-red-900/50', text: 'text-red-800 dark:text-red-300' }, rankingListEl);
+                }
+            }
+        }
+
+        function renderEstoque(items) {
+            mainContentEstoqueEl.innerHTML = '';
+            if (items.length === 0) {
+                mainContentEstoqueEl.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Nenhum item de estoque encontrado.</p></div>`;
+                return;
+            }
+            const unidadesEstoque = [...new Set(items.map(item => item.Unidade || 'N/A'))].sort();
+            filtroEstoqueUnidadeEl.innerHTML = '<option value="">TODAS AS UNIDADES</option>';
+            unidadesEstoque.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u; option.textContent = u.toUpperCase();
+                filtroEstoqueUnidadeEl.appendChild(option);
+            });
+            const busca = filtroEstoqueBuscaEl.value.toLowerCase();
+            const unidade = filtroEstoqueUnidadeEl.value;
+            const filteredItems = items.filter(item => {
+                const matchUnidade = !unidade || item.Unidade === unidade;
+                const matchBusca = !busca || (item.Item || '').toLowerCase().includes(busca) || (item.Fornecedor || '').toLowerCase().includes(busca);
+                return matchUnidade && matchBusca;
+            });
+            const headers = Object.keys(filteredItems[0] || {});
+            const tableHTML = `<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+            mainContentEstoqueEl.innerHTML = tableHTML;
+            const estoqueData = filteredItems.reduce((acc, item) => {
+                const desc = item.Item || 'N/D';
+                const qty = parseInt(item.Quantidade, 10) || 0;
+                acc[desc] = (acc[desc] || 0) + qty;
+                return acc;
+            }, {});
+            const top10 = Object.entries(estoqueData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+            const chartCanvas = document.getElementById('estoqueBarChart');
+            if (chartCanvas) {
+                const chartData = GerarConfigGrafico('bar', { labels: top10.map(item => item[0]), datasets: [{ label: 'Quantidade', data: top10.map(item => item[1]), backgroundColor: '#36a2eb' }] }, { indexAxis: 'y', plugins: { title: { text: 'TOP 10 ITENS EM ESTOQUE' } } });
+                if (estoqueChartInstance) estoqueChartInstance.destroy();
+                estoqueChartInstance = new Chart(chartCanvas, chartData);
+            }
+        }
+
+        function populateTotalItensFilters() {
+            if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl || !allItems || allItems.length === 0) return;
+            const categorias = [...new Set(allItems.map(item => item.type))].filter(type => type && type !== 'N/A').sort((a, b) => a.localeCompare(b));
+            filtroTotalCategoriaEl.innerHTML = '<option value="">TODAS</option>';
+            categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat.toUpperCase();
+                filtroTotalCategoriaEl.appendChild(option);
+            });
+            const unidades = [...new Set(allItems.map(item => formatUnitName(item, true)))].sort((a, b) => a.localeCompare(b));
+            filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>';
+            unidades.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = u.toUpperCase();
+                filtroTotalUnidadeEl.appendChild(option);
+            });
+            const allStates = [...new Set(allItems.map(item => item.state))];
+            const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            filtroTotalEstadoEl.innerHTML = '<option value="">TODOS</option>';
+            sortedStates.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s;
+                option.textContent = s.toUpperCase();
+                filtroTotalEstadoEl.appendChild(option);
+            });
+        }
+
+        function renderTotalItens() {
+            const container = document.getElementById('total-itens-results');
+            const summaryContainer = document.getElementById('total-itens-summary');
+            if (!container || !summaryContainer) return;
+            const selectedCategoria = filtroTotalCategoriaEl.value;
+            const searchTerm = filtroTotalItemEl.value.toLowerCase();
+            const selectedUnidade = filtroTotalUnidadeEl.value;
+            const selectedEstado = filtroTotalEstadoEl.value;
+            let filteredData = allItems;
+            if (selectedCategoria) filteredData = filteredData.filter(item => item.type === selectedCategoria);
+            if (selectedUnidade) filteredData = filteredData.filter(item => formatUnitName(item, true) === selectedUnidade);
+            if (selectedEstado) filteredData = filteredData.filter(item => item.state === selectedEstado);
+            if (searchTerm) filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
+            const groupedItems = {};
+            filteredData.forEach(item => {
+                const desc = item.description;
+                if (!desc || desc === 'N/A') return;
+                if (!groupedItems[desc]) {
+                    groupedItems[desc] = { total: 0, type: item.type, locations: {} };
+                }
+                groupedItems[desc].total += item.quantity;
+                const unitName = formatUnitName(item, true);
+                const locationKey = `${unitName} - ${item.location || 'N/D'}`;
+                groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
+            });
+            const uniqueItemCount = Object.keys(groupedItems).length;
+            const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
+            if (uniqueItemCount > 0) {
+                summaryContainer.innerHTML = `<div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg"><div class="flex flex-wrap justify-between items-center gap-4"><p class="text-slate-600 dark:text-slate-300 font-medium">Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.</p><div class="text-right"><p class="text-sm text-slate-500 dark:text-slate-400">Quantidade Total</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${grandTotalQuantity}</p></div></div></div>`;
+            } else {
+                summaryContainer.innerHTML = '';
+            }
+            if (uniqueItemCount === 0) {
+                container.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 col-span-full"><p class="text-lg text-slate-600 dark:text-slate-300">Nenhum item encontrado com os filtros selecionados.</p></div>`;
+                return;
+            }
+            container.innerHTML = Object.entries(groupedItems).sort((a, b) => a[0].localeCompare(b[0])).map(([desc, data]) => {
+                const locationsHTML = Object.entries(data.locations).sort((a, b) => a[0].localeCompare(b[0])).map(([locationKey, quantity]) => `<li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-100 dark:bg-slate-700"><span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-700 dark:text-slate-200 flex-shrink-0">${quantity}</span></li>`).join('');
+                return `<div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md rounded-lg"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3><div class="text-right flex-shrink-0"><p class="text-xs text-slate-500 dark:text-slate-400">Total</p><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${data.total}</p></div></div><p class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide mb-2">${data.type}</p></div><div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-3"><p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
+            }).join('');
+        }
+
+        function renderDashboard() {
+            renderSummaryCards('summary-cards', allItems);
+            const chartCanvas = document.getElementById('dashboardChart');
+            if (!chartCanvas) return;
+            const stateCounts = allItems.reduce((acc, item) => {
+                acc[item.state] = (acc[item.state] || 0) + item.quantity;
+                return acc;
+            }, { Novo: 0, Bom: 0, Regular: 0, Avariado: 0 });
+            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
+            const chartData = GerarConfigGrafico('doughnut', { labels: stateOrder, datasets: [{ label: 'Quantidade', data: stateOrder.map(state => stateCounts[state]), backgroundColor: stateOrder.map(state => stateColors[state]?.hex || '#cccccc'), hoverOffset: 4 }] }, { plugins: { title: { text: 'Itens por Estado de Conservação' } }, onClick: (event, elements) => { if (elements.length > 0) { const estado = dashboardChartInstance.data.labels[elements[0].index]; switchTab('patrimonio'); filtroEstadoEl.value = estado; handleResumoClick(); } } });
+            if (dashboardChartInstance) dashboardChartInstance.destroy();
+            dashboardChartInstance = new Chart(chartCanvas, chartData);
+        }
+
         // --- LÓGICA DA MODAL ---
-        function openUnidadeModal(){unidadeModal.classList.remove("hidden");setTimeout(()=>{modalOverlay.classList.remove("opacity-0");unidadeModal.querySelector(".modal-container").classList.remove("scale-95","opacity-0")},10)}
-        function closeUnidadeModal(){unidadeModal.querySelector(".modal-container").classList.add("scale-95","opacity-0");modalOverlay.classList.add("opacity-0");setTimeout(()=>{unidadeModal.classList.add("hidden")},300)}
-        function populateUnidadeModalList(searchTerm=""){const selectedServico=filtroServicoEl.value;let unidades=[];if(selectedServico){const unidadesDoServico=[...new Set(allItems.filter(item=>item.id.startsWith(`${selectedServico}_`)).map(item=>item.unit_condition))];unidades=unidadesDoServico.map(u=>{const itemExemplo=allItems.find(item=>item.unit_condition===u&&item.id.startsWith(`${selectedServico}_`));return{value:u,text:itemExemplo?formatUnitName(itemExemplo,true).toUpperCase():u.toUpperCase()}}).sort((a,b)=>a.text.localeCompare(b.text))}const filteredUnidades=unidades.filter(u=>normalizeString(u.text).includes(normalizeString(searchTerm)));if(filteredUnidades.length>0){unidadeListContainer.innerHTML=filteredUnidades.map(u=>`<li data-value="${u.value}" data-text="${u.text}" class="p-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">${u.text}</li>`).join("")}else{unidadeListContainer.innerHTML=`<li class="p-3 text-center text-slate-500">Nenhuma unidade encontrada.</li>`}}
-        
+        function openUnidadeModal() {
+            unidadeModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalOverlay.classList.remove('opacity-0');
+                unidadeModal.querySelector('.modal-container').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeUnidadeModal() {
+            unidadeModal.querySelector('.modal-container').classList.add('scale-95', 'opacity-0');
+            modalOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                unidadeModal.classList.add('hidden');
+            }, 300);
+        }
+
+        function populateUnidadeModalList(searchTerm = "") {
+            const selectedServico = filtroServicoEl.value;
+            let unidades = [];
+            if (selectedServico) {
+                const unidadesDoServico = [...new Set(allItems.filter(item => item.id.startsWith(`${selectedServico}_`)).map(item => item.unit_condition))];
+                unidades = unidadesDoServico.map(u => {
+                    const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
+                    return {
+                        value: u,
+                        text: itemExemplo ? formatUnitName(itemExemplo, true).toUpperCase() : u.toUpperCase()
+                    };
+                }).sort((a, b) => a.text.localeCompare(b.text));
+            }
+
+            const filteredUnidades = unidades.filter(u => normalizeString(u.text).includes(normalizeString(searchTerm)));
+
+            if (filteredUnidades.length > 0) {
+                unidadeListContainer.innerHTML = filteredUnidades.map(u =>
+                    `<li data-value="${u.value}" data-text="${u.text}" class="p-3 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer break-words">${u.text}</li>`
+                ).join('');
+            } else {
+                unidadeListContainer.innerHTML = `<li class="p-3 text-center text-slate-500">Nenhuma unidade encontrada.</li>`;
+            }
+        }
+
+        // --- LÓGICA DA ANÁLISE DE NECESSIDADES ---
+        function runNeedsAnalysis() {
+            const suitableLocations = ['recepção', 'sala', 'atendimento', 'cozinha', 'refeitório', 'copa', 'auditório', 'gabinete'];
+            
+            const itemsForAnalysis = allItems.filter(item => normalizeString(item.type) !== 'sede');
+            const units = [...new Set(itemsForAnalysis.map(item => formatUnitName(item, true)))];
+            
+            analysisResults = [];
+
+            units.forEach(unitName => {
+                const unitItems = itemsForAnalysis.filter(item => formatUnitName(item, true) === unitName);
+                const unitNeeds = {
+                    unitName: unitName,
+                    missing: []
+                };
+
+                const hasBebedouro = unitItems.some(item => normalizeString(item.description).includes('bebedouro'));
+                if (!hasBebedouro) {
+                    unitNeeds.missing.push({ item: 'Bebedouro', location: 'Área Comum (Ex: Recepção ou Copa)' });
+                }
+
+                const locationsInUnit = [...new Set(unitItems.map(item => item.location))];
+                const relevantLocations = locationsInUnit.filter(loc => suitableLocations.some(sLoc => normalizeString(loc).includes(sLoc)));
+                
+                relevantLocations.forEach(location => {
+                    const itemsInLocation = unitItems.filter(item => item.location === location);
+                    const hasAC = itemsInLocation.some(item => normalizeString(item.description).includes('ar condicionado'));
+                    const hasVentilador = itemsInLocation.some(item => normalizeString(item.description).includes('ventilador'));
+
+                    if (!hasAC && !hasVentilador) {
+                        unitNeeds.missing.push({ item: 'Ar Condicionado ou Ventilador', location: location });
+                    }
+                });
+
+                if (unitNeeds.missing.length > 0) {
+                    analysisResults.push(unitNeeds);
+                }
+            });
+        }
+
+        function getFilteredAnalysisResults() {
+            const filterValue = analiseFilterEl.value;
+            if (filterValue === 'todos') {
+                return analysisResults;
+            }
+            if (filterValue === 'bebedouro') {
+                return analysisResults
+                    .map(unit => ({
+                        ...unit,
+                        missing: unit.missing.filter(need => need.item === 'Bebedouro')
+                    }))
+                    .filter(unit => unit.missing.length > 0);
+            }
+            if (filterValue === 'climatizacao') {
+                return analysisResults
+                    .map(unit => ({
+                        ...unit,
+                        missing: unit.missing.filter(need => need.item === 'Ar Condicionado ou Ventilador')
+                    }))
+                    .filter(unit => unit.missing.length > 0);
+            }
+            return [];
+        }
+
+        function renderNeedsAnalysisReport() {
+            analiseResultsContainer.innerHTML = '';
+            analiseSummaryContainer = document.getElementById('analise-summary');
+            
+            const filteredResults = getFilteredAnalysisResults();
+
+            if (filteredResults.length === 0) {
+                analiseSummaryContainer.innerHTML = '';
+                analiseResultsContainer.innerHTML = `<div class="col-span-full text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md"><p class="text-xl text-green-600 dark:text-green-400 font-semibold">Tudo em ordem!</p><p class="text-slate-600 dark:text-slate-300 mt-2">Nenhuma necessidade encontrada para o filtro selecionado.</p></div>`;
+                return;
+            }
+            
+            analiseSummaryContainer.innerHTML = `
+                <div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <p class="text-slate-600 dark:text-slate-300 font-medium">
+                        Foram encontradas <span class="font-bold text-indigo-600 dark:text-indigo-400">${filteredResults.length}</span> unidade(s) com necessidades para o filtro selecionado.
+                    </p>
+                </div>`;
+
+            filteredResults.forEach(result => {
+                const needsList = result.missing.map(need => 
+                    `<li class="flex items-start space-x-3">
+                        <svg class="h-5 w-5 text-yellow-500 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.636-1.23 2.85-1.23 3.486 0l5.58 10.822c.636 1.23.056 2.829-1.342 2.829H4.013C2.615 16.75.035 15.151.67 13.921L6.257 3.099zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+                        <div>
+                            <p class="font-semibold text-slate-700 dark:text-slate-200">${need.item}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Sugestão de Local: ${need.location}</p>
+                        </div>
+                    </li>`
+                ).join('');
+
+                const cardHTML = `
+                    <div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg flex flex-col">
+                        <h3 class="font-bold text-lg text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-3">${result.unitName}</h3>
+                        <ul class="space-y-3">${needsList}</ul>
+                    </div>
+                `;
+                analiseResultsContainer.innerHTML += cardHTML;
+            });
+        }
+
+        function generatePDFReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const filteredResults = getFilteredAnalysisResults();
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('Relatório de Análise de Necessidades', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 28, { align: 'center' });
+
+            if (filteredResults.length === 0) {
+                doc.setFontSize(12);
+                doc.text('Nenhuma necessidade encontrada para o filtro selecionado.', 105, 50, { align: 'center' });
+            } else {
+                let yPosition = 40;
+                filteredResults.forEach(result => {
+                    if (yPosition > 260) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(result.unitName, 14, yPosition);
+                    yPosition += 8;
+
+                    result.missing.forEach(need => {
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'normal');
+                        doc.text(`• Falta: ${need.item}`, 20, yPosition);
+                        yPosition += 6;
+                        doc.setFont('helvetica', 'italic');
+                        doc.text(`  Sugestão de Local: ${need.location}`, 20, yPosition);
+                        yPosition += 8;
+                    });
+                    yPosition += 5;
+                });
+            }
+
+            doc.save('relatorio_necessidades.pdf');
+        }
+
+
         // --- HANDLERS DE EVENTOS ---
-        function handleFilterChange(){currentPage=1;renderApp()}
-        function handleServicoChange(){const selectedService=this.value;selectedUnidadeValue="";openUnidadeModalBtn.textContent="Selecione uma Unidade...";openUnidadeModalBtn.disabled=!selectedService;if(!selectedService){visaoAtiva="boasVindas";dadosOriginais=[];renderApp()}else{mainContentAreaEl.innerHTML=`<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Agora, por favor, <strong>selecione uma Unidade</strong> para ver os detalhes.</p></div>`}}
-        function handleUnidadeChange(){const servicoSelecionado=filtroServicoEl.value;currentPage=1;if(!servicoSelecionado)return;if(selectedUnidadeValue){dadosOriginais=allItems.filter(item=>item.id.startsWith(`${servicoSelecionado}_`)&&item.unit_condition===selectedUnidadeValue);tituloDaVisao=`Inventário de ${openUnidadeModalBtn.textContent}`}else{dadosOriginais=allItems.filter(item=>item.id.startsWith(`${servicoSelecionado}_`));tituloDaVisao=`Inventário de Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`}visaoAtiva="unidade";renderApp()}
-        function handleResumoClick(){mainContentAreaEl.innerHTML=`<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar inventário completo...</p></div>`;setTimeout(()=>{dadosOriginais=allItems;tituloDaVisao="Inventário Geral Completo";visaoAtiva="resumo";currentPage=1;filtroServicoEl.value="";handleServicoChange.call(filtroServicoEl);renderApp()},50)}
-        function handleVoltar(){switchTab("dashboard")}
-        function handlePageChange(event){const page=parseInt(event.target.dataset.page);if(page){currentPage=page;renderApp()}}
-        function handleExport(){const headers=["Tipo","Descrição","Unidade","Quantidade","Localização","Estado","Origem da Doação","Observação","Fornecedor"];const dataToExport=agruparItens(getFilteredItems(dadosOriginais)).map(item=>[`"${(item.type||"").replace(/"/g,'""')}"`,`"${(item.description||"").replace(/"/g,'""')}"`,`"${formatUnitName(item,true).replace(/"/g,'""')}"`,item.quantity,`"${(item.location||"").replace(/"/g,'""')}"`,item.state,`"${(item.donation_source||"").replace(/"/g,'""')}"`,`"${(item.observation||"").replace(/"/g,'""')}"`,`"${(item.supplier||"").replace(/"/g,'""')}"`]);let csvContent="data:text/csv;charset=utf-8,"+headers.join(";")+`\n`+dataToExport.map(e=>e.join(";")).join(`\n`);const encodedUri=encodeURI(csvContent);const link=document.createElement("a");link.setAttribute("href",encodedUri);link.setAttribute("download",`relatorio_inventario.csv`);document.body.appendChild(link);link.click();document.body.removeChild(link)}
-        function handleExportEstoque(){if(allEstoqueItems.length===0)return;const headers=Object.keys(allEstoqueItems[0]||{});const dataToExport=allEstoqueItems.map(item=>headers.map(h=>`"${(item[h]||"").replace(/"/g,'""')}"`));let csvContent="data:text/csv;charset=utf-8,"+headers.join(";")+`\n`+dataToExport.map(e=>e.join(`\n`));const encodedUri=encodeURI(csvContent);const link=document.createElement("a");link.setAttribute("href",encodedUri);link.setAttribute("download",`relatorio_estoque.csv`);document.body.appendChild(link);link.click();document.body.removeChild(link)}
-        function exportChart(chartId){const canvas=document.getElementById(chartId);if(canvas){const link=document.createElement("a");link.href=canvas.toDataURL("image/png");link.download=`${chartId}.png`;link.click()}}
+        function handleFilterChange() {
+            currentPage = 1;
+            renderApp();
+        }
+
+        function handleServicoChange() {
+            const selectedService = this.value;
+            selectedUnidadeValue = '';
+            openUnidadeModalBtn.textContent = 'Selecione uma Unidade...';
+            openUnidadeModalBtn.disabled = !selectedService;
+
+            if (!selectedService) {
+                visaoAtiva = 'boasVindas';
+                dadosOriginais = [];
+                renderApp();
+            } else {
+                 mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Agora, por favor, <strong>selecione uma Unidade</strong> para ver os detalhes.</p></div>`;
+            }
+        }
+        
+        function handleUnidadeChange() {
+            const servicoSelecionado = filtroServicoEl.value;
+            currentPage = 1;
+            if (!servicoSelecionado) return;
+
+            if (selectedUnidadeValue) {
+                dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`) && item.unit_condition === selectedUnidadeValue);
+                tituloDaVisao = `Inventário de ${openUnidadeModalBtn.textContent}`;
+            } else {
+                dadosOriginais = allItems.filter(item => item.id.startsWith(`${servicoSelecionado}_`));
+                tituloDaVisao = `Inventário de Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`;
+            }
+            visaoAtiva = 'unidade';
+            renderApp();
+        }
+
+        function handleResumoClick() {
+            mainContentAreaEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar inventário completo...</p></div>`;
+            setTimeout(() => {
+                dadosOriginais = allItems;
+                tituloDaVisao = 'Inventário Geral Completo';
+                visaoAtiva = 'resumo';
+                currentPage = 1;
+                filtroServicoEl.value = "";
+                handleServicoChange.call(filtroServicoEl);
+                renderApp();
+            }, 50);
+        }
+
+        function handleVoltar() {
+            switchTab('dashboard');
+        }
+
+        function handlePageChange(event) {
+            const page = parseInt(event.target.dataset.page);
+            if (page) {
+                currentPage = page;
+                renderApp();
+            }
+        }
+
+        function handleExport() {
+            const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
+            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [`"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`, item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`, `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`]);
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_inventario.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleExportEstoque() {
+            if (allEstoqueItems.length === 0) return;
+            const headers = Object.keys(allEstoqueItems[0] || {});
+            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join("\n"));
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `relatorio_estoque.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportChart(chartId) {
+            const canvas = document.getElementById(chartId);
+            if (canvas) {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${chartId}.png`;
+                link.click();
+            }
+        }
         
         // --- CONTROLE DE ABAS E INICIALIZAÇÃO ---
-        async function switchTab(tabName){[tabDashboard,tabPatrimonio,tabEstoque,tabTotalItens].forEach(tab=>tab.classList.remove("active"));[contentDashboard,contentPatrimonio,contentEstoque,contentTotalItens].forEach(content=>content.classList.add("hidden"));if(tabName==="dashboard"){visaoAtiva="dashboard";tabDashboard.classList.add("active");contentDashboard.classList.remove("hidden");if(allItems.length>0)renderDashboard()}else if(tabName==="patrimonio"){visaoAtiva="boasVindas";tabPatrimonio.classList.add("active");contentPatrimonio.classList.remove("hidden");renderApp()}else if(tabName==="estoque"){visaoAtiva="estoque";tabEstoque.classList.add("active");contentEstoque.classList.remove("hidden");if(allEstoqueItems.length===0){mainContentEstoqueEl.innerHTML=`<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar dados do estoque...</p></div>`;try{const estoqueData=await fetchAndProcessData(googleSheetEstoqueUrl,"estoqueCache");allEstoqueItems=estoqueData;renderEstoque(allEstoqueItems)}catch(error){console.error("Erro ao carregar dados do estoque:",error);mainContentEstoqueEl.innerHTML=`<div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`}}else{renderEstoque(allEstoqueItems)}}else if(tabName==="total-itens"){visaoAtiva="total-itens";tabTotalItens.classList.add("active");contentTotalItens.classList.remove("hidden");populateTotalItensFilters();renderTotalItens()}}
-        function updateDynamicDOMReferences(){tableBodyEl=document.getElementById("inventory-table-body");paginationControlsEl=document.getElementById("pagination-controls")}
+        async function switchTab(tabName) {
+            [tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise].forEach(tab => tab.classList.remove('active'));
+            [contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise].forEach(content => content.classList.add('hidden'));
+            
+            if (tabName === 'dashboard') {
+                visaoAtiva = 'dashboard';
+                tabDashboard.classList.add('active');
+                contentDashboard.classList.remove('hidden');
+                if (allItems.length > 0) renderDashboard();
+            } else if (tabName === 'patrimonio') {
+                visaoAtiva = 'boasVindas';
+                tabPatrimonio.classList.add('active');
+                contentPatrimonio.classList.remove('hidden');
+                renderApp();
+            } else if (tabName === 'estoque') {
+                visaoAtiva = 'estoque';
+                tabEstoque.classList.add('active');
+                contentEstoque.classList.remove('hidden');
+                if (allEstoqueItems.length === 0) {
+                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar dados do estoque...</p></div>`;
+                    try {
+                        const estoqueData = await fetchAndProcessData(googleSheetEstoqueUrl, 'estoqueCache');
+                        allEstoqueItems = estoqueData;
+                        renderEstoque(allEstoqueItems);
+                    } catch (error) {
+                        console.error('Erro ao carregar dados do estoque:', error);
+                        mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                    }
+                } else {
+                    renderEstoque(allEstoqueItems);
+                }
+            } else if (tabName === 'total-itens') {
+                visaoAtiva = 'total-itens';
+                tabTotalItens.classList.add('active');
+                contentTotalItens.classList.remove('hidden');
+                populateTotalItensFilters();
+                renderTotalItens();
+            } else if (tabName === 'analise') {
+                visaoAtiva = 'analise';
+                tabAnalise.classList.add('active');
+                contentAnalise.classList.remove('hidden');
+                analiseFilterEl.value = 'todos';
+                runNeedsAnalysis();
+                renderNeedsAnalysisReport();
+            }
+        }
+
+        function updateDynamicDOMReferences() {
+            tableBodyEl = document.getElementById('inventory-table-body');
+            paginationControlsEl = document.getElementById('pagination-controls');
+        }
         
-        function initApp(){filtroServicoEl=document.getElementById("filtro-servico");filtroEstadoEl=document.getElementById("filtro-estado");filtroBuscaEl=document.getElementById("filtro-busca");filtroDoacaoEl=document.getElementById("filtro-doacao");summaryCardsContainerEl=document.getElementById("summary-cards");mainContentAreaEl=document.getElementById("main-content-area");verResumoGeralBtn=document.getElementById("ver-resumo-geral-btn");tabDashboard=document.getElementById("tab-dashboard");tabPatrimonio=document.getElementById("tab-patrimonio");tabEstoque=document.getElementById("tab-estoque");tabTotalItens=document.getElementById("tab-total-itens");contentDashboard=document.getElementById("content-dashboard");contentPatrimonio=document.getElementById("content-patrimonio");contentEstoque=document.getElementById("content-estoque");contentTotalItens=document.getElementById("content-total-itens");mainContentEstoqueEl=document.getElementById("main-content-estoque");filtroEstoqueUnidadeEl=document.getElementById("filtro-estoque-unidade");filtroEstoqueBuscaEl=document.getElementById("filtro-estoque-busca");exportEstoqueBtn=document.getElementById("export-estoque-btn");filtroTotalCategoriaEl=document.getElementById("filtro-total-categoria");filtroTotalItemEl=document.getElementById("filtro-total-item");filtroTotalUnidadeEl=document.getElementById("filtro-total-unidade");filtroTotalEstadoEl=document.getElementById("filtro-total-estado");openUnidadeModalBtn=document.getElementById("open-unidade-modal-btn");unidadeModal=document.getElementById("unidade-modal");modalOverlay=document.getElementById("modal-overlay");closeModalBtn=document.getElementById("close-modal-btn");unidadeSearchInput=document.getElementById("unidade-search-input");unidadeListContainer=document.getElementById("unidade-list-container");clearUnidadeSelectionBtn=document.getElementById("clear-unidade-selection-btn");openUnidadeModalBtn.disabled=true;filtroServicoEl.addEventListener("change",handleServicoChange);filtroEstadoEl.addEventListener("change",handleFilterChange);filtroDoacaoEl.addEventListener("change",handleFilterChange);filtroBuscaEl.addEventListener("input",debounce(handleFilterChange,400));verResumoGeralBtn.addEventListener("click",handleResumoClick);document.addEventListener("click",function(event){if(event.target&&event.target.dataset.page){handlePageChange(event)}});tabDashboard.addEventListener("click",()=>switchTab("dashboard"));tabPatrimonio.addEventListener("click",()=>switchTab("patrimonio"));tabEstoque.addEventListener("click",()=>switchTab("estoque"));tabTotalItens.addEventListener("click",()=>switchTab("total-itens"));filtroEstoqueUnidadeEl.addEventListener("input",()=>renderEstoque(allEstoqueItems));filtroEstoqueBuscaEl.addEventListener("input",debounce(()=>renderEstoque(allEstoqueItems),400));exportEstoqueBtn.addEventListener("click",handleExportEstoque);filtroTotalCategoriaEl.addEventListener("change",renderTotalItens);filtroTotalItemEl.addEventListener("input",debounce(renderTotalItens,400));filtroTotalUnidadeEl.addEventListener("change",renderTotalItens);filtroTotalEstadoEl.addEventListener("change",renderTotalItens);openUnidadeModalBtn.addEventListener("click",()=>{populateUnidadeModalList();openUnidadeModal()});closeModalBtn.addEventListener("click",closeUnidadeModal);modalOverlay.addEventListener("click",closeUnidadeModal);unidadeSearchInput.addEventListener("input",debounce(e=>populateUnidadeModalList(e.target.value),300));unidadeListContainer.addEventListener("click",e=>{const targetLi=e.target.closest("li");if(targetLi&&targetLi.dataset.value){selectedUnidadeValue=targetLi.dataset.value;openUnidadeModalBtn.textContent=targetLi.dataset.text;closeUnidadeModal();handleUnidadeChange()}});clearUnidadeSelectionBtn.addEventListener("click",()=>{selectedUnidadeValue="";openUnidadeModalBtn.textContent="Selecione uma Unidade...";closeUnidadeModal();handleUnidadeChange()})}
-        document.addEventListener("DOMContentLoaded",async()=>{setupTheme();initApp();const loaderHTML=`<div class="text-center p-10 col-span-full"><div class="loader"></div><p class="mt-4 text-slate-600 dark:text-slate-300">A carregar dados...</p></div>`;summaryCardsContainerEl.innerHTML=loaderHTML;mainContentAreaEl.innerHTML=`<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para começar.</p></div>`;try{const patrimonioData=await fetchAndProcessData(googleSheetPatrimonioUrl,"patrimonioCache");if(!patrimonioData||!Array.isArray(patrimonioData)){throw new Error("Nenhum dado de patrimônio foi retornado. Verifique a planilha e o script.")}allItems=formatSheetData(patrimonioData);updateFilterOptions();switchTab("dashboard");const now=new Date();const formattedDate=now.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});const updateTimeEl=document.getElementById("last-update-time");if(updateTimeEl){updateTimeEl.textContent=`Dados atualizados em: ${formattedDate}`}}catch(error){console.error("Erro fatal ao inicializar o painel:",error);const errorHTML=`
+        function initApp() {
+            filtroServicoEl = document.getElementById('filtro-servico');
+            filtroEstadoEl = document.getElementById('filtro-estado');
+            filtroBuscaEl = document.getElementById('filtro-busca');
+            filtroDoacaoEl = document.getElementById('filtro-doacao');
+            summaryCardsContainerEl = document.getElementById('summary-cards');
+            mainContentAreaEl = document.getElementById('main-content-area');
+            verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn');
+            tabDashboard = document.getElementById('tab-dashboard');
+            tabPatrimonio = document.getElementById('tab-patrimonio');
+            tabEstoque = document.getElementById('tab-estoque');
+            tabTotalItens = document.getElementById('tab-total-itens');
+            tabAnalise = document.getElementById('tab-analise');
+            contentDashboard = document.getElementById('content-dashboard');
+            contentPatrimonio = document.getElementById('content-patrimonio');
+            contentEstoque = document.getElementById('content-estoque');
+            contentTotalItens = document.getElementById('content-total-itens');
+            contentAnalise = document.getElementById('content-analise');
+            mainContentEstoqueEl = document.getElementById('main-content-estoque');
+            filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
+            filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
+            exportEstoqueBtn = document.getElementById('export-estoque-btn');
+            filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
+            filtroTotalItemEl = document.getElementById('filtro-total-item');
+            filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
+            filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
+            openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn');
+            unidadeModal = document.getElementById('unidade-modal');
+            modalOverlay = document.getElementById('modal-overlay');
+            closeModalBtn = document.getElementById('close-modal-btn');
+            unidadeSearchInput = document.getElementById('unidade-search-input');
+            unidadeListContainer = document.getElementById('unidade-list-container');
+            clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
+            generatePdfBtn = document.getElementById('generate-pdf-btn');
+            analiseResultsContainer = document.getElementById('analise-results');
+            analiseFilterEl = document.getElementById('analise-filter');
+            
+            openUnidadeModalBtn.disabled = true;
+
+            filtroServicoEl.addEventListener('change', handleServicoChange);
+            filtroEstadoEl.addEventListener('change', handleFilterChange);
+            filtroDoacaoEl.addEventListener('change', handleFilterChange);
+            filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
+            verResumoGeralBtn.addEventListener('click', handleResumoClick);
+            document.addEventListener('click', (event) => { if (event.target && event.target.dataset.page) { handlePageChange(event); } });
+            tabDashboard.addEventListener('click', () => switchTab('dashboard'));
+            tabPatrimonio.addEventListener('click', () => switchTab('patrimonio'));
+            tabEstoque.addEventListener('click', () => switchTab('estoque'));
+            tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
+            tabAnalise.addEventListener('click', () => switchTab('analise'));
+            filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
+            filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
+            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
+            filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
+            filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
+            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
+            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
+            
+            openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); openUnidadeModal(); });
+            closeModalBtn.addEventListener('click', closeUnidadeModal);
+            modalOverlay.addEventListener('click', closeUnidadeModal);
+            unidadeSearchInput.addEventListener('input', debounce((e) => populateUnidadeModalList(e.target.value), 300));
+            unidadeListContainer.addEventListener('click', (e) => {
+                const targetLi = e.target.closest('li');
+                if (targetLi && targetLi.dataset.value) {
+                    selectedUnidadeValue = targetLi.dataset.value;
+                    openUnidadeModalBtn.textContent = targetLi.dataset.text;
+                    closeUnidadeModal();
+                    handleUnidadeChange();
+                }
+            });
+            clearUnidadeSelectionBtn.addEventListener('click', () => {
+                selectedUnidadeValue = '';
+                openUnidadeModalBtn.textContent = 'Selecione uma Unidade...';
+                closeUnidadeModal();
+                handleUnidadeChange();
+            });
+            generatePdfBtn.addEventListener('click', generatePDFReport);
+            analiseFilterEl.addEventListener('change', renderNeedsAnalysisReport);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupTheme(); 
+            initApp(); 
+
+            const loaderHTML = `<div class="text-center p-10 col-span-full"><div class="loader"></div><p class="mt-4 text-slate-600 dark:text-slate-300">A carregar dados...</p></div>`;
+            summaryCardsContainerEl.innerHTML = loaderHTML;
+            mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para começar.</p></div>`;
+            
+            try {
+                const patrimonioData = await fetchAndProcessData(googleSheetPatrimonioUrl, 'patrimonioCache');
+                if (!patrimonioData || !Array.isArray(patrimonioData)) {
+                    throw new Error("Nenhum dado de patrimônio foi retornado. Verifique a planilha e o script.");
+                }
+                allItems = formatSheetData(patrimonioData);
+                updateFilterOptions();
+                switchTab('dashboard');
+                const now = new Date();
+                const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const updateTimeEl = document.getElementById('last-update-time');
+                if (updateTimeEl) {
+                    updateTimeEl.textContent = `Dados atualizados em: ${formattedDate}`;
+                }
+            } catch (error) {
+                console.error('Erro fatal ao inicializar o painel:', error);
+                const errorHTML = `
                     <div class="text-center p-10 bg-red-100 dark:bg-red-900/50 rounded-lg border border-red-300 dark:border-red-700 col-span-full">
                         <h2 class="text-xl font-bold text-red-800 dark:text-red-200">Erro ao Carregar Painel</h2>
                         <p class="text-red-700 dark:text-red-300 mt-2">Não foi possível carregar os dados do patrimônio.</p>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-4"><strong>Detalhes:</strong> ${error.message}</p>
-                    </div>`;summaryCardsContainerEl.innerHTML=errorHTML;document.getElementById("dashboardChart").parentElement.innerHTML=""}})
+                    </div>`;
+                summaryCardsContainerEl.innerHTML = errorHTML;
+                document.getElementById('dashboardChart').parentElement.innerHTML = '';
+            }
+        });
     </script>
 </body>
 </html>
