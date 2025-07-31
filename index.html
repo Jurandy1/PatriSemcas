@@ -80,11 +80,9 @@
         }
         .tab-button.active {
             color: #4f46e5;
-            border-bottom-color: #4f46e5;
         }
         .dark .tab-button.active {
             color: #818cf8;
-            border-bottom-color: #818cf8;
         }
         .loader {
             border: 5px solid #e5e7eb;
@@ -171,24 +169,21 @@
                 <button id="tab-estoque" class="tab-button">ESTOQUE</button>
                 <button id="tab-total-itens" class="tab-button">TOTAL DE ITENS</button>
                 <button id="tab-analise" class="tab-button">ANÁLISE DE NECESSIDADES</button>
+                <button id="tab-sede" class="tab-button">ESTRUTURA DA SEDE</button>
             </div>
         </nav>
 
-        <div id="content-dashboard">
-             <!-- NOVO DASHBOARD INTELIGENTE -->
+        <div id="content-dashboard" class="mt-8">
             <section id="intelligent-dashboard" class="space-y-8">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Coluna de Unidades em Atenção -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                         <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">⚠️ Top 10 Unidades em Atenção</h3>
                         <div id="attention-units-list" class="space-y-3 dashboard-list"></div>
                     </div>
-                    <!-- Coluna de Unidades Supridas -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                         <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">✅ Top 10 Unidades Supridas</h3>
                         <div id="supplied-units-list" class="space-y-3 dashboard-list"></div>
                     </div>
-                     <!-- Coluna de Unidades sem Bebedouro -->
                     <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
                         <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">💧 Top 10 Unidades sem Bebedouro</h3>
                         <div id="no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
@@ -197,12 +192,12 @@
             </section>
         </div>
 
-        <div id="content-patrimonio" class="hidden">
-            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+        <div id="content-patrimonio" class="hidden mt-8">
+            <div class="bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 rounded-lg shadow-md">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                     <div>
                         <label for="filtro-servico" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Tipo de Unidade</label>
-                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400">
                             <option value="">TODOS</option>
                             <option value="conselho">CONSELHO</option>
                             <option value="cras">CRAS</option>
@@ -221,13 +216,11 @@
                     </div>
                     <div>
                         <label for="filtro-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label>
-                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
-                            <option value="">TODOS</option>
-                        </select>
+                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"></select>
                     </div>
                     <div>
                         <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Origem</label>
-                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400">
                             <option value="">TODAS</option>
                             <option value="sim">APENAS DOAÇÕES</option>
                             <option value="nao">APENAS PRÓPRIOS</option>
@@ -235,7 +228,7 @@
                     </div>
                     <div>
                         <label for="filtro-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar Item</label>
-                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:focus:ring-indigo-400 dark:focus:border-indigo-400">
+                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400">
                     </div>
                 </div>
                 <div class="w-full md:w-auto mt-4">
@@ -245,25 +238,23 @@
             <main id="main-content-area" class="mt-8"></main>
         </div>
 
-        <div id="content-estoque" class="hidden">
-             <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+        <div id="content-estoque" class="hidden mt-8">
+             <div class="bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 rounded-lg shadow-md">
                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                      <div>
                         <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Unidade</label>
-                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">TODAS AS UNIDADES</option>
-                        </select>
+                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
                     </div>
                     <div>
                         <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar no Estoque</label>
-                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                          <button id="export-estoque-btn" class="w-full p-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">EXPORTAR ESTOQUE</button>
                     </div>
                  </div>
             </div>
-            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+            <div class="bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 rounded-lg shadow-md">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white">TOP 10 ITENS EM ESTOQUE</h3>
                      <button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
@@ -273,30 +264,24 @@
             <main id="main-content-estoque" class="mt-8"></main>
         </div>
         
-        <div id="content-total-itens" class="hidden">
-            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+        <div id="content-total-itens" class="hidden mt-8">
+            <div class="bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 rounded-lg shadow-md">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Categoria (Tipo)</label>
-                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">TODAS</option>
-                        </select>
+                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
                     </div>
                     <div>
                         <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar por Descrição</label>
-                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Unidade</label>
-                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">TODAS</option>
-                        </select>
+                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
                     </div>
                     <div>
                         <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Estado</label>
-                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">TODOS</option>
-                        </select>
+                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
                     </div>
                 </div>
             </div>
@@ -306,8 +291,8 @@
             </main>
         </div>
         
-        <div id="content-analise" class="hidden">
-            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
+        <div id="content-analise" class="hidden mt-8">
+            <div class="bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 rounded-lg shadow-md">
                 <div class="flex flex-wrap justify-between items-center gap-4">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Análise de Necessidades Essenciais</h2>
@@ -320,7 +305,7 @@
                 </div>
                 <div class="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
                     <label for="analise-filter" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Filtrar por Necessidade</label>
-                    <select id="analise-filter" class="w-full max-w-xs p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <select id="analise-filter" class="w-full max-w-xs p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500">
                         <option value="todos">Todas as Necessidades</option>
                         <option value="bebedouro">Falta de Bebedouro</option>
                         <option value="climatizacao">Falta de Climatização</option>
@@ -330,6 +315,42 @@
             <div id="analise-summary" class="mb-6"></div>
             <main id="analise-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
             </main>
+        </div>
+
+        <div id="content-sede" class="hidden mt-8">
+            <div class="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4">Estrutura de Salas - SEDE</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label for="filtro-sede-local" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Local (Andar)</label>
+                        <select id="filtro-sede-local" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
+                    </div>
+                    <div>
+                        <label for="filtro-sede-tipo" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Tipo de Sala</label>
+                        <select id="filtro-sede-tipo" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500"></select>
+                    </div>
+                    <div>
+                        <label for="filtro-sede-busca" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1 uppercase">Buscar por Setor</label>
+                        <input type="text" id="filtro-sede-busca" class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                        <thead class="text-xs uppercase bg-slate-100 dark:bg-slate-700">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Cód. Sistema</th>
+                                <th scope="col" class="px-6 py-3">Descrição</th>
+                                <th scope="col" class="px-6 py-3">Local</th>
+                                <th scope="col" class="px-6 py-3">Sala</th>
+                                <th scope="col" class="px-6 py-3">Tipo de Sala</th>
+                                <th scope="col" class="px-6 py-3">Setor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sede-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <footer class="text-center mt-12 text-sm text-slate-500 dark:text-slate-400">
@@ -347,7 +368,7 @@
                 </button>
             </div>
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <input type="text" id="unidade-search-input" placeholder="Pesquisar pelo nome da unidade..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" id="unidade-search-input" placeholder="Pesquisar pelo nome da unidade..." class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-2 focus:ring-indigo-500">
             </div>
             <div class="p-4 overflow-y-auto flex-1">
                 <ul id="unidade-list-container" class="space-y-2"></ul>
@@ -376,15 +397,16 @@
 
         // --- Referências de Elementos ---
         let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
-        let summaryCardsContainerEl, mainContentAreaEl, verResumoGeralBtn;
+        let mainContentAreaEl, verResumoGeralBtn;
         let tableBodyEl, paginationControlsEl;
-        let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise;
-        let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise;
+        let tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise, tabSede;
+        let contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise, contentSede;
         let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
         let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
         let themeToggleBtn, darkIcon, lightIcon;
         let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
         let generatePdfBtn, analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
+        let filtroSedeLocal, filtroSedeTipo, filtroSedeBusca;
         
         // --- LÓGICA DE TEMA (DARK MODE) ---
         function setupTheme() {
@@ -392,19 +414,25 @@
             darkIcon = document.getElementById('theme-toggle-dark-icon');
             lightIcon = document.getElementById('theme-toggle-light-icon');
 
-            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                lightIcon.classList.remove('hidden');
-            } else {
-                darkIcon.classList.remove('hidden');
-            }
+            const applyTheme = () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    lightIcon.classList.remove('hidden');
+                    darkIcon.classList.add('hidden');
+                } else {
+                    darkIcon.classList.remove('hidden');
+                    lightIcon.classList.add('hidden');
+                }
+            };
 
             themeToggleBtn.addEventListener('click', () => {
                 document.documentElement.classList.toggle('dark');
-                darkIcon.classList.toggle('hidden');
-                lightIcon.classList.toggle('hidden');
                 localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                applyTheme();
                 redrawAllCharts();
             });
+
+            applyTheme(); // Aplica o tema correto no carregamento inicial
         }
 
         function redrawAllCharts() {
@@ -626,9 +654,8 @@
                  return `CT ${nomeUnidade}`;
             }
             
-            // Remove potential duplicated prefix, case-insensitive
             const regex = new RegExp(`^${type}\\s*`, 'i');
-            return nomeUnidade.replace(regex, `${type} `).trim();
+            return nomeUnidade.replace(regex, `${type} `).trim().toUpperCase();
         }
         
         // --- FUNÇÕES DE RENDERIZAÇÃO ---
@@ -716,7 +743,7 @@
                 const supplierText = item.supplier || '';
                 const finalSupplierText = (observationText && supplierText && normalizeString(observationText) === normalizeString(supplierText)) ? 'N/A' : (supplierText || 'N/A');
                 tableHTML += `
-                    <tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                    <tr class="border-b border-slate-200 dark:border-slate-700">
                         <td class="px-6 py-4">${item.type}</td>
                         <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">${item.description}</td>
                         <td class="px-6 py-4">${unitDisplayName}</td>
@@ -739,8 +766,8 @@
             paginationControlsEl.innerHTML = `
                 <span class="text-sm text-slate-600 dark:text-slate-400">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems} itens</span>
                 <div class="inline-flex rounded-md shadow-sm" role="group">
-                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
-                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium text-slate-900 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-700 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
+                    <button type="button" data-page="${currentPage - 1}" class="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-l-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                    <button type="button" data-page="${currentPage + 1}" class="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-600 rounded-r-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button>
                 </div>`;
         }
 
@@ -803,13 +830,13 @@
             if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
-            const tableHeadersHTML = `<thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
+            const tableHeadersHTML = `<thead class="text-xs uppercase bg-slate-100 dark:bg-slate-700"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
             if (visaoAtiva === 'boasVindas') {
-                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`;
+                mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`;
             } else if (visaoAtiva === 'unidade') {
                 const totalDoacoes = currentFilteredData.filter(item => { const source = normalizeString(item.donation_source); return item.donation_source && !['proprio', 'proprios'].includes(source); }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
                 const descriptiveReportContent = GerarRelatorioUnidade(currentFilteredData);
-                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="card bg-white dark:bg-slate-800 p-4 h-full shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-4 text-center shadow-md rounded-lg"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold text-slate-800 dark:text-white mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 flex flex-col gap-6"><div class="bg-white dark:bg-slate-800 p-4 h-full rounded-lg shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="bg-white dark:bg-slate-800 p-4 text-center rounded-lg shadow-md"><h3 class="text-lg font-semibold text-purple-800 dark:text-purple-300">Itens de Doação</h3><p class="text-3xl font-bold text-purple-700 dark:text-purple-400 mt-2">${totalDoacoes}</p></div></div><div class="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4">Relatório Descritivo da Unidade</h3><div class="text-slate-600 dark:text-slate-300 space-y-2">${descriptiveReportContent}</div></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado da Unidade</h2><div class="bg-white dark:bg-slate-800 p-0 overflow-x-auto rounded-lg shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length, true);
                 const chartCanvas = document.getElementById('estadoChart');
@@ -819,7 +846,7 @@
                     estadoChartInstance = new Chart(chartCanvas, chartData);
                 }
             } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card bg-white dark:bg-slate-800 p-6 shadow-md rounded-lg"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800 dark:text-white">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button><button id="back-to-selection-btn" class="px-4 py-2 bg-slate-600 text-white font-semibold rounded-lg hover:bg-slate-700 transition-colors">&larr; Voltar à Seleção</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md"><h3 class="text-xl font-bold text-slate-700 dark:text-slate-200 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="bg-white dark:bg-slate-800 p-0 overflow-x-auto rounded-lg shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
                 document.getElementById('export-btn').addEventListener('click', handleExport);
                 document.getElementById('back-to-selection-btn').addEventListener('click', handleVoltar);
@@ -846,7 +873,7 @@
         function renderEstoque(items) {
             mainContentEstoqueEl.innerHTML = '';
             if (items.length === 0) {
-                mainContentEstoqueEl.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Nenhum item de estoque encontrado.</p></div>`;
+                mainContentEstoqueEl.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md"><p class="text-xl text-slate-600 dark:text-slate-300">Nenhum item de estoque encontrado.</p></div>`;
                 return;
             }
             const unidadesEstoque = [...new Set(items.map(item => item.Unidade || 'N/A'))].sort();
@@ -864,7 +891,7 @@
                 return matchUnidade && matchBusca;
             });
             const headers = Object.keys(filteredItems[0] || {});
-            const tableHTML = `<div class="card bg-white dark:bg-slate-800 p-0 overflow-x-auto shadow-md rounded-lg"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-700 dark:text-slate-300"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+            const tableHTML = `<div class="bg-white dark:bg-slate-800 p-0 overflow-x-auto rounded-lg shadow-md"><table class="w-full text-sm text-left text-slate-500 dark:text-slate-400"><thead class="text-xs uppercase bg-slate-100 dark:bg-slate-700"><tr>${headers.map(h => `<th scope="col" class="px-6 py-3">${h.toUpperCase()}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr class="border-b border-slate-200 dark:border-slate-700">${headers.map(h => `<td class="px-6 py-4">${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
             mainContentEstoqueEl.innerHTML = tableHTML;
             const estoqueData = filteredItems.reduce((acc, item) => {
                 const desc = item.Item || 'N/D';
@@ -938,17 +965,17 @@
             const uniqueItemCount = Object.keys(groupedItems).length;
             const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
             if (uniqueItemCount > 0) {
-                summaryContainer.innerHTML = `<div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg"><div class="flex flex-wrap justify-between items-center gap-4"><p class="text-slate-600 dark:text-slate-300 font-medium">Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.</p><div class="text-right"><p class="text-sm text-slate-500 dark:text-slate-400">Quantidade Total</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${grandTotalQuantity}</p></div></div></div>`;
+                summaryContainer.innerHTML = `<div class="bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg"><div class="flex flex-wrap justify-between items-center gap-4"><p class="text-slate-600 dark:text-slate-300 font-medium">Exibindo <span class="font-bold text-indigo-600 dark:text-indigo-400">${uniqueItemCount}</span> tipo(s) de item.</p><div class="text-right"><p class="text-sm text-slate-500 dark:text-slate-400">Quantidade Total</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${grandTotalQuantity}</p></div></div></div>`;
             } else {
                 summaryContainer.innerHTML = '';
             }
             if (uniqueItemCount === 0) {
-                container.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 col-span-full"><p class="text-lg text-slate-600 dark:text-slate-300">Nenhum item encontrado com os filtros selecionados.</p></div>`;
+                container.innerHTML = `<div class="text-center p-10 bg-white dark:bg-slate-800 rounded-lg shadow-md col-span-full"><p class="text-lg text-slate-600 dark:text-slate-300">Nenhum item encontrado com os filtros selecionados.</p></div>`;
                 return;
             }
             container.innerHTML = Object.entries(groupedItems).sort((a, b) => a[0].localeCompare(b[0])).map(([desc, data]) => {
                 const locationsHTML = Object.entries(data.locations).sort((a, b) => a[0].localeCompare(b[0])).map(([locationKey, quantity]) => `<li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-100 dark:bg-slate-700"><span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-700 dark:text-slate-200 flex-shrink-0">${quantity}</span></li>`).join('');
-                return `<div class="card bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md rounded-lg"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3><div class="text-right flex-shrink-0"><p class="text-xs text-slate-500 dark:text-slate-400">Total</p><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${data.total}</p></div></div><p class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide mb-2">${data.type}</p></div><div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-3"><p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
+                return `<div class="bg-white dark:bg-slate-800 p-4 flex flex-col shadow-md rounded-lg"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-semibold text-slate-800 dark:text-white text-base md:text-lg pr-2">${desc}</h3><div class="text-right flex-shrink-0"><p class="text-xs text-slate-500 dark:text-slate-400">Total</p><p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${data.total}</p></div></div><p class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 uppercase tracking-wide mb-2">${data.type}</p></div><div class="mt-4 border-t border-slate-200 dark:border-slate-700 pt-3"><p class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
             }).join('');
         }
 
@@ -1075,7 +1102,7 @@
             }
             
             analiseSummaryContainer.innerHTML = `
-                <div class="card bg-slate-100 dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-md">
                     <p class="text-slate-600 dark:text-slate-300 font-medium">
                         Foram encontradas <span class="font-bold text-indigo-600 dark:text-indigo-400">${filteredResults.length}</span> unidade(s) com necessidades para o filtro selecionado.
                     </p>
@@ -1093,7 +1120,7 @@
                 ).join('');
 
                 const cardHTML = `
-                    <div class="card bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg flex flex-col">
+                    <div class="bg-white dark:bg-slate-800 p-4 shadow-md rounded-lg flex flex-col">
                         <h3 class="font-bold text-lg text-indigo-600 dark:text-indigo-400 border-b border-slate-200 dark:border-slate-700 pb-2 mb-3">${result.unitName}</h3>
                         <ul class="space-y-3">${needsList}</ul>
                     </div>
@@ -1164,7 +1191,7 @@
                 dadosOriginais = [];
                 renderApp();
             } else {
-                 mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Agora, por favor, <strong>selecione uma Unidade</strong> para ver os detalhes.</p></div>`;
+                 mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md"><p class="text-xl text-slate-600 dark:text-slate-300">Agora, por favor, <strong>selecione uma Unidade</strong> para ver os detalhes.</p></div>`;
             }
         }
         
@@ -1248,8 +1275,8 @@
         
         // --- CONTROLE DE ABAS E INICIALIZAÇÃO ---
         async function switchTab(tabName) {
-            [tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise].forEach(tab => tab.classList.remove('active'));
-            [contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise].forEach(content => content.classList.add('hidden'));
+            [tabDashboard, tabPatrimonio, tabEstoque, tabTotalItens, tabAnalise, tabSede].forEach(tab => tab.classList.remove('active'));
+            [contentDashboard, contentPatrimonio, contentEstoque, contentTotalItens, contentAnalise, contentSede].forEach(content => content.classList.add('hidden'));
             
             if (tabName === 'dashboard') {
                 visaoAtiva = 'dashboard';
@@ -1268,14 +1295,14 @@
                 tabEstoque.classList.add('active');
                 contentEstoque.classList.remove('hidden');
                 if (allEstoqueItems.length === 0) {
-                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar dados do estoque...</p></div>`;
+                    mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl">A carregar dados do estoque...</p></div>`;
                     try {
                         const csvText = await dataManager.fetchWithCache(googleSheetEstoqueUrl, 'estoque', 'text');
                         allEstoqueItems = parseCsvData(csvText);
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
                         console.error('Erro ao carregar dados do estoque:', error);
-                        mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm text-slate-500 mt-2">${error.message}</p></div>`;
+                        mainContentEstoqueEl.innerHTML = `<div class="text-center p-20 card"><p class="text-xl text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</p><p class="text-sm mt-2">${error.message}</p></div>`;
                     }
                 } else {
                     renderEstoque(allEstoqueItems);
@@ -1293,6 +1320,11 @@
                 analiseFilterEl.value = 'todos';
                 runNeedsAnalysis();
                 renderNeedsAnalysisReport();
+            } else if (tabName === 'sede') {
+                visaoAtiva = 'sede';
+                tabSede.classList.add('active');
+                contentSede.classList.remove('hidden');
+                renderSedeReport();
             }
         }
 
@@ -1313,11 +1345,13 @@
             tabEstoque = document.getElementById('tab-estoque');
             tabTotalItens = document.getElementById('tab-total-itens');
             tabAnalise = document.getElementById('tab-analise');
+            tabSede = document.getElementById('tab-sede');
             contentDashboard = document.getElementById('content-dashboard');
             contentPatrimonio = document.getElementById('content-patrimonio');
             contentEstoque = document.getElementById('content-estoque');
             contentTotalItens = document.getElementById('content-total-itens');
             contentAnalise = document.getElementById('content-analise');
+            contentSede = document.getElementById('content-sede');
             mainContentEstoqueEl = document.getElementById('main-content-estoque');
             filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
             filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
@@ -1336,6 +1370,9 @@
             generatePdfBtn = document.getElementById('generate-pdf-btn');
             analiseResultsContainer = document.getElementById('analise-results');
             analiseFilterEl = document.getElementById('analise-filter');
+            filtroSedeLocal = document.getElementById('filtro-sede-local');
+            filtroSedeTipo = document.getElementById('filtro-sede-tipo');
+            filtroSedeBusca = document.getElementById('filtro-sede-busca');
             
             openUnidadeModalBtn.disabled = true;
 
@@ -1350,6 +1387,7 @@
             tabEstoque.addEventListener('click', () => switchTab('estoque'));
             tabTotalItens.addEventListener('click', () => switchTab('total-itens'));
             tabAnalise.addEventListener('click', () => switchTab('analise'));
+            tabSede.addEventListener('click', () => switchTab('sede'));
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
             exportEstoqueBtn.addEventListener('click', handleExportEstoque);
@@ -1379,6 +1417,9 @@
             });
             generatePdfBtn.addEventListener('click', generatePDFReport);
             analiseFilterEl.addEventListener('change', renderNeedsAnalysisReport);
+            filtroSedeLocal.addEventListener('change', renderSedeReport);
+            filtroSedeTipo.addEventListener('change', renderSedeReport);
+            filtroSedeBusca.addEventListener('input', debounce(renderSedeReport, 400));
         }
 
         // --- LÓGICA DO PAINEL DE PRIORIDADES ---
@@ -1395,7 +1436,7 @@
                     const unitKey = item.unit_condition;
                     if (!unitsData.has(unitKey)) {
                         unitsData.set(unitKey, {
-                            name: formatUnitName(item).toUpperCase(),
+                            name: formatUnitName(item),
                             items: [],
                             hasBebedouro: false,
                             avariados: 0,
@@ -1438,6 +1479,115 @@
             const noBebedouroContainer = document.getElementById('no-bebedouro-units-list');
             if(noBebedouroContainer) noBebedouroContainer.innerHTML = analysis.noBebedouro.length > 0 ? analysis.noBebedouro.map(u => `<p class="text-sm text-slate-600 dark:text-slate-300">${u.name}</p>`).join('') : '<p class="text-sm text-slate-500 dark:text-slate-400">Todas as unidades têm bebedouro.</p>';
         }
+        
+        // --- LÓGICA DA ABA SEDE ---
+        const sedeData = [
+            { cod: '140.32', desc: 'SUPERINTENDENCIA DE ADMINISTRAÇAO', local: 'SUBSOLO', sala: 'SALA 1', tipo: 'SALA INDIVIDUAL', setor: 'DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO' },
+            { cod: '140.88', desc: 'DIRETORIA TÉCNICA DE ARQUIVO E PROTOCOLO', local: 'SUBSOLO', sala: 'SALA 2', tipo: 'SALA INDIVIDUAL', setor: 'DIRETORIA TÉCNICA DE ARQUIVO E PROTOCOLO' },
+            { cod: '140.101', desc: 'SERVIÇOS GERAIS - SEMCAS', local: 'SUBSOLO', sala: 'SALA 3', tipo: 'SALA INDIVIDUAL', setor: 'SERVIÇOS GERAIS (LSL)' },
+            { cod: '140.1', desc: 'COORDENAÇAO DE MATERIAL E PATRIMONIO', local: 'SUBSOLO', sala: 'SALA 4', tipo: 'SALA INDIVIDUAL', setor: 'COORDENAÇÃO DE ADMINISTRAÇÃO E PATRIMÔNIO' },
+            { cod: '140.1', desc: 'COORDENAÇAO DE MATERIAL E PATRIMONIO', local: 'SUBSOLO', sala: 'SALA 5', tipo: 'SALA INDIVIDUAL', setor: 'ALMOXARIFADO' },
+            { cod: '140.73', desc: 'COORDENAÇÃO DE SUPORTE E LOGÍSTICA', local: 'SUBSOLO', sala: 'SALA 5', tipo: 'SALA INDIVIDUAL', setor: 'DIRETORIA TÉCNICA DE LOGÍSTICA E TRANSPORTE' },
+            { cod: '140.96', desc: 'DIRETORIA TÉCNICA DE MANUTENÇÃO', local: 'SUBSOLO', sala: 'SALA 6', tipo: 'SALA INDIVIDUAL', setor: 'DIRETORIA TÉCNICA DE MANUTENÇÃO' },
+            { cod: '140.94', desc: 'RECEPÇÃO - SEMCAS', local: 'TÉRREO', sala: 'SALA 1', tipo: 'SALA INDIVIDUAL', setor: 'RECEPÇÃO' },
+            { cod: '140.29', desc: 'SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...', local: 'TÉRREO', sala: 'SALA 2', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA' },
+            { cod: '140.29', desc: 'SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...', local: 'TÉRREO', sala: 'SALA 2', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE GESTÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS E TRANSFERÊNCIA DE RENDA' },
+            { cod: '140.29', desc: 'SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...', local: 'TÉRREO', sala: 'SALA 2', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA' },
+            { cod: '140.48', desc: 'COORDENAÇAO DO PAEFI - SEMCAS', local: 'TÉRREO', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO ESPECIALIZADO À FAMÍLIA (PAEFI)' },
+            { cod: '140.76', desc: 'SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE', local: 'TÉRREO', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE' },
+            { cod: '140.93', desc: 'SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL', local: 'TÉRREO', sala: 'SALA 4', tipo: 'DIVIDIDA POR GESSO', setor: 'COORDENAÇÃO DO SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL' },
+            { cod: '140.99', desc: 'COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊNCIA E IDOSAS', local: 'TÉRREO', sala: 'SALA 5', tipo: 'DIVIDIDA POR GESSO', setor: 'COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL ESPECIAL DE MÉDIA COMPLEXIDADE PARA PESSOAS COM DEFICIÊNCIA E IDOSAS' },
+            { cod: '140.89', desc: 'AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL', local: 'TÉRREO', sala: 'SALA 6', tipo: 'DIVIDIDA POR GESSO', setor: 'AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL (AEPETI)' },
+            { cod: '140.40', desc: 'COORDENAÇAO DE PESSOAS EM SITUAÇAO DE RUA', local: 'TÉRREO', sala: 'SALA 7', tipo: 'DIVIDIDA POR GESSO', setor: 'COORDENAÇÃO DE PESSOAS EM SITUAÇÃO DE RUA' },
+            { cod: '140.33', desc: 'COORDENAÇAO DE MEDIDAS SOCIO EDUCATIVAS', local: 'TÉRREO', sala: 'SALA 8', tipo: 'DIVIDIDA POR GESSO', setor: 'COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL A ADOLESCENTES EM CUMPRIMENTO DE MEDIDAS SOCIOEDUCATIVAS...' },
+            { cod: '140.33', desc: 'COORDENAÇAO DE MEDIDAS SOCIO EDUCATIVAS', local: 'TÉRREO', sala: 'SALA 9', tipo: 'DIVIDIDA POR GESSO', setor: 'MEDIDA SOCIOEDUCATIVA' },
+            { cod: '140.44', desc: 'COORDENAÇAO DE BENEFICIOS E AÇOES SOCIOASSISTENCIAIS', local: 'MEZANINO', sala: 'SALA 1', tipo: 'SALA INDIVIDUAL', setor: 'COORDENAÇÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS' },
+            { cod: '140.79', desc: 'TECNOLOGIA DA INFORMAÇÃO - SEMCAS', local: 'MEZANINO', sala: 'SALA 2', tipo: 'SALA INDIVIDUAL', setor: 'DIRETORIA TÉCNICA DE INFORMÁTICA' },
+            { cod: '140.31 / 140.77', desc: 'SUPERINTENDÊNCIA DE ARTICULAÇÃO INSTITUCIONAL', local: 'MEZANINO', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE ARTICULAÇÃO INSTITUCIONAL' },
+            { cod: '140.41', desc: 'COORDENAÇAO DE PROTEÇAO E ARTICULAÇAO DE POLITICA DE INCLUSAO', local: 'MEZANINO', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS' },
+            { cod: '140.41', desc: 'COORDENAÇAO DE PROTEÇAO E ARTICULAÇAO DE POLITICA DE INCLUSAO', local: 'MEZANINO', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS' },
+            { cod: '-', desc: '(SETOR SEM CÓDIGO NO SISTEMA)', local: 'MEZANINO', sala: 'SALA 4', tipo: 'SALA INDIVIDUAL', setor: 'SECRETÁRIA ADJUNTA DE PROTEÇÃO SOCIAL' },
+            { cod: '140.78', desc: 'ASSESSORIA TÉCNICA / COMUNICAÇÃO -SEMCAS', local: 'MEZANINO', sala: 'SALA 5', tipo: 'SALA CONJUNTA', setor: 'ASSESSORIA TÉCNICA (ASTEC)' },
+            { cod: '140.36', desc: 'COORDENAÇAO DE CAPACITAÇAO - SEMCAS', local: 'MEZANINO', sala: 'SALA 5', tipo: 'SALA CONJUNTA', setor: 'PROGRAMA DE CAPACITAÇÃO DE DIRIGENTES (PROCAD)' },
+            { cod: '-', desc: '(SETOR SEM CÓDIGO NO SISTEMA)', local: 'MEZANINO', sala: 'SALA 5', tipo: 'SALA CONJUNTA', setor: 'PROGRAMA CRIANÇA FELIZ (PCF)' },
+            { cod: '140.27', desc: 'SUPERINTENDENCIA DE GESTAO DO SISTEMA UNICO DE ASSISTENCIA SOCIAL', local: '1º ANDAR', sala: 'SALA 1', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE GESTÃO DO SISTEMA ÚNICO DE ASSISTÊNCIA SOCIAL (SUAS)' },
+            { cod: '140.27', desc: 'SUPERINTENDENCIA DE GESTAO DO SISTEMA UNICO DE ASSISTENCIA SOCIAL', local: '1º ANDAR', sala: 'SALA 1', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE REGULAÇÃO DO SUAS' },
+            { cod: '140.49', desc: 'COORDENAÇAO DE ARTICULAÇAO DA REDE DE PROTEÇAO', local: '1º ANDAR', sala: 'SALA 1', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DA REDE SOCIOASSISTENCIAL PRIVADA' },
+            { cod: '140.26', desc: 'SUPERINTENDENCIA DE PROTEÇAO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE', local: '1º ANDAR', sala: 'SALA 2', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE' },
+            { cod: '140.26', desc: 'SUPERINTENDENCIA DE PROTEÇAO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE', local: '1º ANDAR', sala: 'SALA 2', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DOS SERVIÇOS FAMILIAR E INSTITUCIONAL DE ACOLHIMENTO' },
+            { cod: '140.46', desc: 'COORDENAÇAO ACOLHIMENTO INSTITUCIONAL', local: '1º ANDAR', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE ACOLHIMENTO INSTITUCIONAL' },
+            { cod: '140.46', desc: 'COORDENAÇAO ACOLHIMENTO INSTITUCIONAL', local: '1º ANDAR', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DA CENTRAL DE ACOLHIMENTO' },
+            { cod: '140.46', desc: 'COORDENAÇAO ACOLHIMENTO INSTITUCIONAL', local: '1º ANDAR', sala: 'SALA 3', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE ACOLHIMENTO EM FAMÍLIA ACOLHEDORA' },
+            { cod: '140.4', desc: 'COORDENAÇAO DO PAIF - SEMCAS', local: '1º ANDAR', sala: 'SALA 4', tipo: 'SALA CONJUNTA', setor: 'PAIF - COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO INTEGRAL À FAMÍLIA' },
+            { cod: '140.43', desc: 'COORDENAÇAO DE CONVIVENCIA E FORTALECIMENTO', local: '1º ANDAR', sala: 'SALA 4', tipo: 'SALA CONJUNTA', setor: 'SCFV - COORDENAÇÃO DO SERVIÇO DE CONVIVÊNCIA E FORTALECIMENTO DE VÍNCULOS' },
+            { cod: '140.25', desc: 'SUPERINTENDENCIA DE PROTEÇAO SOCIAL BASICA', local: '1º ANDAR', sala: 'SALA 4', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL BÁSICA NO DOMICÍLIO' },
+            { cod: '140.25', desc: 'SUPERINTENDENCIA DE PROTEÇAO SOCIAL BASICA', local: '1º ANDAR', sala: 'SALA 5', tipo: 'SALA INDIVIDUAL', setor: 'SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL BÁSICA' },
+            { cod: '140.95', desc: 'COORDENAÇÃO DE GESTÃO DO TRABALHO E EDUCAÇÃO PERMANENTE', local: '1º ANDAR', sala: 'SALA 6', tipo: 'SALA INDIVIDUAL', setor: 'COORDENAÇÃO DE GESTÃO DO TRABALHO E EDUCAÇÃO PERMANENTE (COGETEP)' },
+            { cod: '140.34', desc: 'COORDENAÇAO DE RECURSOS HUMANOS', local: '1º ANDAR', sala: 'SALA 7', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE RECURSOS HUMANOS' },
+            { cod: '140.34', desc: 'COORDENAÇAO DE RECURSOS HUMANOS', local: '1º ANDAR', sala: 'SALA 7', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE FOLHA DE PAGAMENTO' },
+            { cod: '140.84', desc: 'SEMCAS - ASSESSORIA JURIDICA', local: '1º ANDAR', sala: 'SALA 9', tipo: 'SALA INDIVIDUAL', setor: 'ASSESSORIA JURÍDICA' },
+            { cod: '140.87', desc: 'COORDENAÇAO DE PLANEJAMENTO E VIGILANCIA', local: '1º ANDAR', sala: 'SALA 10', tipo: 'SALA INDIVIDUAL', setor: 'COORDENAÇÃO DE PLANEJAMENTO E VIGILÂNCIA SOCIOASSISTENCIAL' },
+            { cod: '140.81', desc: 'COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA', local: '1º ANDAR', sala: 'SALA 11', tipo: 'SALA CONJUNTA', setor: 'SUPERINTENDÊNCIA DE EXECUÇÃO ORÇAMENTÁRIA, FINANCEIRA E DE CONTABILIDADE' },
+            { cod: '140.81', desc: 'COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA', local: '1º ANDAR', sala: 'SALA 11', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE EXECUÇÃO ORÇAMENTÁRIA E FINANCEIRA' },
+            { cod: '140.81', desc: 'COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA', local: '1º ANDAR', sala: 'SALA 11', tipo: 'SALA CONJUNTA', setor: 'COORDENAÇÃO DE CONTABILIDADE' },
+            { cod: '140.90 / 91 / 92', desc: 'FUNDO MUNICIPAL (ASSISTENCIA / CRIANÇA / IDOSO)', local: '1º ANDAR', sala: 'SALA 11', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE GESTÃO DOS FUNDOS MUNICIPAIS VINCULADOS AOS CONSELHOS DE DIREITOS' },
+            { cod: '140.81', desc: 'COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA', local: '1º ANDAR', sala: 'SALA 11', tipo: 'SALA CONJUNTA', setor: 'DIRETORIA TÉCNICA DE PRESTAÇÃO DE CONTAS' },
+            { cod: '140.85', desc: 'GABINETE - SEMCAS', local: '1º ANDAR', sala: 'SALA 12', tipo: 'SALA CONJUNTA', setor: 'GABINETE' },
+            { cod: '140.42', desc: 'COORDENAÇAO E ASSESSORIA DE COMUNICAÇAO', local: '1º ANDAR', sala: 'SALA 12', tipo: 'SALA CONJUNTA', setor: 'COMUNICAÇÃO' },
+            { cod: '140.74', desc: 'GABINETE DA SECRETÁRIA ADJUNTA DE GESTÃO', local: '1º ANDAR', sala: 'SALA 13', tipo: 'SALA INDIVIDUAL', setor: 'GABINETE DO SECRETÁRIO ADJUNTO DE ADMINISTRAÇÃO' },
+            { cod: '140.2 / 140.86', desc: 'COORDENAÇAO DE CONTRATOS E CONVENIOS / COORDENAÇAO DE CONTRATOS', local: '1º ANDAR', sala: 'SALA 14', tipo: 'SALA INDIVIDUAL', setor: 'COORDENAÇÃO DE CONTRATOS' },
+            { cod: '140.70', desc: 'CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE', local: '2º ANDAR', sala: 'SALA 1', tipo: 'SALA INDIVIDUAL', setor: 'CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE (CMDCA)' },
+            { cod: '140.71', desc: 'CONSELHO MUNICIPAL DO IDOSO', local: '2º ANDAR', sala: 'SALA 2', tipo: 'SALA INDIVIDUAL', setor: 'CONSELHO MUNICIPAL DO IDOSO (CMDI)' },
+            { cod: '140.69', desc: 'CONSELHO MUNICIPAL ASSISTENCIA SOCIAL', local: '2º ANDAR', sala: 'SALA 3', tipo: 'SALA INDIVIDUAL', setor: 'CONSELHO MUNICIPAL DE ASSISTÊNCIA SOCIAL (CMAS)' },
+            { cod: '140.97', desc: 'AUDITÓRIO - SEMCAS', local: '2º ANDAR', sala: 'SALA 6', tipo: 'SALA INDIVIDUAL', setor: 'AUDITÓRIO' },
+            { cod: '140.97', desc: 'AUDITÓRIO - SEMCAS', local: '3º ANDAR', sala: 'SALA 1', tipo: 'SALA INDIVIDUAL', setor: 'AUDITÓRIO' }
+        ];
+
+        function renderSedeReport() {
+            const tableBody = document.getElementById('sede-table-body');
+            if (!tableBody) return;
+
+            const localFiltro = filtroSedeLocal.value;
+            const tipoFiltro = filtroSedeTipo.value;
+            const buscaFiltro = normalizeString(filtroSedeBusca.value);
+
+            const filteredData = sedeData.filter(row => {
+                const matchLocal = !localFiltro || row.local === localFiltro;
+                const matchTipo = !tipoFiltro || row.tipo === tipoFiltro;
+                const matchBusca = !buscaFiltro || normalizeString(row.setor).includes(buscaFiltro);
+                return matchLocal && matchTipo && matchBusca;
+            });
+            
+            let tableHTML = '';
+            filteredData.forEach(row => {
+                tableHTML += `
+                    <tr class="border-b dark:border-slate-700">
+                        <td class="px-6 py-4">${row.cod}</td>
+                        <td class="px-6 py-4">${row.desc}</td>
+                        <td class="px-6 py-4">${row.local}</td>
+                        <td class="px-6 py-4">${row.sala}</td>
+                        <td class="px-6 py-4">${row.tipo}</td>
+                        <td class="px-6 py-4">${row.setor}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = tableHTML;
+        }
+
+        function populateSedeFilters() {
+            const locais = [...new Set(sedeData.map(item => item.local))];
+            const tipos = [...new Set(sedeData.map(item => item.tipo))];
+
+            filtroSedeLocal.innerHTML = '<option value="">Todos os Locais</option>';
+            locais.forEach(l => {
+                filtroSedeLocal.innerHTML += `<option value="${l}">${l}</option>`;
+            });
+
+            filtroSedeTipo.innerHTML = '<option value="">Todos os Tipos</option>';
+            tipos.forEach(t => {
+                filtroSedeTipo.innerHTML += `<option value="${t}">${t}</option>`;
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             setupTheme(); 
@@ -1476,6 +1626,7 @@
                 }
 
                 updateFilterOptions();
+                populateSedeFilters();
                 switchTab('dashboard');
                 const now = new Date();
                 const formattedDate = now.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
