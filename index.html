@@ -20,9 +20,52 @@
         }
     </script>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --border-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        .btn-gradient {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            padding: 14px 28px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn-gradient:hover::before {
+            left: 100%;
+        }
+
         .chart-container {
             position: relative;
             width: 100%;
@@ -36,16 +79,16 @@
             font-weight: 600;
         }
         .tab-button.active {
-            color: #4f46e5; /* Indigo-600 */
+            color: #4f46e5;
             border-bottom-color: #4f46e5;
         }
         .dark .tab-button.active {
-            color: #818cf8; /* Indigo-400 */
+            color: #818cf8;
             border-bottom-color: #818cf8;
         }
         .loader {
-            border: 5px solid #e5e7eb; /* Gray 200 */
-            border-top: 5px solid #4f46e5; /* Indigo 600 */
+            border: 5px solid #e5e7eb;
+            border-top: 5px solid #4f46e5;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -53,8 +96,8 @@
             margin: auto;
         }
         .dark .loader {
-             border: 5px solid #374151; /* Gray 700 */
-             border-top: 5px solid #818cf8; /* Indigo 400 */
+             border: 5px solid #374151;
+             border-top: 5px solid #818cf8;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
@@ -98,6 +141,10 @@
             transition: all 0.3s ease;
             max-height: 90vh;
         }
+        .dashboard-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 antialiased transition-colors duration-300">
@@ -128,16 +175,26 @@
         </nav>
 
         <div id="content-dashboard">
-            <section id="summary-section" class="mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6" id="summary-cards"></div>
-            </section>
-            <div class="card bg-white dark:bg-slate-800 p-4 md:p-6 mb-8 shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white">VISÃO GERAL DO PATRIMÔNIO</h3>
-                    <button onclick="exportChart('dashboardChart')" class="text-xs bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
+             <!-- NOVO DASHBOARD INTELIGENTE -->
+            <section id="intelligent-dashboard" class="space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Coluna de Unidades em Atenção -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">⚠️ Top 10 Unidades em Atenção</h3>
+                        <div id="attention-units-list" class="space-y-3 dashboard-list"></div>
+                    </div>
+                    <!-- Coluna de Unidades Supridas -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">✅ Top 10 Unidades Supridas</h3>
+                        <div id="supplied-units-list" class="space-y-3 dashboard-list"></div>
+                    </div>
+                     <!-- Coluna de Unidades sem Bebedouro -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">💧 Top 10 Unidades sem Bebedouro</h3>
+                        <div id="no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
+                    </div>
                 </div>
-                <div class="chart-container" data-chart-name="dashboardChart"><canvas id="dashboardChart"></canvas></div>
-            </div>
+            </section>
         </div>
 
         <div id="content-patrimonio" class="hidden">
@@ -182,7 +239,7 @@
                     </div>
                 </div>
                 <div class="w-full md:w-auto mt-4">
-                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-indigo-600 text-white font-semibold rounded-lg text-base hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow">VER INVENTÁRIO COMPLETO</button>
+                    <button id="ver-resumo-geral-btn" class="btn-gradient w-full">VER INVENTÁRIO COMPLETO</button>
                 </div>
             </div>
             <main id="main-content-area" class="mt-8"></main>
@@ -256,7 +313,7 @@
                         <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Análise de Necessidades Essenciais</h2>
                         <p class="text-slate-500 dark:text-slate-400 mt-1">Ferramenta para identificar a falta de itens essenciais (climatização e bebedouros) nas unidades.</p>
                     </div>
-                    <button id="generate-pdf-btn" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                    <button id="generate-pdf-btn" class="btn-gradient flex items-center gap-2 !px-4 !py-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                         Gerar Relatório PDF
                     </button>
@@ -328,7 +385,7 @@
         let themeToggleBtn, darkIcon, lightIcon;
         let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
         let generatePdfBtn, analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
-
+        
         // --- LÓGICA DE TEMA (DARK MODE) ---
         function setupTheme() {
             themeToggleBtn = document.getElementById('theme-toggle');
@@ -357,57 +414,74 @@
         }
         
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
-        const setWithExpiry = (key, value, ttl) => {
-            const now = new Date();
-            const item = { value: value, expiry: now.getTime() + ttl };
-            try {
-                localStorage.setItem(key, JSON.stringify(item));
-            } catch (e) {
-                console.error("Error saving to localStorage", e);
-            }
-        };
-
-        const getWithExpiry = (key) => {
-            const itemStr = localStorage.getItem(key);
-            if (!itemStr) return null;
-            const item = JSON.parse(itemStr);
-            const now = new Date();
-            if (now.getTime() > item.expiry) {
-                localStorage.removeItem(key);
-                return null;
-            }
-            return item.value;
-        };
-        
-        async function fetchAndProcessData(url, cacheKey, ttl = 300000) {
-            const cachedData = getWithExpiry(cacheKey);
-            if (cachedData) {
-                return cachedData;
+        class DataManager {
+            constructor() {
+                this.cacheKey = 'dashboard_cache_v3';
+                this.cacheExpiry = 5 * 60 * 1000; // 5 minutos
+                this.loadingPromises = new Map();
             }
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`Falha ao carregar dados: ${response.status}`);
-            }
-
-            let data;
-            if (url.includes('script.google.com/macros/s/')) {
-                const rawData = await response.json();
-                if (rawData && rawData.error) {
-                    throw new Error(`Erro do Apps Script: ${rawData.error}`);
+            async fetchWithCache(url, key, type = 'json') {
+                const cached = this.getFromCache(key);
+                if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
+                    return cached.data;
                 }
-                data = Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null;
-                if (data === null) {
-                    throw new Error("Formato de dados do patrimônio inválido.");
+
+                if (this.loadingPromises.has(key)) {
+                    return this.loadingPromises.get(key);
                 }
-            } else {
-                const csvText = await response.text();
-                data = parseCsvData(csvText);
+
+                const promise = this.fetchData(url, type).then(data => {
+                    this.saveToCache(key, data);
+                    this.loadingPromises.delete(key);
+                    return data;
+                }).catch(error => {
+                    this.loadingPromises.delete(key);
+                    throw error;
+                });
+
+                this.loadingPromises.set(key, promise);
+                return promise;
             }
-            
-            setWithExpiry(cacheKey, data, ttl);
-            return data;
+
+            async fetchData(url, type) {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                if (type === 'json') {
+                    const rawData = await response.json();
+                     if (rawData && rawData.error) throw new Error(`Erro do Apps Script: ${rawData.error}`);
+                    return Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null;
+                }
+                return response.text();
+            }
+
+            saveToCache(key, data) {
+                try {
+                    const cache = this.getAllCache();
+                    cache[key] = { data, timestamp: Date.now() };
+                    localStorage.setItem(this.cacheKey, JSON.stringify(cache));
+                } catch (e) {
+                    console.warn("Could not save to cache, it might be full. Clearing cache.");
+                    localStorage.removeItem(this.cacheKey);
+                }
+            }
+
+            getFromCache(key) {
+                const cache = this.getAllCache();
+                return cache[key] || null;
+            }
+
+            getAllCache() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.cacheKey)) || {};
+                } catch {
+                    return {};
+                }
+            }
         }
+        const dataManager = new DataManager();
 
         function parseCsvData(csvText) {
             const lines = csvText.trim().split(/\r\n|\n/);
@@ -537,29 +611,24 @@
             return Object.values(agrupados);
         }
 
-        function formatUnitName(item, includeType = false) {
+        function formatUnitName(item) {
             let nomeUnidade = item.unit_condition;
-            const idPrefix = (item.id || '').split('_')[0];
+            const type = item.type.toUpperCase();
             const lowerCaseName = nomeUnidade.toLowerCase();
-            if (item.type === 'CT') {
+            
+            if (type === 'CRAS' && !lowerCaseName.startsWith('cras')) {
+                return `CRAS ${nomeUnidade}`;
+            }
+            if (type === 'CREAS' && !lowerCaseName.startsWith('creas')) {
+                return `CREAS ${nomeUnidade}`;
+            }
+            if (type === 'CT') {
                  return `CT ${nomeUnidade}`;
             }
-            let prefix = '';
-            switch(idPrefix) {
-                case 'creas': prefix = 'CREAS '; break;
-                case 'cras':
-                    if (!lowerCaseName.startsWith('cras ')) {
-                        prefix = 'CRAS ';
-                    }
-                    break;
-                case 'externa':
-                case 'centro_pop':
-                case 'abrigo':
-                case 'sede':
-                case 'conselho':
-                    return nomeUnidade;
-            }
-            return `${prefix}${nomeUnidade}`;
+            
+            // Remove potential duplicated prefix, case-insensitive
+            const regex = new RegExp(`^${type}\\s*`, 'i');
+            return nomeUnidade.replace(regex, `${type} `).trim();
         }
         
         // --- FUNÇÕES DE RENDERIZAÇÃO ---
@@ -629,27 +698,6 @@
             return reportLines.join('<br>');
         }
 
-        function renderSummaryCards(containerId, data) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            const totalItems = data.reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const attentionItems = data.filter(item => item.state === 'Avariado').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const newItems = data.filter(item => item.state === 'Novo').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const goodItems = data.filter(item => item.state === 'Bom').reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-            const totalDonations = data.filter(item => {
-                const source = normalizeString(item.donation_source);
-                return item.donation_source && !['proprio', 'proprios'].includes(source);
-            }).reduce((sum, item) => sum + parseInt(item.quantity, 10), 0);
-
-            container.innerHTML = `
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Itens</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-red-100 dark:bg-red-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600 dark:text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Avariados</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${attentionItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-green-100 dark:bg-green-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400"><path d="M7 10v4h10v-4"></path><path d="M17 14v2a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2"></path><path d="M12 14V4"></path><path d="m15 7-3-3-3 3"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens Novos</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${newItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-sky-100 dark:bg-sky-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600 dark:text-sky-400"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2z"></path></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Itens em Bom Estado</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${goodItems}</p></div></div>
-                <div class="card bg-white dark:bg-slate-800 p-5 flex items-center space-x-4 shadow-md rounded-lg"><div class="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-600 dark:text-purple-400"><path d="M20 12v4H4v-4"/><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 12v8"/><path d="M12 12h.01"/><path d="M12 7.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg></div><div><p class="text-slate-500 dark:text-slate-400 text-sm">Total de Doações</p><p class="text-2xl font-bold text-slate-800 dark:text-white">${totalDonations}</p></div></div>
-            `;
-        }
-
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
             if (itemsToDisplay.length === 0) {
@@ -661,7 +709,7 @@
             itemsToDisplay.forEach(item => {
                 const isNewButDefective = item.originalStateWasNew && item.state === 'Avariado';
                 const color = stateColors[item.state] || stateColors['Regular'];
-                const unitDisplayName = formatUnitName(item, true);
+                const unitDisplayName = formatUnitName(item);
                 const stateTextClass = isNewButDefective ? 'text-red-600 font-semibold dark:text-red-400' : color.text;
                 const stateDisplayName = isNewButDefective ? `Novo (Avariado)` : item.state;
                 const observationText = item.observation || '';
@@ -729,7 +777,7 @@
 
         function generateRanking(data, states) {
             const counts = data.filter(item => states.includes(item.state)).reduce((acc, item) => {
-                const unitName = formatUnitName(item, true);
+                const unitName = formatUnitName(item);
                 acc[unitName] = (acc[unitName] || 0) + item.quantity;
                 return acc;
             }, {});
@@ -843,7 +891,7 @@
                 option.textContent = cat.toUpperCase();
                 filtroTotalCategoriaEl.appendChild(option);
             });
-            const unidades = [...new Set(allItems.map(item => formatUnitName(item, true)))].sort((a, b) => a.localeCompare(b));
+            const unidades = [...new Set(allItems.map(item => formatUnitName(item)))].sort((a, b) => a.localeCompare(b));
             filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>';
             unidades.forEach(u => {
                 const option = document.createElement('option');
@@ -872,7 +920,7 @@
             const selectedEstado = filtroTotalEstadoEl.value;
             let filteredData = allItems;
             if (selectedCategoria) filteredData = filteredData.filter(item => item.type === selectedCategoria);
-            if (selectedUnidade) filteredData = filteredData.filter(item => formatUnitName(item, true) === selectedUnidade);
+            if (selectedUnidade) filteredData = filteredData.filter(item => formatUnitName(item) === selectedUnidade);
             if (selectedEstado) filteredData = filteredData.filter(item => item.state === selectedEstado);
             if (searchTerm) filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
             const groupedItems = {};
@@ -883,7 +931,7 @@
                     groupedItems[desc] = { total: 0, type: item.type, locations: {} };
                 }
                 groupedItems[desc].total += item.quantity;
-                const unitName = formatUnitName(item, true);
+                const unitName = formatUnitName(item);
                 const locationKey = `${unitName} - ${item.location || 'N/D'}`;
                 groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
             });
@@ -905,17 +953,7 @@
         }
 
         function renderDashboard() {
-            renderSummaryCards('summary-cards', allItems);
-            const chartCanvas = document.getElementById('dashboardChart');
-            if (!chartCanvas) return;
-            const stateCounts = allItems.reduce((acc, item) => {
-                acc[item.state] = (acc[item.state] || 0) + item.quantity;
-                return acc;
-            }, { Novo: 0, Bom: 0, Regular: 0, Avariado: 0 });
-            const stateOrder = ['Novo', 'Bom', 'Regular', 'Avariado'];
-            const chartData = GerarConfigGrafico('doughnut', { labels: stateOrder, datasets: [{ label: 'Quantidade', data: stateOrder.map(state => stateCounts[state]), backgroundColor: stateOrder.map(state => stateColors[state]?.hex || '#cccccc'), hoverOffset: 4 }] }, { plugins: { title: { text: 'Itens por Estado de Conservação' } }, onClick: (event, elements) => { if (elements.length > 0) { const estado = dashboardChartInstance.data.labels[elements[0].index]; switchTab('patrimonio'); filtroEstadoEl.value = estado; handleResumoClick(); } } });
-            if (dashboardChartInstance) dashboardChartInstance.destroy();
-            dashboardChartInstance = new Chart(chartCanvas, chartData);
+            renderPriorityPanel();
         }
 
         // --- LÓGICA DA MODAL ---
@@ -944,7 +982,7 @@
                     const itemExemplo = allItems.find(item => item.unit_condition === u && item.id.startsWith(`${selectedServico}_`));
                     return {
                         value: u,
-                        text: itemExemplo ? formatUnitName(itemExemplo, true).toUpperCase() : u.toUpperCase()
+                        text: itemExemplo ? formatUnitName(itemExemplo) : u.toUpperCase()
                     };
                 }).sort((a, b) => a.text.localeCompare(b.text));
             }
@@ -965,12 +1003,12 @@
             const suitableLocations = ['recepção', 'sala', 'atendimento', 'cozinha', 'refeitório', 'copa', 'auditório', 'gabinete'];
             
             const itemsForAnalysis = allItems.filter(item => normalizeString(item.type) !== 'sede');
-            const units = [...new Set(itemsForAnalysis.map(item => formatUnitName(item, true)))];
+            const units = [...new Set(itemsForAnalysis.map(item => formatUnitName(item)))];
             
             analysisResults = [];
 
             units.forEach(unitName => {
-                const unitItems = itemsForAnalysis.filter(item => formatUnitName(item, true) === unitName);
+                const unitItems = itemsForAnalysis.filter(item => formatUnitName(item) === unitName);
                 const unitNeeds = {
                     unitName: unitName,
                     missing: []
@@ -1173,7 +1211,7 @@
 
         function handleExport() {
             const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
-            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [`"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item, true).replace(/"/g, '""')}"`, item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`, `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`]);
+            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [`"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item).replace(/"/g, '""')}"`, item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`, `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`]);
             let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -1217,7 +1255,9 @@
                 visaoAtiva = 'dashboard';
                 tabDashboard.classList.add('active');
                 contentDashboard.classList.remove('hidden');
-                if (allItems.length > 0) renderDashboard();
+                if (allItems.length > 0) {
+                    renderPriorityPanel();
+                }
             } else if (tabName === 'patrimonio') {
                 visaoAtiva = 'boasVindas';
                 tabPatrimonio.classList.add('active');
@@ -1230,8 +1270,8 @@
                 if (allEstoqueItems.length === 0) {
                     mainContentEstoqueEl.innerHTML = `<div class="text-center p-20"><div class="loader"></div><p class="mt-4 text-xl text-slate-600 dark:text-slate-300">A carregar dados do estoque...</p></div>`;
                     try {
-                        const estoqueData = await fetchAndProcessData(googleSheetEstoqueUrl, 'estoqueCache');
-                        allEstoqueItems = estoqueData;
+                        const csvText = await dataManager.fetchWithCache(googleSheetEstoqueUrl, 'estoque', 'text');
+                        allEstoqueItems = parseCsvData(csvText);
                         renderEstoque(allEstoqueItems);
                     } catch (error) {
                         console.error('Erro ao carregar dados do estoque:', error);
@@ -1266,7 +1306,6 @@
             filtroEstadoEl = document.getElementById('filtro-estado');
             filtroBuscaEl = document.getElementById('filtro-busca');
             filtroDoacaoEl = document.getElementById('filtro-doacao');
-            summaryCardsContainerEl = document.getElementById('summary-cards');
             mainContentAreaEl = document.getElementById('main-content-area');
             verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn');
             tabDashboard = document.getElementById('tab-dashboard');
@@ -1342,20 +1381,100 @@
             analiseFilterEl.addEventListener('change', renderNeedsAnalysisReport);
         }
 
+        // --- LÓGICA DO PAINEL DE PRIORIDADES ---
+        class PriorityAnalyzer {
+            analyze(items) {
+                const unitsData = new Map();
+                const itemsForAnalysis = items.filter(item => {
+                    const type = normalizeString(item.type);
+                    const unitCondition = normalizeString(item.unit_condition);
+                    return type !== 'sede' && !unitCondition.includes('circo escola');
+                });
+
+                itemsForAnalysis.forEach(item => {
+                    const unitKey = item.unit_condition;
+                    if (!unitsData.has(unitKey)) {
+                        unitsData.set(unitKey, {
+                            name: formatUnitName(item).toUpperCase(),
+                            items: [],
+                            hasBebedouro: false,
+                            avariados: 0,
+                            regulares: 0,
+                            novos: 0,
+                            bons: 0
+                        });
+                    }
+                    const unit = unitsData.get(unitKey);
+                    unit.items.push(item);
+
+                    const desc = normalizeString(item.description);
+                    if (desc.includes('bebedouro')) unit.hasBebedouro = true;
+                    if (item.state === 'Avariado') unit.avariados++;
+                    if (item.state === 'Regular') unit.regulares++;
+                    if (item.state === 'Novo') unit.novos++;
+                    if (item.state === 'Bom') unit.bons++;
+                });
+
+                const allUnits = Array.from(unitsData.values());
+
+                const attention = allUnits.filter(u => (u.avariados + u.regulares) > 0).sort((a,b) => (b.avariados + b.regulares) - (a.avariados + a.regulares)).slice(0, 10);
+                const supplied = allUnits.filter(u => u.avariados === 0).sort((a,b) => (b.novos * 1.5 + b.bons) - (a.novos * 1.5 + a.bons)).slice(0, 10);
+                const noBebedouro = allUnits.filter(u => !u.hasBebedouro).slice(0, 10);
+                
+                return { attention, supplied, noBebedouro };
+            }
+        }
+        const priorityAnalyzer = new PriorityAnalyzer();
+
+        function renderPriorityPanel() {
+            const analysis = priorityAnalyzer.analyze(allItems);
+            
+            const attentionContainer = document.getElementById('attention-units-list');
+            if(attentionContainer) attentionContainer.innerHTML = analysis.attention.length > 0 ? analysis.attention.map(u => `<p class="text-sm text-slate-600 dark:text-slate-300">${u.name} <span class="font-bold text-yellow-500">(${u.avariados + u.regulares} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhuma unidade em atenção.</p>';
+
+            const suppliedContainer = document.getElementById('supplied-units-list');
+            if(suppliedContainer) suppliedContainer.innerHTML = analysis.supplied.length > 0 ? analysis.supplied.map(u => `<p class="text-sm text-slate-600 dark:text-slate-300">${u.name} <span class="font-bold text-green-500">(${u.novos + u.bons} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500 dark:text-slate-400">Nenhuma unidade suprida encontrada.</p>';
+            
+            const noBebedouroContainer = document.getElementById('no-bebedouro-units-list');
+            if(noBebedouroContainer) noBebedouroContainer.innerHTML = analysis.noBebedouro.length > 0 ? analysis.noBebedouro.map(u => `<p class="text-sm text-slate-600 dark:text-slate-300">${u.name}</p>`).join('') : '<p class="text-sm text-slate-500 dark:text-slate-400">Todas as unidades têm bebedouro.</p>';
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             setupTheme(); 
             initApp(); 
 
+            const intelligentDashboard = document.getElementById('intelligent-dashboard');
             const loaderHTML = `<div class="text-center p-10 col-span-full"><div class="loader"></div><p class="mt-4 text-slate-600 dark:text-slate-300">A carregar dados...</p></div>`;
-            summaryCardsContainerEl.innerHTML = loaderHTML;
-            mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700"><p class="text-xl text-slate-600 dark:text-slate-300">Selecione um <strong>Tipo de Unidade</strong> para começar.</p></div>`;
+            if(intelligentDashboard) {
+                intelligentDashboard.innerHTML = loaderHTML;
+            }
             
             try {
-                const patrimonioData = await fetchAndProcessData(googleSheetPatrimonioUrl, 'patrimonioCache');
+                const patrimonioData = await dataManager.fetchWithCache(googleSheetPatrimonioUrl, 'patrimonio');
                 if (!patrimonioData || !Array.isArray(patrimonioData)) {
                     throw new Error("Nenhum dado de patrimônio foi retornado. Verifique a planilha e o script.");
                 }
                 allItems = formatSheetData(patrimonioData);
+                
+                if(intelligentDashboard) {
+                    intelligentDashboard.innerHTML = `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">⚠️ Top 10 Unidades em Atenção</h3>
+                                <div id="attention-units-list" class="space-y-3 dashboard-list"></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">✅ Top 10 Unidades Supridas</h3>
+                                <div id="supplied-units-list" class="space-y-3 dashboard-list"></div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">💧 Top 10 Unidades sem Bebedouro</h3>
+                                <div id="no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 updateFilterOptions();
                 switchTab('dashboard');
                 const now = new Date();
@@ -1372,8 +1491,9 @@
                         <p class="text-red-700 dark:text-red-300 mt-2">Não foi possível carregar os dados do patrimônio.</p>
                         <p class="text-sm text-slate-500 dark:text-slate-400 mt-4"><strong>Detalhes:</strong> ${error.message}</p>
                     </div>`;
-                summaryCardsContainerEl.innerHTML = errorHTML;
-                document.getElementById('dashboardChart').parentElement.innerHTML = '';
+                if(intelligentDashboard) {
+                    intelligentDashboard.innerHTML = errorHTML;
+                }
             }
         });
     </script>
