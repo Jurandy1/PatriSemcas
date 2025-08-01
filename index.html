@@ -243,8 +243,8 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20V16"/></svg>
                     </div>
                     <div>
-                        <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio </h2>
-                        <p class="text-sm text-slate-500">v2.0</p>
+                        <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
+                        <p class="text-sm text-slate-500">v.2.0</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -502,7 +502,7 @@
 
     <!-- 5. Rodapé -->
     <footer class="text-center mt-12 mb-6 text-sm text-slate-500">
-        <p>Painel desenvolvido por: Jurandy</p>
+        <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         <p>Secretaria Municipal da Criança e Assistência Social (SEMCAS)</p>
     </footer>
 
@@ -691,12 +691,16 @@
                 let originalState = row.Estado || 'Regular';
                 let finalState = originalState;
                 const observationTextRaw = (row['Observação'] || '').toLowerCase();
-                const normalizedState = normalizeString(originalState);
-                const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizedState);
                 const isDamagedByObs = /avariado|defeito|danificado|não funciona|nao funciona/.test(observationTextRaw);
-                if (isDamagedByState || (originalState === 'Novo' && isDamagedByObs)) {
+                const isDamagedByState = /defeito|avaria|danificado|nao funciona/.test(normalizeString(originalState));
+
+                // A Observação tem prioridade máxima para definir como 'Avariado'
+                if (isDamagedByObs) {
+                    finalState = 'Avariado';
+                } else if (isDamagedByState) {
                     finalState = 'Avariado';
                 }
+                
                 const serviceKey = getServiceKey(row.Tipo);
                 const rawObservation = (row['Observação'] || '').trim();
                 const cleanedObservation = cleanDuplicatedString(rawObservation);
@@ -1506,6 +1510,61 @@
         }
 
         // --- LÓGICA DO PAINEL DE PRIORIDADES (DASHBOARD) ---
+        class PriorityAnalyzer {
+            analyze(items) {
+                const unitsData = new Map();
+                const itemsForAnalysis = items.filter(item => {
+                    const type = normalizeString(item.type);
+                    const unitCondition = normalizeString(item.unit_condition);
+                    return type !== 'sede' && !unitCondition.includes('circo escola');
+                });
+
+                itemsForAnalysis.forEach(item => {
+                    const unitKey = item.unit_condition;
+                    if (!unitsData.has(unitKey)) {
+                        unitsData.set(unitKey, {
+                            name: formatUnitName(item),
+                            items: [],
+                            avariados: 0,
+                            regulares: 0,
+                            totalItems: 0
+                        });
+                    }
+                    const unit = unitsData.get(unitKey);
+                    unit.items.push(item);
+                    unit.totalItems += item.quantity;
+                    if (item.state === 'Avariado') unit.avariados += item.quantity;
+                    if (item.state === 'Regular') unit.regulares += item.quantity;
+                });
+
+                const allUnits = Array.from(unitsData.values());
+
+                // Lógica de Atenção Proporcional
+                allUnits.forEach(u => {
+                    if (u.totalItems > 0) {
+                        // Peso 3 para avariados, 1 para regulares
+                        u.attentionScore = ((u.avariados * 3) + u.regulares) / u.totalItems;
+                    } else {
+                        u.attentionScore = 0;
+                    }
+                });
+                const attention = allUnits.filter(u => u.attentionScore > 0).sort((a,b) => b.attentionScore - a.attentionScore).slice(0, 10);
+                
+                // Lógica Bebedouro
+                const noBebedouro = allUnits.filter(unit => {
+                    const bebedouros = unit.items.filter(item => normalizeString(item.description).includes('bebedouro'));
+                    if (bebedouros.length === 0) {
+                        return true; // Não tem bebedouro
+                    }
+                    // Retorna true se NENHUM bebedouro for funcional
+                    return !bebedouros.some(b => b.state !== 'Avariado');
+                }).slice(0, 10);
+                
+                return { attention, noBebedouro };
+            }
+        }
+        const priorityAnalyzer = new PriorityAnalyzer();
+
         function renderDashboard() {
             if (!allItems || allItems.length === 0) {
                 document.getElementById('content-dashboard').innerHTML = `<div class="card text-center p-10"><p>Nenhum dado para exibir no dashboard.</p></div>`;
@@ -1598,59 +1657,11 @@
 
             // 5. Renderizar Listas
             const attentionContainer = document.getElementById('dashboard-attention-units-list');
-            if(attentionContainer) attentionContainer.innerHTML = analysis.attention.length > 0 ? analysis.attention.map(u => `<p class="text-sm text-slate-600">${u.name} <span class="font-bold text-yellow-500">(${u.avariados + u.regulares} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500">Nenhuma unidade em atenção.</p>';
+            if(attentionContainer) attentionContainer.innerHTML = analysis.attention.length > 0 ? analysis.attention.map(u => `<p class="text-sm text-slate-600">${u.name} <span class="font-bold text-yellow-500">(${u.avariados} avariados, ${u.regulares} regulares)</span></p>`).join('') : '<p class="text-sm text-slate-500">Nenhuma unidade em atenção.</p>';
             
             const noBebedouroContainer = document.getElementById('dashboard-no-bebedouro-units-list');
             if(noBebedouroContainer) noBebedouroContainer.innerHTML = analysis.noBebedouro.length > 0 ? analysis.noBebedouro.map(u => `<p class="text-sm text-slate-600">${u.name}</p>`).join('') : '<p class="text-sm text-slate-500">Todas as unidades têm bebedouro funcional.</p>';
         }
-        
-        class PriorityAnalyzer {
-            analyze(items) {
-                const unitsData = new Map();
-                const itemsForAnalysis = items.filter(item => {
-                    const type = normalizeString(item.type);
-                    const unitCondition = normalizeString(item.unit_condition);
-                    return type !== 'sede' && !unitCondition.includes('circo escola');
-                });
-
-                itemsForAnalysis.forEach(item => {
-                    const unitKey = item.unit_condition;
-                    if (!unitsData.has(unitKey)) {
-                        unitsData.set(unitKey, {
-                            name: formatUnitName(item),
-                            items: [],
-                            hasFunctionalBebedouro: false,
-                            avariados: 0,
-                            regulares: 0,
-                            novos: 0,
-                            bons: 0
-                        });
-                    }
-                    const unit = unitsData.get(unitKey);
-                    unit.items.push(item);
-
-                    const desc = normalizeString(item.description);
-                    if (desc.includes('bebedouro')) {
-                        if (item.state !== 'Avariado') {
-                           unit.hasFunctionalBebedouro = true;
-                        }
-                    }
-                    if (item.state === 'Avariado') unit.avariados++;
-                    if (item.state === 'Regular') unit.regulares++;
-                    if (item.state === 'Novo') unit.novos++;
-                    if (item.state === 'Bom') unit.bons++;
-                });
-
-                const allUnits = Array.from(unitsData.values());
-
-                const attention = allUnits.filter(u => (u.avariados + u.regulares) > 0).sort((a,b) => (b.avariados + b.regulares) - (a.avariados + a.regulares)).slice(0, 10);
-                const supplied = allUnits.filter(u => (u.novos + u.bons) > 0).sort((a,b) => (b.novos + b.bons) - (a.novos + a.bons)).slice(0, 10);
-                const noBebedouro = allUnits.filter(u => !u.hasFunctionalBebedouro).slice(0, 10);
-                
-                return { attention, supplied, noBebedouro };
-            }
-        }
-        const priorityAnalyzer = new PriorityAnalyzer();
 
         // --- LÓGICA DA ABA SEDE (NOVO LAYOUT) ---
         const sedeData = [
