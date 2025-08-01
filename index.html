@@ -294,6 +294,11 @@
                 </div>
             </div>
 
+            <!-- Indicadores Inteligentes -->
+            <div id="intelligent-indicators" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Conteúdo gerado via JavaScript -->
+            </div>
+
             <!-- Charts and Lists -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Main Chart -->
@@ -318,7 +323,7 @@
                     </div>
                 </div>
                 <div class="card">
-                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades sem Bebedouro Funcional</h3>
+                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades com Bebedouro com Defeito</h3>
                      <div id="dashboard-no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
                 </div>
             </div>
@@ -728,6 +733,22 @@
         function normalizeString(str) {
             if (!str) return '';
             return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function normalizarDescricao(desc) {
+            if (!desc) return '';
+            return desc
+                .toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+                .replace(/\b(de|da|do|em|com|para)\b/g, '') // remove preposições como palavras inteiras
+                .replace(/[^a-z0-9]/gi, ' ') // remove símbolos
+                .replace(/\s+/g, ' ') // espaços repetidos
+                .trim();
+        }
+
+        function isBebedouroDefeituoso(item) {
+            return normalizeString(item.description).includes('bebedouro') &&
+                /avariado|defeito|vazando|quebrado|sem funcionar|não funciona|nao funciona|desligado|inutilizável/.test(normalizeString(item.observation || ''));
         }
 
         function debounce(func, delay) {
@@ -1160,8 +1181,10 @@
                     missing: []
                 };
 
-                const hasBebedouro = unitItems.some(item => normalizeString(item.description).includes('bebedouro'));
-                if (!hasBebedouro) {
+                const bebedourosInUnit = unitItems.filter(item => normalizeString(item.description).includes('bebedouro'));
+                const hasFunctionalBebedouro = bebedourosInUnit.some(b => !isBebedouroDefeituoso(b) && b.state !== 'Avariado');
+
+                if (bebedourosInUnit.length === 0 || !hasFunctionalBebedouro) {
                     unitNeeds.missing.push({ item: 'Bebedouro', location: 'Área Comum (Ex: Recepção ou Copa)' });
                 }
 
@@ -1551,13 +1574,21 @@
                 const attention = allUnits.filter(u => u.attentionScore > 0).sort((a,b) => b.attentionScore - a.attentionScore).slice(0, 10);
                 
                 // Lógica Bebedouro
-                const noBebedouro = allUnits.filter(unit => {
-                    const bebedouros = unit.items.filter(item => normalizeString(item.description).includes('bebedouro'));
-                    if (bebedouros.length === 0) {
-                        return true; // Não tem bebedouro
+                const bebedourosDefeituososPorUnidade = new Set();
+                itemsForAnalysis.forEach(item => {
+                    if (isBebedouroDefeituoso(item)) {
+                        bebedourosDefeituososPorUnidade.add(formatUnitName(item));
                     }
-                    // Retorna true se NENHUM bebedouro for funcional
-                    return !bebedouros.some(b => b.state !== 'Avariado');
+                });
+
+                const noBebedouro = allUnits.filter(unit => {
+                    // Adiciona à lista se a unidade já foi marcada com bebedouro defeituoso
+                    if (bebedourosDefeituososPorUnidade.has(unit.name)) {
+                        return true;
+                    }
+                    // Adiciona se não tiver nenhum bebedouro registrado
+                    const hasAnyBebedouro = unit.items.some(item => normalizeString(item.description).includes('bebedouro'));
+                    return !hasAnyBebedouro;
                 }).slice(0, 10);
                 
                 return { attention, noBebedouro };
@@ -1588,6 +1619,75 @@
             document.getElementById('kpi-total-unidades').textContent = totalUnidades.toLocaleString('pt-BR');
             document.getElementById('kpi-total-avariados').textContent = totalAvariados.toLocaleString('pt-BR');
             document.getElementById('kpi-unidades-atencao').textContent = unidadesAtencao.toLocaleString('pt-BR');
+
+            // 2.5. Renderizar Indicadores Inteligentes
+            const indicatorsContainer = document.getElementById('intelligent-indicators');
+            if (indicatorsContainer) {
+                let indicatorsHTML = '';
+
+                // Indicador 1: Percentual de itens avariados
+                if (totalItens > 0) {
+                    const percentageAvariados = ((totalAvariados / totalItens) * 100).toFixed(1);
+                    indicatorsHTML += `
+                        <div class="card bg-yellow-50 border-l-4 border-yellow-400">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-yellow-100 rounded-full mr-4">
+                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-yellow-800">${percentageAvariados}%</p>
+                                    <p class="text-sm text-yellow-700">dos itens estão avariados</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Indicador 2: Concentração de problemas
+                let concentrationInfo = '';
+                if (totalAvariados > 0) {
+                    const avariadosPorUnidade = allItems.filter(item => item.state === 'Avariado').reduce((acc, item) => {
+                        const unitName = formatUnitName(item);
+                        acc[unitName] = (acc[unitName] || 0) + item.quantity;
+                        return acc;
+                    }, {});
+                    const sortedUnidades = Object.entries(avariadosPorUnidade).sort((a, b) => b[1] - a[1]);
+                    let unidadesConcentramCount = 0;
+                    let avariadosConcentrados = 0;
+                    const totalUnidadesComAvariados = sortedUnidades.length;
+                    if (totalUnidadesComAvariados > 1) {
+                        for (const [unidade, count] of sortedUnidades) {
+                            avariadosConcentrados += count;
+                            unidadesConcentramCount++;
+                            if (avariadosConcentrados / totalAvariados >= 0.65 && unidadesConcentramCount < totalUnidadesComAvariados) {
+                                break;
+                            }
+                        }
+                        if (unidadesConcentramCount > 0 && unidadesConcentramCount < totalUnidadesComAvariados) {
+                            const percentProblemas = ((avariadosConcentrados / totalAvariados) * 100).toFixed(0);
+                            concentrationInfo = `${unidadesConcentramCount} unidade${unidadesConcentramCount > 1 ? 's' : ''} concentram ${percentProblemas}% dos problemas.`;
+                        }
+                    }
+                }
+
+                if (concentrationInfo) {
+                    indicatorsHTML += `
+                        <div class="card bg-red-50 border-l-4 border-red-400">
+                            <div class="flex items-center">
+                                <div class="p-3 bg-red-100 rounded-full mr-4">
+                                     <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-semibold text-red-800">${concentrationInfo}</p>
+                                    <p class="text-sm text-red-700">Foco para manutenção</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                indicatorsContainer.innerHTML = indicatorsHTML;
+            }
 
             // 3. Renderizar Chart de Estado
             const estadoData = {
@@ -1622,19 +1722,30 @@
 
             // 4. Renderizar Chart Top Itens
             const itemCounts = allItems.reduce((acc, item) => {
-                acc[item.description] = (acc[item.description] || 0) + item.quantity;
+                const normalizedDesc = normalizarDescricao(item.description);
+                if (!acc[normalizedDesc]) {
+                    acc[normalizedDesc] = { 
+                        total: 0, 
+                        originalDescription: item.description // Armazena a descrição original
+                    };
+                }
+                acc[normalizedDesc].total += item.quantity;
                 return acc;
             }, {});
 
             const topItems = Object.entries(itemCounts)
-                .sort(([, a], [, b]) => b - a)
+                .map(([normalized, data]) => ({
+                    description: data.originalDescription,
+                    total: data.total
+                }))
+                .sort((a, b) => b.total - a.total)
                 .slice(0, 10);
 
             const topItemsData = {
-                labels: topItems.map(item => item[0]),
+                labels: topItems.map(item => item.description), // Usa a descrição original para o label
                 datasets: [{
                     label: 'Quantidade Total',
-                    data: topItems.map(item => item[1]),
+                    data: topItems.map(item => item.total),
                     backgroundColor: '#667eea',
                     borderColor: '#4338ca',
                     borderWidth: 1
