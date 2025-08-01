@@ -243,8 +243,8 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20V16"/></svg>
                     </div>
                     <div>
-                        <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio - Semcas</h2>
-                        <p class="text-sm text-slate-500">v2.0</p>
+                        <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio IA</h2>
+                        <p class="text-sm text-slate-500">Dashboard Inteligente v2.0</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -272,11 +272,56 @@
     <!-- 4. Conteúdo Principal -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- Conteúdo do Dashboard -->
+        <!-- Conteúdo do Dashboard (NOVO LAYOUT) -->
         <div id="content-dashboard" class="hidden fade-in">
-            <section id="intelligent-dashboard" class="space-y-8">
-                <!-- O conteúdo será preenchido pelo JS -->
-            </section>
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="card text-center">
+                    <p class="text-sm text-slate-500 uppercase">Total de Itens</p>
+                    <p id="kpi-total-itens" class="text-4xl font-bold text-blue-600 mt-2">0</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-sm text-slate-500 uppercase">Unidades Mapeadas</p>
+                    <p id="kpi-total-unidades" class="text-4xl font-bold text-blue-600 mt-2">0</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-sm text-slate-500 uppercase">Itens Avariados</p>
+                    <p id="kpi-total-avariados" class="text-4xl font-bold text-red-600 mt-2">0</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-sm text-slate-500 uppercase">Unidades em Atenção</p>
+                    <p id="kpi-unidades-atencao" class="text-4xl font-bold text-yellow-500 mt-2">0</p>
+                </div>
+            </div>
+
+            <!-- Charts and Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Chart -->
+                <div class="lg:col-span-2 card">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Distribuição de Itens por Estado</h3>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="dashboardEstadoChart"></canvas>
+                    </div>
+                </div>
+                <!-- Side List -->
+                <div class="card">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">⚠️ Top Unidades em Atenção</h3>
+                    <div id="dashboard-attention-units-list" class="space-y-3 dashboard-list"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                 <div class="lg:col-span-2 card">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Top 10 Itens no Inventário</h3>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="dashboardTopItemsChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades sem Bebedouro Funcional</h3>
+                     <div id="dashboard-no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Conteúdo do Patrimônio -->
@@ -457,7 +502,7 @@
 
     <!-- 5. Rodapé -->
     <footer class="text-center mt-12 mb-6 text-sm text-slate-500">
-        <p>Painel desenvolvido por: Jurandy </p>
+        <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         <p>Secretaria Municipal da Criança e Assistência Social (SEMCAS)</p>
     </footer>
 
@@ -499,6 +544,8 @@
         let allEstoqueItems = [];
         let selectedUnidadeValue = '';
         let analysisResults = [];
+        let dashboardEstadoChartInstance, dashboardTopItemsChartInstance;
+
 
         // --- Referências de Elementos ---
         let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
@@ -1051,10 +1098,6 @@
             }).join('');
         }
 
-        function renderDashboard() {
-            renderPriorityPanel();
-        }
-
         // --- LÓGICA DA MODAL ---
         function openUnidadeModal() {
             unidadeModal.classList.remove('hidden');
@@ -1463,6 +1506,104 @@
         }
 
         // --- LÓGICA DO PAINEL DE PRIORIDADES (DASHBOARD) ---
+        function renderDashboard() {
+            if (!allItems || allItems.length === 0) {
+                document.getElementById('content-dashboard').innerHTML = `<div class="card text-center p-10"><p>Nenhum dado para exibir no dashboard.</p></div>`;
+                return;
+            }
+
+            // Destruir charts antigos se existirem
+            if (dashboardEstadoChartInstance) dashboardEstadoChartInstance.destroy();
+            if (dashboardTopItemsChartInstance) dashboardTopItemsChartInstance.destroy();
+
+            // 1. Calcular KPIs
+            const totalItens = allItems.reduce((sum, item) => sum + item.quantity, 0);
+            const totalUnidades = new Set(allItems.map(item => item.unit_condition)).size;
+            const totalAvariados = allItems.filter(i => i.state === 'Avariado').reduce((sum, item) => sum + item.quantity, 0);
+            
+            const analysis = priorityAnalyzer.analyze(allItems);
+            const unidadesAtencao = analysis.attention.length;
+
+            // 2. Renderizar KPIs
+            document.getElementById('kpi-total-itens').textContent = totalItens.toLocaleString('pt-BR');
+            document.getElementById('kpi-total-unidades').textContent = totalUnidades.toLocaleString('pt-BR');
+            document.getElementById('kpi-total-avariados').textContent = totalAvariados.toLocaleString('pt-BR');
+            document.getElementById('kpi-unidades-atencao').textContent = unidadesAtencao.toLocaleString('pt-BR');
+
+            // 3. Renderizar Chart de Estado
+            const estadoData = {
+                labels: ['Novo', 'Bom', 'Regular', 'Avariado'],
+                datasets: [{
+                    label: 'Quantidade de Itens',
+                    data: [
+                        allItems.filter(i => i.state === 'Novo').reduce((s, i) => s + i.quantity, 0),
+                        allItems.filter(i => i.state === 'Bom').reduce((s, i) => s + i.quantity, 0),
+                        allItems.filter(i => i.state === 'Regular').reduce((s, i) => s + i.quantity, 0),
+                        totalAvariados
+                    ],
+                    backgroundColor: [
+                        stateColors['Novo'].hex,
+                        stateColors['Bom'].hex,
+                        stateColors['Regular'].hex,
+                        stateColors['Avariado'].hex,
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            };
+            const estadoChartCanvas = document.getElementById('dashboardEstadoChart');
+            if (estadoChartCanvas) {
+                dashboardEstadoChartInstance = new Chart(estadoChartCanvas, GerarConfigGrafico('doughnut', estadoData, {
+                    plugins: {
+                        title: { display: false },
+                        legend: { position: 'right' }
+                    }
+                }));
+            }
+
+            // 4. Renderizar Chart Top Itens
+            const itemCounts = allItems.reduce((acc, item) => {
+                acc[item.description] = (acc[item.description] || 0) + item.quantity;
+                return acc;
+            }, {});
+
+            const topItems = Object.entries(itemCounts)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 10);
+
+            const topItemsData = {
+                labels: topItems.map(item => item[0]),
+                datasets: [{
+                    label: 'Quantidade Total',
+                    data: topItems.map(item => item[1]),
+                    backgroundColor: '#667eea',
+                    borderColor: '#4338ca',
+                    borderWidth: 1
+                }]
+            };
+            const topItemsChartCanvas = document.getElementById('dashboardTopItemsChart');
+            if (topItemsChartCanvas) {
+                dashboardTopItemsChartInstance = new Chart(topItemsChartCanvas, GerarConfigGrafico('bar', topItemsData, {
+                    indexAxis: 'y',
+                    plugins: {
+                        title: { display: false },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: true } },
+                        y: { grid: { display: false } }
+                    }
+                }));
+            }
+
+            // 5. Renderizar Listas
+            const attentionContainer = document.getElementById('dashboard-attention-units-list');
+            if(attentionContainer) attentionContainer.innerHTML = analysis.attention.length > 0 ? analysis.attention.map(u => `<p class="text-sm text-slate-600">${u.name} <span class="font-bold text-yellow-500">(${u.avariados + u.regulares} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500">Nenhuma unidade em atenção.</p>';
+            
+            const noBebedouroContainer = document.getElementById('dashboard-no-bebedouro-units-list');
+            if(noBebedouroContainer) noBebedouroContainer.innerHTML = analysis.noBebedouro.length > 0 ? analysis.noBebedouro.map(u => `<p class="text-sm text-slate-600">${u.name}</p>`).join('') : '<p class="text-sm text-slate-500">Todas as unidades têm bebedouro funcional.</p>';
+        }
+        
         class PriorityAnalyzer {
             analyze(items) {
                 const unitsData = new Map();
@@ -1511,39 +1652,6 @@
         }
         const priorityAnalyzer = new PriorityAnalyzer();
 
-        function renderPriorityPanel() {
-            const intelligentDashboard = document.getElementById('intelligent-dashboard');
-            if (!intelligentDashboard) return;
-
-            intelligentDashboard.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="card">
-                        <h3 class="text-lg font-semibold text-slate-800 mb-4">⚠️ Top 10 Unidades em Atenção</h3>
-                        <div id="attention-units-list" class="space-y-3 dashboard-list"></div>
-                    </div>
-                    <div class="card">
-                        <h3 class="text-lg font-semibold text-slate-800 mb-4">✅ Top 10 Unidades Supridas</h3>
-                        <div id="supplied-units-list" class="space-y-3 dashboard-list"></div>
-                    </div>
-                    <div class="card">
-                        <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Top 10 Unidades sem Bebedouro Funcional</h3>
-                        <div id="no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
-                    </div>
-                </div>
-            `;
-
-            const analysis = priorityAnalyzer.analyze(allItems);
-            
-            const attentionContainer = document.getElementById('attention-units-list');
-            if(attentionContainer) attentionContainer.innerHTML = analysis.attention.length > 0 ? analysis.attention.map(u => `<p class="text-sm text-slate-600">${u.name} <span class="font-bold text-yellow-500">(${u.avariados + u.regulares} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500">Nenhuma unidade em atenção.</p>';
-
-            const suppliedContainer = document.getElementById('supplied-units-list');
-            if(suppliedContainer) suppliedContainer.innerHTML = analysis.supplied.length > 0 ? analysis.supplied.map(u => `<p class="text-sm text-slate-600">${u.name} <span class="font-bold text-green-500">(${u.novos + u.bons} itens)</span></p>`).join('') : '<p class="text-sm text-slate-500">Nenhuma unidade suprida encontrada.</p>';
-            
-            const noBebedouroContainer = document.getElementById('no-bebedouro-units-list');
-            if(noBebedouroContainer) noBebedouroContainer.innerHTML = analysis.noBebedouro.length > 0 ? analysis.noBebedouro.map(u => `<p class="text-sm text-slate-600">${u.name}</p>`).join('') : '<p class="text-sm text-slate-500">Todas as unidades têm bebedouro funcional.</p>';
-        }
-        
         // --- LÓGICA DA ABA SEDE (NOVO LAYOUT) ---
         const sedeData = [
             {cod: "140.32", desc: "SUPERINTENDENCIA DE ADMINISTRAÇAO", local: "SUBSOLO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO", nomeCompleto: "Sala 1 - Superintendência de Administração"},
