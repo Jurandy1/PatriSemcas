@@ -1565,30 +1565,33 @@
                 // Lógica de Atenção Proporcional
                 allUnits.forEach(u => {
                     if (u.totalItems > 0) {
-                        // Peso 3 para avariados, 1 para regulares
                         u.attentionScore = ((u.avariados * 3) + u.regulares) / u.totalItems;
                     } else {
                         u.attentionScore = 0;
                     }
                 });
-                const attention = allUnits.filter(u => u.attentionScore > 0).sort((a,b) => b.attentionScore - a.attentionScore).slice(0, 10);
+                
+                const attention = allUnits
+                    .filter(u => u.avariados > 0 || u.regulares > 0)
+                    .sort((a, b) => {
+                        // Prioridade 1: Mais avariados
+                        if (b.avariados !== a.avariados) {
+                            return b.avariados - a.avariados;
+                        }
+                        // Prioridade 2: Mais regulares
+                        if (b.regulares !== a.regulares) {
+                            return b.regulares - a.regulares;
+                        }
+                        // Critério de desempate: Pontuação de atenção (proporcional)
+                        return b.attentionScore - a.attentionScore;
+                    })
+                    .slice(0, 10);
                 
                 // Lógica Bebedouro
-                const bebedourosDefeituososPorUnidade = new Set();
-                itemsForAnalysis.forEach(item => {
-                    if (isBebedouroDefeituoso(item)) {
-                        bebedourosDefeituososPorUnidade.add(formatUnitName(item));
-                    }
-                });
-
                 const noBebedouro = allUnits.filter(unit => {
-                    // Adiciona à lista se a unidade já foi marcada com bebedouro defeituoso
-                    if (bebedourosDefeituososPorUnidade.has(unit.name)) {
-                        return true;
-                    }
-                    // Adiciona se não tiver nenhum bebedouro registrado
-                    const hasAnyBebedouro = unit.items.some(item => normalizeString(item.description).includes('bebedouro'));
-                    return !hasAnyBebedouro;
+                    const bebedourosInUnit = unit.items.filter(item => normalizeString(item.description).includes('bebedouro'));
+                    const hasFunctionalBebedouro = bebedourosInUnit.some(b => !isBebedouroDefeituoso(b) && b.state !== 'Avariado');
+                    return bebedourosInUnit.length === 0 || !hasFunctionalBebedouro;
                 }).slice(0, 10);
                 
                 return { attention, noBebedouro };
@@ -1652,9 +1655,11 @@
                         return acc;
                     }, {});
                     const sortedUnidades = Object.entries(avariadosPorUnidade).sort((a, b) => b[1] - a[1]);
+                    
                     let unidadesConcentramCount = 0;
                     let avariadosConcentrados = 0;
                     const totalUnidadesComAvariados = sortedUnidades.length;
+
                     if (totalUnidadesComAvariados > 1) {
                         for (const [unidade, count] of sortedUnidades) {
                             avariadosConcentrados += count;
@@ -1665,7 +1670,7 @@
                         }
                         if (unidadesConcentramCount > 0 && unidadesConcentramCount < totalUnidadesComAvariados) {
                             const percentProblemas = ((avariadosConcentrados / totalAvariados) * 100).toFixed(0);
-                            concentrationInfo = `${unidadesConcentramCount} unidade${unidadesConcentramCount > 1 ? 's' : ''} concentram ${percentProblemas}% dos problemas.`;
+                            concentrationInfo = `<strong>${unidadesConcentramCount} unidade${unidadesConcentramCount > 1 ? 's' : ''}</strong> concentram <strong>${percentProblemas}%</strong> dos problemas.`;
                         }
                     }
                 }
@@ -1678,7 +1683,7 @@
                                      <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                                 </div>
                                 <div>
-                                    <p class="text-lg font-semibold text-red-800">${concentrationInfo}</p>
+                                    <p class="text-md font-semibold text-red-800">${concentrationInfo}</p>
                                     <p class="text-sm text-red-700">Foco para manutenção</p>
                                 </div>
                             </div>
