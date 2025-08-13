@@ -8,7 +8,6 @@
     <!-- Scripts e Links -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -149,7 +148,7 @@
             .sub-header-info { text-align: center; }
         }
 
-        /* Estilos adicionais do painel antigo */
+        /* Estilos adicionais */
         .tooltip { position: relative; display: inline-block; cursor: help; }
         .tooltip .tooltip-text { visibility: hidden; width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 10; bottom: 125%; left: 50%; margin-left: -125px; opacity: 0; transition: opacity 0.3s; font-size: 0.875rem; line-height: 1.25rem; word-wrap: break-word; }
         .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
@@ -158,7 +157,7 @@
         .dashboard-list { max-height: 300px; overflow-y: auto; }
         .chart-container { position: relative; width: 100%; height: 350px; }
 
-        /* Estilos para a nova aba SEDE */
+        /* Estilos para a aba SEDE */
         .sede-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem 1.5rem; text-align: center; margin-bottom: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         .sede-header h1 { font-size: clamp(1.8rem, 4vw, 3rem); margin-bottom: 0.5rem; font-weight: 700; }
         .sede-header p { font-size: clamp(1rem, 2vw, 1.2rem); opacity: 0.9; font-weight: 300; }
@@ -205,6 +204,59 @@
         .department-name { color: #4a5568; font-size: 0.9rem; line-height: 1.4; }
         .no-results { text-align: center; padding: 3rem 1rem; color: #64748b; }
         .no-results h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #374151; }
+        
+        /* --- ESTILOS PARA NOVA ABA "TOTAL DE ITENS" --- */
+        #total-itens-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        #total-itens-list-container {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: calc(100vh - 300px);
+            display: flex;
+            flex-direction: column;
+        }
+        #total-itens-list {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .total-item-entry {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .total-item-entry:hover {
+            background-color: #f8fafc;
+        }
+        .total-item-entry.selected {
+            background-color: #eef2ff;
+            border-left: 4px solid var(--primary-blue);
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+        #total-itens-details-container {
+            position: sticky;
+            top: 160px;
+        }
+        
+        @media (max-width: 1024px) {
+            #total-itens-layout {
+                grid-template-columns: 1fr;
+            }
+            #total-itens-list-container {
+                height: auto;
+                max-height: 400px;
+            }
+            #total-itens-details-container {
+                position: static;
+                top: auto;
+            }
+        }
         @media (max-width: 768px) {
             .search-filters { grid-template-columns: 1fr; gap: 0.75rem; }
             .filter-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -221,7 +273,7 @@
 </head>
 <body class="text-slate-700 antialiased">
 
-    <!-- 1. Header Institucional (Novo) -->
+    <!-- 1. Header Institucional -->
     <header class="header-banner sticky top-0 z-50">
         <div class="container mx-auto px-4">
             <div class="logo-container">
@@ -234,7 +286,7 @@
         </div>
     </header>
 
-    <!-- 2. Sub-Header de Controles (Novo) -->
+    <!-- 2. Sub-Header de Controles -->
     <div class="bg-white shadow-sm border-b border-slate-200">
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center flex-wrap sub-header-controls">
@@ -244,7 +296,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
-                        <p class="text-sm text-slate-500">v.2.0</p>
+                        <p class="text-sm text-slate-500">v.2.1 (Modernizado)</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -255,7 +307,7 @@
         </div>
     </div>
 
-    <!-- 3. Sistema de Navegação (Novo e Responsivo) -->
+    <!-- 3. Sistema de Navegação -->
     <nav class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky z-40 top-[92px] md:top-[88px]">
         <div class="container mx-auto px-4">
             <div class="flex space-x-1 overflow-x-auto">
@@ -263,8 +315,8 @@
                 <button class="nav-btn" data-tab="patrimonio">💼 Patrimônio</button>
                 <button class="nav-btn" data-tab="estoque">📦 Estoque</button>
                 <button class="nav-btn" data-tab="total-itens">🔢 Total de Itens</button>
-                <button class="nav-btn" data-tab="analise">🔍 Análise de Necessidades</button>
-                <button class="nav-btn" data-tab="sede">🏢 Estrutura da Sede</button>
+                <button class="nav-btn" data-tab="analise">🔍 Análise</button>
+                <button class="nav-btn" data-tab="sede">🏢 Sede</button>
             </div>
         </div>
     </nav>
@@ -272,7 +324,7 @@
     <!-- 4. Conteúdo Principal -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- Conteúdo do Dashboard (NOVO LAYOUT) -->
+        <!-- Conteúdo do Dashboard -->
         <div id="content-dashboard" class="hidden fade-in">
             <!-- KPI Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -294,21 +346,14 @@
                 </div>
             </div>
 
-            <!-- Indicadores Inteligentes -->
-            <div id="intelligent-indicators" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <!-- Conteúdo gerado via JavaScript -->
-            </div>
-
             <!-- Charts and Lists -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Main Chart -->
                 <div class="lg:col-span-2 card">
                     <h3 class="text-lg font-semibold text-slate-800 mb-4">Distribuição de Itens por Estado</h3>
                     <div class="chart-container" style="height: 400px;">
                         <canvas id="dashboardEstadoChart"></canvas>
                     </div>
                 </div>
-                <!-- Side List -->
                 <div class="card">
                     <h3 class="text-lg font-semibold text-slate-800 mb-4">⚠️ Top Unidades em Atenção</h3>
                     <div id="dashboard-attention-units-list" class="space-y-3 dashboard-list"></div>
@@ -323,7 +368,7 @@
                     </div>
                 </div>
                 <div class="card">
-                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades com Bebedouro com Defeito</h3>
+                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades sem Bebedouro Funcional</h3>
                      <div id="dashboard-no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
                 </div>
             </div>
@@ -379,7 +424,7 @@
         <!-- Conteúdo do Estoque -->
         <div id="content-estoque" class="hidden fade-in">
              <div class="card mb-8">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 items-end">
                      <div>
                         <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Filtrar por Unidade</label>
                         <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
@@ -388,22 +433,18 @@
                         <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Buscar no Estoque</label>
                         <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
                     </div>
-                    <div>
-                         <button id="export-estoque-btn" class="w-full p-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">EXPORTAR ESTOQUE</button>
-                    </div>
                  </div>
             </div>
             <div class="card mb-8">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-slate-800">TOP 10 ITENS EM ESTOQUE</h3>
-                     <button onclick="exportChart('estoqueBarChart')" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-600 font-semibold py-1 px-3 rounded-lg transition-colors">EXPORTAR GRÁFICO</button>
                 </div>
                 <div class="chart-container" data-chart-name="estoqueBarChart"><canvas id="estoqueBarChart"></canvas></div>
             </div>
             <main id="main-content-estoque" class="mt-8"></main>
         </div>
         
-        <!-- Conteúdo do Total de Itens -->
+        <!-- Conteúdo do Total de Itens (NOVO LAYOUT) -->
         <div id="content-total-itens" class="hidden fade-in">
             <div class="card mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -425,9 +466,22 @@
                     </div>
                 </div>
             </div>
+            
             <div id="total-itens-summary" class="mb-6"></div>
-            <main id="main-content-total-itens" class="mt-8">
-                <div id="total-itens-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+
+            <main id="total-itens-layout">
+                <div id="total-itens-list-container">
+                    <div class="p-4 border-b border-slate-200">
+                        <h3 class="font-semibold text-slate-800">Itens Agrupados</h3>
+                        <p class="text-sm text-slate-500" id="total-itens-list-count">0 itens encontrados</p>
+                    </div>
+                    <div id="total-itens-list">
+                        <!-- A lista de itens será renderizada aqui -->
+                    </div>
+                </div>
+                <div id="total-itens-details-container">
+                    <!-- Os detalhes do item selecionado aparecerão aqui -->
+                </div>
             </main>
         </div>
         
@@ -439,10 +493,6 @@
                         <h2 class="text-2xl font-bold text-slate-800">Análise de Necessidades Essenciais</h2>
                         <p class="text-slate-500 mt-1">Ferramenta para identificar a falta de itens essenciais (climatização e bebedouros) nas unidades.</p>
                     </div>
-                    <button id="generate-pdf-btn" class="p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        Gerar Relatório PDF
-                    </button>
                 </div>
                 <div class="mt-6 border-t border-slate-200 pt-4">
                     <label for="analise-filter" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Filtrar por Necessidade</label>
@@ -558,10 +608,10 @@
         let tableBodyEl, paginationControlsEl;
         let navButtons;
         let contentPanes;
-        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, exportEstoqueBtn;
+        let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl;
         let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
         let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
-        let generatePdfBtn, analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
+        let analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
         let connectionStatusEl;
         
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
@@ -733,22 +783,6 @@
         function normalizeString(str) {
             if (!str) return '';
             return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-
-        function normalizarDescricao(desc) {
-            if (!desc) return '';
-            return desc
-                .toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-                .replace(/\b(de|da|do|em|com|para)\b/g, '') // remove preposições como palavras inteiras
-                .replace(/[^a-z0-9]/gi, ' ') // remove símbolos
-                .replace(/\s+/g, ' ') // espaços repetidos
-                .trim();
-        }
-
-        function isBebedouroDefeituoso(item) {
-            return normalizeString(item.description).includes('bebedouro') &&
-                /avariado|defeito|vazando|quebrado|sem funcionar|não funciona|nao funciona|desligado|inutilizável/.test(normalizeString(item.observation || ''));
         }
 
         function debounce(func, delay) {
@@ -991,9 +1025,8 @@
                     estadoChartInstance = new Chart(chartCanvas, chartData);
                 }
             } else if (visaoAtiva === 'resumo') {
-                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800">${tituloDaVisao}</h2><div class="flex gap-2"><button id="export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">Exportar Relatório</button></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card"><h3 class="text-xl font-bold text-slate-700 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card p-0 overflow-x-auto"><table class="table w-full text-sm text-left">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
+                mainContentAreaEl.innerHTML = `<div><div class="flex justify-between items-start flex-wrap gap-4"><h2 class="text-3xl font-bold text-slate-800">${tituloDaVisao}</h2></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><div class="card"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div><div class="card"><h3 class="text-xl font-bold text-slate-700 mb-4"></h3><ul class="space-y-3"></ul></div></div><h2 class="text-2xl font-bold text-slate-800 mb-6 mt-8">Inventário Detalhado (Resumo Geral)</h2><div class="card p-0 overflow-x-auto"><table class="table w-full text-sm text-left">${tableHeadersHTML}<tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
                 updateDynamicDOMReferences();
-                document.getElementById('export-btn').addEventListener('click', handleExport);
                 const filteredAllItems = getFilteredItems(allItems);
                 const groupedAllItems = agruparItens(filteredAllItems);
                 renderTable(groupedAllItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), groupedAllItems.length, true);
@@ -1082,45 +1115,149 @@
         }
 
         function renderTotalItens() {
-            const container = document.getElementById('total-itens-results');
-            const summaryContainer = document.getElementById('total-itens-summary');
-            if (!container || !summaryContainer) return;
+            const listContainer = document.getElementById('total-itens-list');
+            const detailsContainer = document.getElementById('total-itens-details-container');
+            const listCountEl = document.getElementById('total-itens-list-count');
+            if (!listContainer || !detailsContainer) return;
+
             const selectedCategoria = filtroTotalCategoriaEl.value;
             const searchTerm = filtroTotalItemEl.value.toLowerCase();
             const selectedUnidade = filtroTotalUnidadeEl.value;
             const selectedEstado = filtroTotalEstadoEl.value;
+
             let filteredData = allItems;
             if (selectedCategoria) filteredData = filteredData.filter(item => item.type === selectedCategoria);
             if (selectedUnidade) filteredData = filteredData.filter(item => formatUnitName(item) === selectedUnidade);
             if (selectedEstado) filteredData = filteredData.filter(item => item.state === selectedEstado);
             if (searchTerm) filteredData = filteredData.filter(item => item.description.toLowerCase().includes(searchTerm));
+
             const groupedItems = {};
             filteredData.forEach(item => {
                 const desc = item.description;
                 if (!desc || desc === 'N/A') return;
                 if (!groupedItems[desc]) {
-                    groupedItems[desc] = { total: 0, type: item.type, locations: {} };
+                    groupedItems[desc] = { total: 0, type: item.type, items: [] };
                 }
                 groupedItems[desc].total += item.quantity;
-                const unitName = formatUnitName(item);
-                const locationKey = `${unitName} - ${item.location || 'N/D'}`;
-                groupedItems[desc].locations[locationKey] = (groupedItems[desc].locations[locationKey] || 0) + item.quantity;
+                groupedItems[desc].items.push(item);
             });
-            const uniqueItemCount = Object.keys(groupedItems).length;
-            const grandTotalQuantity = Object.values(groupedItems).reduce((sum, item) => sum + item.total, 0);
-            if (uniqueItemCount > 0) {
-                summaryContainer.innerHTML = `<div class="card"><div class="flex flex-wrap justify-between items-center gap-4"><p class="text-slate-600 font-medium">Exibindo <span class="font-bold text-indigo-600">${uniqueItemCount}</span> tipo(s) de item.</p><div class="text-right"><p class="text-sm text-slate-500">Quantidade Total</p><p class="text-2xl font-bold text-slate-800">${grandTotalQuantity}</p></div></div></div>`;
-            } else {
-                summaryContainer.innerHTML = '';
-            }
-            if (uniqueItemCount === 0) {
-                container.innerHTML = `<div class="card text-center p-10 col-span-full"><p class="text-lg text-slate-600">Nenhum item encontrado com os filtros selecionados.</p></div>`;
+
+            const sortedItemNames = Object.keys(groupedItems).sort((a, b) => a.localeCompare(b));
+            listCountEl.textContent = `${sortedItemNames.length} itens encontrados`;
+
+            if (sortedItemNames.length === 0) {
+                listContainer.innerHTML = `<div class="p-4 text-center text-slate-500">Nenhum item encontrado.</div>`;
+                detailsContainer.innerHTML = '';
                 return;
             }
-            container.innerHTML = Object.entries(groupedItems).sort((a, b) => a[0].localeCompare(b[0])).map(([desc, data]) => {
-                const locationsHTML = Object.entries(data.locations).sort((a, b) => a[0].localeCompare(b[0])).map(([locationKey, quantity]) => `<li class="flex justify-between items-center text-sm py-1 px-2 rounded bg-slate-100"><span class="truncate pr-2">${locationKey}</span><span class="font-medium text-slate-700 flex-shrink-0">${quantity}</span></li>`).join('');
-                return `<div class="card flex flex-col"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-semibold text-slate-800 text-base md:text-lg pr-2">${desc}</h3><div class="text-right flex-shrink-0"><p class="text-xs text-slate-500">Total</p><p class="text-2xl font-bold text-indigo-600">${data.total}</p></div></div><p class="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-2">${data.type}</p></div><div class="mt-4 border-t border-slate-200 pt-3"><p class="text-xs font-medium text-slate-400 uppercase mb-2">Distribuição</p><ul class="space-y-1 max-h-40 overflow-y-auto">${locationsHTML}</ul></div></div>`;
+
+            listContainer.innerHTML = sortedItemNames.map(desc => `
+                <div class="total-item-entry" data-item-name="${desc}">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-slate-800 truncate pr-2">${desc}</span>
+                        <span class="text-sm font-bold bg-slate-200 text-slate-700 rounded-full px-2 py-0.5">${groupedItems[desc].total}</span>
+                    </div>
+                    <div class="text-xs text-slate-500">${groupedItems[desc].type}</div>
+                </div>
+            `).join('');
+            
+            // Adiciona event listeners para a nova lista
+            document.querySelectorAll('.total-item-entry').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const selectedItem = e.currentTarget;
+                    const itemName = selectedItem.dataset.itemName;
+                    
+                    // Remove a seleção anterior
+                    document.querySelectorAll('.total-item-entry.selected').forEach(prev => prev.classList.remove('selected'));
+                    // Adiciona a seleção atual
+                    selectedItem.classList.add('selected');
+
+                    renderTotalItemDetails(itemName, groupedItems[itemName]);
+                });
+            });
+
+            // Renderiza o detalhe do primeiro item da lista por padrão
+            if (sortedItemNames.length > 0) {
+                const firstItemName = sortedItemNames[0];
+                listContainer.querySelector('.total-item-entry').classList.add('selected');
+                renderTotalItemDetails(firstItemName, groupedItems[firstItemName]);
+            } else {
+                 detailsContainer.innerHTML = `<div class="card text-center p-10"><p class="text-lg text-slate-600">Selecione um item da lista para ver os detalhes.</p></div>`;
+            }
+        }
+
+        function renderTotalItemDetails(itemName, data) {
+            const detailsContainer = document.getElementById('total-itens-details-container');
+            if (!data) {
+                detailsContainer.innerHTML = '';
+                return;
+            }
+
+            const stateCounts = data.items.reduce((acc, item) => {
+                acc[item.state] = (acc[item.state] || 0) + item.quantity;
+                return acc;
+            }, {});
+
+            const distribution = {};
+            data.items.forEach(item => {
+                const unitName = formatUnitName(item);
+                const location = item.location || 'N/D';
+                const key = `${unitName} >> ${location}`;
+                if (!distribution[key]) {
+                    distribution[key] = { quantity: 0, state: item.state };
+                }
+                distribution[key].quantity += item.quantity;
+            });
+
+            const statesHTML = Object.entries(stateColors).map(([state, colorInfo]) => {
+                const count = stateCounts[state] || 0;
+                if (count === 0) return '';
+                return `<div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full" style="background-color: ${colorInfo.hex}"></span>
+                            <span>${state}:</span>
+                            <span class="font-bold">${count}</span>
+                        </div>`;
             }).join('');
+
+            const distributionHTML = Object.entries(distribution).sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => `
+                <tr class="border-b border-slate-200">
+                    <td class="px-4 py-2">${key.replace(' >> ', '<span class="text-slate-400 mx-2">›</span>')}</td>
+                    <td class="px-4 py-2 text-center font-bold">${value.quantity}</td>
+                    <td class="px-4 py-2 text-center"><span class="badge ${stateColors[value.state]?.bg}">${value.state}</span></td>
+                </tr>
+            `).join('');
+
+            detailsContainer.innerHTML = `
+                <div class="card fade-in">
+                    <h2 class="text-2xl font-bold text-slate-800">${itemName}</h2>
+                    <p class="text-sm text-slate-500 mb-4">Total de ${data.total} unidades</p>
+                    
+                    <div class="card bg-slate-50 mb-6">
+                        <h4 class="font-semibold text-slate-700 mb-2">Resumo por Estado</h4>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            ${statesHTML}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-semibold text-slate-700 mb-2">Distribuição por Local</h4>
+                        <div class="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
+                            <table class="table w-full text-sm">
+                                <thead class="sticky top-0 bg-slate-100">
+                                    <tr>
+                                        <th class="px-4 py-2">Unidade / Localização</th>
+                                        <th class="px-4 py-2 text-center">Qtd.</th>
+                                        <th class="px-4 py-2 text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${distributionHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // --- LÓGICA DA MODAL ---
@@ -1181,10 +1318,8 @@
                     missing: []
                 };
 
-                const bebedourosInUnit = unitItems.filter(item => normalizeString(item.description).includes('bebedouro'));
-                const hasFunctionalBebedouro = bebedourosInUnit.some(b => !isBebedouroDefeituoso(b) && b.state !== 'Avariado');
-
-                if (bebedourosInUnit.length === 0 || !hasFunctionalBebedouro) {
+                const hasBebedouro = unitItems.some(item => normalizeString(item.description).includes('bebedouro'));
+                if (!hasBebedouro) {
                     unitNeeds.missing.push({ item: 'Bebedouro', location: 'Área Comum (Ex: Recepção ou Copa)' });
                 }
 
@@ -1271,51 +1406,6 @@
             });
         }
 
-        function generatePDFReport() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const filteredResults = getFilteredAnalysisResults();
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.text('Relatório de Análise de Necessidades', 105, 20, { align: 'center' });
-            
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 28, { align: 'center' });
-
-            if (filteredResults.length === 0) {
-                doc.setFontSize(12);
-                doc.text('Nenhuma necessidade encontrada para o filtro selecionado.', 105, 50, { align: 'center' });
-            } else {
-                let yPosition = 40;
-                filteredResults.forEach(result => {
-                    if (yPosition > 260) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    doc.setFontSize(14);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(result.unitName, 14, yPosition);
-                    yPosition += 8;
-
-                    result.missing.forEach(need => {
-                        doc.setFontSize(11);
-                        doc.setFont('helvetica', 'normal');
-                        doc.text(`• Falta: ${need.item}`, 20, yPosition);
-                        yPosition += 6;
-                        doc.setFont('helvetica', 'italic');
-                        doc.text(`  Sugestão de Local: ${need.location}`, 20, yPosition);
-                        yPosition += 8;
-                    });
-                    yPosition += 5;
-                });
-            }
-
-            doc.save('relatorio_necessidades.pdf');
-        }
-
-
         // --- HANDLERS DE EVENTOS ---
         function handleFilterChange() {
             currentPage = 1;
@@ -1371,43 +1461,6 @@
             if (page) {
                 currentPage = page;
                 renderApp();
-            }
-        }
-
-        function handleExport() {
-            const headers = ["Tipo", "Descrição", "Unidade", "Quantidade", "Localização", "Estado", "Origem da Doação", "Observação", "Fornecedor"];
-            const dataToExport = agruparItens(getFilteredItems(dadosOriginais)).map(item => [`"${(item.type || '').replace(/"/g, '""')}"`, `"${(item.description || '').replace(/"/g, '""')}"`, `"${formatUnitName(item).replace(/"/g, '""')}"`, item.quantity, `"${(item.location || '').replace(/"/g, '""')}"`, item.state, `"${(item.donation_source || '').replace(/"/g, '""')}"`, `"${(item.observation || '').replace(/"/g, '""')}"`, `"${(item.supplier || '').replace(/"/g, '""')}"`]);
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join(";")).join("\n");
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `relatorio_inventario.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function handleExportEstoque() {
-            if (allEstoqueItems.length === 0) return;
-            const headers = Object.keys(allEstoqueItems[0] || {});
-            const dataToExport = allEstoqueItems.map(item => headers.map(h => `"${(item[h] || '').replace(/"/g, '""')}"`));
-            let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n" + dataToExport.map(e => e.join("\n"));
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `relatorio_estoque.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function exportChart(chartId) {
-            const canvas = document.getElementById(chartId);
-            if (canvas) {
-                const link = document.createElement('a');
-                link.href = canvas.toDataURL('image/png');
-                link.download = `${chartId}.png`;
-                link.click();
             }
         }
         
@@ -1470,7 +1523,6 @@
             mainContentEstoqueEl = document.getElementById('main-content-estoque');
             filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
             filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
-            exportEstoqueBtn = document.getElementById('export-estoque-btn');
             filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
             filtroTotalItemEl = document.getElementById('filtro-total-item');
             filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
@@ -1482,7 +1534,6 @@
             unidadeSearchInput = document.getElementById('unidade-search-input');
             unidadeListContainer = document.getElementById('unidade-list-container');
             clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
-            generatePdfBtn = document.getElementById('generate-pdf-btn');
             analiseResultsContainer = document.getElementById('analise-results');
             analiseFilterEl = document.getElementById('analise-filter');
             connectionStatusEl = document.getElementById('connectionStatus');
@@ -1503,11 +1554,10 @@
 
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
-            exportEstoqueBtn.addEventListener('click', handleExportEstoque);
-            filtroTotalCategoriaEl.addEventListener('change', renderTotalItens);
+            
+            const totalItensFilters = [filtroTotalCategoriaEl, filtroTotalUnidadeEl, filtroTotalEstadoEl];
+            totalItensFilters.forEach(el => el.addEventListener('change', renderTotalItens));
             filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
-            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
-            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
             
             openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); openUnidadeModal(); });
             closeModalBtn.addEventListener('click', closeUnidadeModal);
@@ -1528,7 +1578,6 @@
                 closeUnidadeModal();
                 handleUnidadeChange();
             });
-            generatePdfBtn.addEventListener('click', generatePDFReport);
             analiseFilterEl.addEventListener('change', renderNeedsAnalysisReport);
         }
 
@@ -1565,33 +1614,22 @@
                 // Lógica de Atenção Proporcional
                 allUnits.forEach(u => {
                     if (u.totalItems > 0) {
+                        // Peso 3 para avariados, 1 para regulares
                         u.attentionScore = ((u.avariados * 3) + u.regulares) / u.totalItems;
                     } else {
                         u.attentionScore = 0;
                     }
                 });
-                
-                const attention = allUnits
-                    .filter(u => u.avariados > 0 || u.regulares > 0)
-                    .sort((a, b) => {
-                        // Prioridade 1: Mais avariados
-                        if (b.avariados !== a.avariados) {
-                            return b.avariados - a.avariados;
-                        }
-                        // Prioridade 2: Mais regulares
-                        if (b.regulares !== a.regulares) {
-                            return b.regulares - a.regulares;
-                        }
-                        // Critério de desempate: Pontuação de atenção (proporcional)
-                        return b.attentionScore - a.attentionScore;
-                    })
-                    .slice(0, 10);
+                const attention = allUnits.filter(u => u.attentionScore > 0).sort((a,b) => b.attentionScore - a.attentionScore).slice(0, 10);
                 
                 // Lógica Bebedouro
                 const noBebedouro = allUnits.filter(unit => {
-                    const bebedourosInUnit = unit.items.filter(item => normalizeString(item.description).includes('bebedouro'));
-                    const hasFunctionalBebedouro = bebedourosInUnit.some(b => !isBebedouroDefeituoso(b) && b.state !== 'Avariado');
-                    return bebedourosInUnit.length === 0 || !hasFunctionalBebedouro;
+                    const bebedouros = unit.items.filter(item => normalizeString(item.description).includes('bebedouro'));
+                    if (bebedouros.length === 0) {
+                        return true; // Não tem bebedouro
+                    }
+                    // Retorna true se NENHUM bebedouro for funcional
+                    return !bebedouros.some(b => b.state !== 'Avariado');
                 }).slice(0, 10);
                 
                 return { attention, noBebedouro };
@@ -1622,77 +1660,6 @@
             document.getElementById('kpi-total-unidades').textContent = totalUnidades.toLocaleString('pt-BR');
             document.getElementById('kpi-total-avariados').textContent = totalAvariados.toLocaleString('pt-BR');
             document.getElementById('kpi-unidades-atencao').textContent = unidadesAtencao.toLocaleString('pt-BR');
-
-            // 2.5. Renderizar Indicadores Inteligentes
-            const indicatorsContainer = document.getElementById('intelligent-indicators');
-            if (indicatorsContainer) {
-                let indicatorsHTML = '';
-
-                // Indicador 1: Percentual de itens avariados
-                if (totalItens > 0) {
-                    const percentageAvariados = ((totalAvariados / totalItens) * 100).toFixed(1);
-                    indicatorsHTML += `
-                        <div class="card bg-yellow-50 border-l-4 border-yellow-400">
-                            <div class="flex items-center">
-                                <div class="p-3 bg-yellow-100 rounded-full mr-4">
-                                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                                <div>
-                                    <p class="text-2xl font-bold text-yellow-800">${percentageAvariados}%</p>
-                                    <p class="text-sm text-yellow-700">dos itens estão avariados</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Indicador 2: Concentração de problemas
-                let concentrationInfo = '';
-                if (totalAvariados > 0) {
-                    const avariadosPorUnidade = allItems.filter(item => item.state === 'Avariado').reduce((acc, item) => {
-                        const unitName = formatUnitName(item);
-                        acc[unitName] = (acc[unitName] || 0) + item.quantity;
-                        return acc;
-                    }, {});
-                    const sortedUnidades = Object.entries(avariadosPorUnidade).sort((a, b) => b[1] - a[1]);
-                    
-                    let unidadesConcentramCount = 0;
-                    let avariadosConcentrados = 0;
-                    const totalUnidadesComAvariados = sortedUnidades.length;
-
-                    if (totalUnidadesComAvariados > 1) {
-                        for (const [unidade, count] of sortedUnidades) {
-                            avariadosConcentrados += count;
-                            unidadesConcentramCount++;
-                            if (avariadosConcentrados / totalAvariados >= 0.65 && unidadesConcentramCount < totalUnidadesComAvariados) {
-                                break;
-                            }
-                        }
-                        if (unidadesConcentramCount > 0 && unidadesConcentramCount < totalUnidadesComAvariados) {
-                            const percentProblemas = ((avariadosConcentrados / totalAvariados) * 100).toFixed(0);
-                            concentrationInfo = `<strong>${unidadesConcentramCount} unidade${unidadesConcentramCount > 1 ? 's' : ''}</strong> concentram <strong>${percentProblemas}%</strong> dos problemas.`;
-                        }
-                    }
-                }
-
-                if (concentrationInfo) {
-                    indicatorsHTML += `
-                        <div class="card bg-red-50 border-l-4 border-red-400">
-                            <div class="flex items-center">
-                                <div class="p-3 bg-red-100 rounded-full mr-4">
-                                     <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                </div>
-                                <div>
-                                    <p class="text-md font-semibold text-red-800">${concentrationInfo}</p>
-                                    <p class="text-sm text-red-700">Foco para manutenção</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                indicatorsContainer.innerHTML = indicatorsHTML;
-            }
 
             // 3. Renderizar Chart de Estado
             const estadoData = {
@@ -1727,30 +1694,19 @@
 
             // 4. Renderizar Chart Top Itens
             const itemCounts = allItems.reduce((acc, item) => {
-                const normalizedDesc = normalizarDescricao(item.description);
-                if (!acc[normalizedDesc]) {
-                    acc[normalizedDesc] = { 
-                        total: 0, 
-                        originalDescription: item.description // Armazena a descrição original
-                    };
-                }
-                acc[normalizedDesc].total += item.quantity;
+                acc[item.description] = (acc[item.description] || 0) + item.quantity;
                 return acc;
             }, {});
 
             const topItems = Object.entries(itemCounts)
-                .map(([normalized, data]) => ({
-                    description: data.originalDescription,
-                    total: data.total
-                }))
-                .sort((a, b) => b.total - a.total)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 10);
 
             const topItemsData = {
-                labels: topItems.map(item => item.description), // Usa a descrição original para o label
+                labels: topItems.map(item => item[0]),
                 datasets: [{
                     label: 'Quantidade Total',
-                    data: topItems.map(item => item.total),
+                    data: topItems.map(item => item[1]),
                     backgroundColor: '#667eea',
                     borderColor: '#4338ca',
                     borderWidth: 1
