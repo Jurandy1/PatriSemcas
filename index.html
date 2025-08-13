@@ -157,53 +157,144 @@
         .dashboard-list { max-height: 300px; overflow-y: auto; }
         .chart-container { position: relative; width: 100%; height: 350px; }
 
-        /* Estilos para a aba SEDE */
-        .sede-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem 1.5rem; text-align: center; margin-bottom: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .sede-header h1 { font-size: clamp(1.8rem, 4vw, 3rem); margin-bottom: 0.5rem; font-weight: 700; }
-        .sede-header p { font-size: clamp(1rem, 2vw, 1.2rem); opacity: 0.9; font-weight: 300; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); text-align: center; transition: transform 0.2s ease; }
-        .stat-card:hover { transform: translateY(-2px); }
-        .stat-number { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .stat-label { color: #64748b; font-size: 0.9rem; font-weight: 500; margin-top: 0.5rem; }
-        .controls { background: white; padding: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); margin-bottom: 2rem; }
-        .search-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center; }
-        .search-box { width: 100%; padding: 12px 20px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 50px; outline: none; transition: all 0.3s ease; background: #f8fafc; }
-        .search-box:focus { border-color: #667eea; background: white; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .filter-btn { padding: 12px 24px; border: 2px solid #e2e8f0; border-radius: 50px; background: white; color: #64748b; font-weight: 500; cursor: pointer; transition: all 0.3s ease; white-space: nowrap; }
-        .filter-btn:hover { border-color: #667eea; color: #667eea; }
-        .filter-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-color: transparent; }
-        .floor-section { background: white; margin-bottom: 1.5rem; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); overflow: hidden; transition: all 0.3s ease; }
-        .floor-header { background: linear-gradient(135deg, #4a5568, #2d3748); color: white; padding: 1.5rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
-        .floor-header:hover { background: linear-gradient(135deg, #2d3748, #1a202c); }
-        .floor-header h2 { font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 600; }
-        .floor-info { font-size: 0.9rem; opacity: 0.8; }
-        .toggle-icon { font-size: 1.2rem; transition: transform 0.3s ease; }
-        .floor-content { display: none; padding: 0; }
-        .floor-content.active { display: block; }
-        .room-card { border-bottom: 1px solid #f1f5f9; padding: 1.5rem; transition: all 0.3s ease; }
-        .room-card:hover { background: linear-gradient(135deg, #f8fafc, #f1f5f9); }
-        .room-card:last-child { border-bottom: none; }
-        .room-card.no-registry { background: linear-gradient(135deg, #fef2f2, #fee2e2); border-left: 4px solid #ef4444; }
-        .room-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 1rem; }
-        .room-info { flex: 1; min-width: 0; }
-        .room-number { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 8px 16px; border-radius: 50px; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
-        .room-name { font-size: clamp(1.1rem, 2.5vw, 1.3rem); font-weight: 700; color: #1a202c; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .room-full-name { font-size: clamp(0.9rem, 2vw, 1rem); color: #4a5568; font-weight: 500; margin-bottom: 0.5rem; }
-        .system-description { font-size: 0.85rem; color: #64748b; font-style: italic; margin-bottom: 0.5rem; opacity: 0.8; }
-        .no-registry-badge { background: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-        .room-type { padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
-        .room-type.individual { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-        .room-type.conjunta { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-        .room-type.dividida { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
-        .department-list { margin-top: 1rem; }
-        .department-list-title { font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem; }
-        .department-item { background: linear-gradient(135deg, #f8fafc, #f1f5f9); margin: 0.5rem 0; padding: 1rem; border-radius: 10px; border-left: 4px solid #667eea; transition: all 0.2s ease; }
-        .department-item:hover { transform: translateX(2px); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .department-code { font-weight: 600; color: #1a202c; font-size: 0.85rem; margin-bottom: 0.25rem; }
-        .department-name { color: #4a5568; font-size: 0.9rem; line-height: 1.4; }
-        .no-results { text-align: center; padding: 3rem 1rem; color: #64748b; }
-        .no-results h3 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #374151; }
+        /* --- ESTILOS MODERNIZADOS PARA ABA SEDE --- */
+        .sede-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        .floor-nav {
+            position: sticky;
+            top: 160px;
+        }
+        .floor-nav-button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .floor-nav-button:hover {
+            background-color: #f8fafc;
+            color: var(--primary-blue);
+        }
+        .floor-nav-button.active {
+            background-color: var(--primary-blue);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3);
+        }
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .room-card-sede {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--light-blue);
+            display: flex;
+            flex-direction: column;
+        }
+        .room-card-sede:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+        .room-card-sede.no-registry {
+            border-left-color: var(--error);
+        }
+        .room-card-header {
+            padding: 1rem 1.25rem;
+        }
+        .room-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .room-card-subtitle {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .room-card-body {
+            padding: 0 1.25rem 1.25rem;
+            flex-grow: 1;
+        }
+        .department-item-sede {
+            padding: 0.75rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .department-name-sede {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+        .department-code-sede {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-family: monospace;
+        }
+        .search-box { 
+            width: 100%; 
+            padding: 10px 18px; 
+            font-size: 16px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 50px; 
+            outline: none; 
+            transition: all 0.3s ease; 
+            background: #f8fafc; 
+        }
+        .search-box:focus { 
+            border-color: #667eea; 
+            background: white; 
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); 
+        }
+        .filter-btn { 
+            padding: 10px 20px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 50px; 
+            background: white; 
+            color: #64748b; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            white-space: nowrap; 
+        }
+        .filter-btn:hover { 
+            border-color: #667eea; 
+            color: #667eea; 
+        }
+        .filter-btn.active { 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            color: white; 
+            border-color: transparent; 
+        }
+        
+        @media (max-width: 1024px) {
+            .sede-layout {
+                grid-template-columns: 1fr;
+            }
+            .floor-nav {
+                position: static;
+                display: flex;
+                overflow-x: auto;
+                padding-bottom: 1rem;
+                gap: 0.5rem;
+            }
+            .floor-nav-button {
+                flex-shrink: 0;
+            }
+        }
         
         /* --- ESTILOS PARA NOVA ABA "TOTAL DE ITENS" --- */
         #total-itens-layout {
@@ -258,15 +349,9 @@
             }
         }
         @media (max-width: 768px) {
-            .search-filters { grid-template-columns: 1fr; gap: 0.75rem; }
-            .filter-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-            .room-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-            .room-type { align-self: flex-start; }
             .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
         }
         @media (max-width: 480px) {
-            .filter-buttons { grid-template-columns: 1fr; }
-            .room-name { font-size: 1.1rem; }
             .stats { grid-template-columns: 1fr 1fr; }
         }
     </style>
@@ -296,7 +381,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
-                        <p class="text-sm text-slate-500">v.2.1 (Modernizado)</p>
+                        <p class="text-sm text-slate-500">v.2.4 (Sede Corrigida)</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -510,54 +595,36 @@
 
         <!-- Conteúdo da Estrutura da Sede -->
         <div id="content-sede" class="hidden fade-in">
-            <div class="sede-header">
-                <h1>🏢 Mapa de Localização da Sede</h1>
-                <p>Secretaria Municipal de Cidadania e Assistência Social - SEMCAS</p>
-            </div>
-
-            <div class="stats" id="stats-sede">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-rooms">0</div>
-                    <div class="stat-label">Total de Salas</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-superintendencias">0</div>
-                    <div class="stat-label">Superintendências</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="no-registry-count">0</div>
-                    <div class="stat-label">Sem Registro</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-floors">6</div>
-                    <div class="stat-label">Andares</div>
-                </div>
-            </div>
-
-            <div class="controls">
-                <div class="search-filters">
-                    <input type="text" class="search-box" id="searchBoxSede" placeholder="🔍 Pesquisar por setor, sala, código ou descrição...">
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" id="filterAllSede">Todas as Salas</button>
+            <div class="card mb-8">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <input type="text" class="search-box" id="searchBoxSede" placeholder="🔍 Pesquisar por setor, sala, ou tipo...">
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm font-medium">Filtro:</label>
+                        <button class="filter-btn active" id="filterAllSede">Todas</button>
                         <button class="filter-btn" id="filterNoRegistrySede">Sem Registro</button>
                     </div>
                 </div>
             </div>
 
-            <div id="floors-container">
-                <!-- As seções dos andares serão geradas via JavaScript -->
+            <div class="sede-layout">
+                <nav id="sede-floor-nav" class="floor-nav space-y-2">
+                    <!-- Navegação dos andares será gerada aqui -->
+                </nav>
+                <div id="sede-rooms-container" class="room-grid">
+                     <!-- Cards das salas serão gerados aqui -->
+                </div>
             </div>
 
             <div class="no-results" id="noResultsSede" style="display: none;">
-                <h3>❌ Nenhum resultado encontrado</h3>
-                <p>Tente ajustar os termos da sua pesquisa ou filtros</p>
+                <h3 class="text-2xl font-bold">❌ Nenhum resultado encontrado</h3>
+                <p>Tente ajustar os termos da sua pesquisa ou filtros.</p>
             </div>
         </div>
     </main>
 
     <!-- 5. Rodapé -->
     <footer class="text-center mt-12 mb-6 text-sm text-slate-500">
-        <p>Painel desenvolvido por: Jurandy </p>
+        <p>Painel desenvolvido por: Jurandy & Colaboradores</p>
         <p>Secretaria Municipal da Criança e Assistência Social (SEMCAS)</p>
     </footer>
 
@@ -1737,243 +1804,156 @@
 
         // --- LÓGICA DA ABA SEDE (NOVO LAYOUT) ---
         const sedeData = [
-            {cod: "140.32", desc: "SUPERINTENDENCIA DE ADMINISTRAÇAO", local: "SUBSOLO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO", nomeCompleto: "Sala 1 - Superintendência de Administração"},
-            {cod: "140.88", desc: "DIRETORIA TÉCNICA DE ARQUIVO E PROTOCOLO", local: "SUBSOLO", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE ARQUIVO E PROTOCOLO", nomeCompleto: "Sala 2 - Diretoria Técnica de Arquivo e Protocolo"},
-            {cod: "140.101", desc: "SERVIÇOS GERAIS - SEMCAS", local: "SUBSOLO", sala: "SALA 3", tipo: "SALA INDIVIDUAL", setor: "SERVIÇOS GERAIS (LSL)", nomeCompleto: "Sala 3 - Serviços Gerais SEMCAS"},
-            {cod: "140.1", desc: "COORDENAÇAO DE MATERIAL E PATRIMONIO", local: "SUBSOLO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE ADMINISTRAÇÃO E PATRIMÔNIO", nomeCompleto: "Sala 4 - Coordenação de Material e Patrimônio"},
-            {cod: "140.1", desc: "COORDENAÇAO DE MATERIAL E PATRIMONIO", local: "SUBSOLO", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setor: "ALMOXARIFADO", nomeCompleto: "Sala 5 - Coordenação de Material e Patrimônio"},
-            {cod: "140.73", desc: "COORDENAÇÃO DE SUPORTE E LOGÍSTICA", local: "SUBSOLO", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE LOGÍSTICA E TRANSPORTE", nomeCompleto: "Sala 5 - Coordenação de Suporte e Logística"},
-            {cod: "140.96", desc: "DIRETORIA TÉCNICA DE MANUTENÇÃO", local: "SUBSOLO", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE MANUTENÇÃO", nomeCompleto: "Sala 6 - Diretoria Técnica de Manutenção"},
-            {cod: "140.94", desc: "RECEPÇÃO - SEMCAS", local: "TÉRREO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "RECEPÇÃO", nomeCompleto: "Sala 1 - Recepção SEMCAS"},
-            {cod: "140.29", desc: "SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...", local: "TÉRREO", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA", nomeCompleto: "Sala 2 - Superintendência de Gestão de Benefícios"},
-            {cod: "140.29", desc: "SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...", local: "TÉRREO", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE GESTÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS E TRANSFERÊNCIA DE RENDA", nomeCompleto: "Sala 2 - Superintendência de Gestão de Benefícios"},
-            {cod: "140.29", desc: "SUPERINTENDENCIA DE GESTAO DE BENEFICIOS...", local: "TÉRREO", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA", nomeCompleto: "Sala 2 - Superintendência de Gestão de Benefícios"},
-            {cod: "140.48", desc: "COORDENAÇAO DO PAEFI - SEMCAS", local: "TÉRREO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO ESPECIALIZADO À FAMÍLIA (PAEFI)", nomeCompleto: "Sala 3 - Coordenação do PAEFI SEMCAS"},
-            {cod: "140.76", desc: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE", local: "TÉRREO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE", nomeCompleto: "Sala 3 - Superintendência de Proteção Social de Média Complexidade"},
-            {cod: "140.93", desc: "SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL", local: "TÉRREO", sala: "SALA 4", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL", nomeCompleto: "Sala 4 - Serviço Especializado em Abordagem Social"},
-            {cod: "140.99", desc: "COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊNCIA E IDOSAS", local: "TÉRREO", sala: "SALA 5", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL ESPECIAL DE MÉDIA COMPLEXIDADE PARA PESSOAS COM DEFICIÊNCIA E IDOSAS", nomeCompleto: "Sala 5 - Coordenação de Proteção para Pessoas com Deficiência e Idosas"},
-            {cod: "140.89", desc: "AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL", local: "TÉRREO", sala: "SALA 6", tipo: "DIVIDIDA POR GESSO", setor: "AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL (AEPETI)", nomeCompleto: "Sala 6 - Ações Estratégicas do Programa de Erradicação do Trabalho Infantil"},
-            {cod: "140.40", desc: "COORDENAÇAO DE PESSOAS EM SITUAÇAO DE RUA", local: "TÉRREO", sala: "SALA 7", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DE PESSOAS EM SITUAÇÃO DE RUA", nomeCompleto: "Sala 7 - Coordenação de Pessoas em Situação de Rua"},
-            {cod: "140.33", desc: "COORDENAÇAO DE MEDIDAS SOCIO EDUCATIVAS", local: "TÉRREO", sala: "SALA 8", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL A ADOLESCENTES EM CUMPRIMENTO DE MEDIDAS SOCIOEDUCATIVAS...", nomeCompleto: "Sala 8 - Coordenação de Medidas Socioeducativas"},
-            {cod: "140.33", desc: "COORDENAÇAO DE MEDIDAS SOCIO EDUCATIVAS", local: "TÉRREO", sala: "SALA 9", tipo: "DIVIDIDA POR GESSO", setor: "MEDIDA SOCIOEDUCATIVA", nomeCompleto: "Sala 9 - Coordenação de Medidas Socioeducativas"},
-            {cod: "140.44", desc: "COORDENAÇAO DE BENEFICIOS E AÇOES SOCIOASSISTENCIAIS", local: "MEZANINO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS", nomeCompleto: "Sala 1 - Coordenação de Benefícios e Ações Socioassistenciais"},
-            {cod: "140.79", desc: "TECNOLOGIA DA INFORMAÇÃO - SEMCAS", local: "MEZANINO", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE INFORMÁTICA", nomeCompleto: "Sala 2 - Tecnologia da Informação SEMCAS"},
-            {cod: "140.31 / 140.77", desc: "SUPERINTENDÊNCIA DE ARTICULAÇÃO INSTITUCIONAL", local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE ARTICULAÇÃO INSTITUCIONAL", nomeCompleto: "Sala 3 - Superintendência de Articulação Institucional"},
-            {cod: "140.41", desc: "COORDENAÇAO DE PROTEÇAO E ARTICULAÇAO DE POLITICA DE INCLUSAO", local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS", nomeCompleto: "Sala 3 - Coordenação de Proteção e Articulação de Política de Inclusão"},
-            {cod: "140.41", desc: "COORDENAÇAO DE PROTEÇAO E ARTICULAÇAO DE POLITICA DE INCLUSAO", local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS", nomeCompleto: "Sala 3 - Coordenação de Proteção e Articulação de Política de Inclusão"},
-            {cod: "-", desc: "(SETOR SEM CÓDIGO NO SISTEMA)", local: "MEZANINO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setor: "SECRETÁRIA ADJUNTA DE PROTEÇÃO SOCIAL", nomeCompleto: "Sala 4 - Secretária Adjunta de Proteção Social"},
-            {cod: "140.78", desc: "ASSESSORIA TÉCNICA / COMUNICAÇÃO -SEMCAS", local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "ASSESSORIA TÉCNICA (ASTEC)", nomeCompleto: "Sala 5 - Assessoria Técnica / Comunicação SEMCAS"},
-            {cod: "140.36", desc: "COORDENAÇAO DE CAPACITAÇAO - SEMCAS", local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "PROGRAMA DE CAPACITAÇÃO DE DIRIGENTES (PROCAD)", nomeCompleto: "Sala 5 - Coordenação de Capacitação SEMCAS"},
-            {cod: "-", desc: "(SETOR SEM CÓDIGO NO SISTEMA)", local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "PROGRAMA CRIANÇA FELIZ (PCF)", nomeCompleto: "Sala 5 - Programa Criança Feliz"},
-            {cod: "140.27", desc: "SUPERINTENDENCIA DE GESTAO DO SISTEMA UNICO DE ASSISTENCIA SOCIAL", local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE GESTÃO DO SISTEMA ÚNICO DE ASSISTÊNCIA SOCIAL (SUAS)", nomeCompleto: "Sala 1 - Superintendência de Gestão do Sistema Único de Assistência Social"},
-            {cod: "140.27", desc: "SUPERINTENDENCIA DE GESTAO DO SISTEMA UNICO DE ASSISTENCIA SOCIAL", local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE REGULAÇÃO DO SUAS", nomeCompleto: "Sala 1 - Superintendência de Gestão do Sistema Único de Assistência Social"},
-            {cod: "140.49", desc: "COORDENAÇAO DE ARTICULAÇAO DA REDE DE PROTEÇAO", local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DA REDE SOCIOASSISTENCIAL PRIVADA", nomeCompleto: "Sala 1 - Coordenação de Articulação da Rede de Proteção"},
-            {cod: "140.26", desc: "SUPERINTENDENCIA DE PROTEÇAO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", local: "1º ANDAR", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", nomeCompleto: "Sala 2 - Superintendência de Proteção Social Especial de Alta Complexidade"},
-            {cod: "140.26", desc: "SUPERINTENDENCIA DE PROTEÇAO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", local: "1º ANDAR", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DOS SERVIÇOS FAMILIAR E INSTITUCIONAL DE ACOLHIMENTO", nomeCompleto: "Sala 2 - Superintendência de Proteção Social Especial de Alta Complexidade"},
-            {cod: "140.46", desc: "COORDENAÇAO ACOLHIMENTO INSTITUCIONAL", local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE ACOLHIMENTO INSTITUCIONAL", nomeCompleto: "Sala 3 - Coordenação Acolhimento Institucional"},
-            {cod: "140.46", desc: "COORDENAÇAO ACOLHIMENTO INSTITUCIONAL", local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DA CENTRAL DE ACOLHIMENTO", nomeCompleto: "Sala 3 - Coordenação Acolhimento Institucional"},
-            {cod: "140.46", desc: "COORDENAÇAO ACOLHIMENTO INSTITUCIONAL", local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE ACOLHIMENTO EM FAMÍLIA ACOLHEDORA", nomeCompleto: "Sala 3 - Coordenação Acolhimento Institucional"},
-            {cod: "140.4", desc: "COORDENAÇAO DO PAIF - SEMCAS", local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "PAIF - COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO INTEGRAL À FAMÍLIA", nomeCompleto: "Sala 4 - Coordenação do PAIF SEMCAS"},
-            {cod: "140.43", desc: "COORDENAÇAO DE CONVIVENCIA E FORTALECIMENTO", local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "SCFV - COORDENAÇÃO DO SERVIÇO DE CONVIVÊNCIA E FORTALECIMENTO DE VÍNCULOS", nomeCompleto: "Sala 4 - Coordenação de Convivência e Fortalecimento"},
-            {cod: "140.25", desc: "SUPERINTENDENCIA DE PROTEÇAO SOCIAL BASICA", local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL BÁSICA NO DOMICÍLIO", nomeCompleto: "Sala 4 - Superintendência de Proteção Social Básica"},
-            {cod: "140.25", desc: "SUPERINTENDENCIA DE PROTEÇAO SOCIAL BASICA", local: "1º ANDAR", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL BÁSICA", nomeCompleto: "Sala 5 - Superintendência de Proteção Social Básica"},
-            {cod: "140.95", desc: "COORDENAÇÃO DE GESTÃO DO TRABALHO E EDUCAÇÃO PERMANENTE", local: "1º ANDAR", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE GESTÃO DO TRABALHO E EDUCAÇÃO PERMANENTE (COGETEP)", nomeCompleto: "Sala 6 - Coordenação de Gestão do Trabalho e Educação Permanente"},
-            {cod: "140.34", desc: "COORDENAÇAO DE RECURSOS HUMANOS", local: "1º ANDAR", sala: "SALA 7", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE RECURSOS HUMANOS", nomeCompleto: "Sala 7 - Coordenação de Recursos Humanos"},
-            {cod: "140.34", desc: "COORDENAÇAO DE RECURSOS HUMANOS", local: "1º ANDAR", sala: "SALA 7", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE FOLHA DE PAGAMENTO", nomeCompleto: "Sala 7 - Coordenação de Recursos Humanos"},
-            {cod: "140.84", desc: "SEMCAS - ASSESSORIA JURIDICA", local: "1º ANDAR", sala: "SALA 9", tipo: "SALA INDIVIDUAL", setor: "ASSESSORIA JURÍDICA", nomeCompleto: "Sala 9 - SEMCAS Assessoria Jurídica"},
-            {cod: "140.87", desc: "COORDENAÇAO DE PLANEJAMENTO E VIGILANCIA", local: "1º ANDAR", sala: "SALA 10", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE PLANEJAMENTO E VIGILÂNCIA SOCIOASSISTENCIAL", nomeCompleto: "Sala 10 - Coordenação de Planejamento e Vigilância"},
-            {cod: "140.81", desc: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA", local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE EXECUÇÃO ORÇAMENTÁRIA, FINANCEIRA E DE CONTABILIDADE", nomeCompleto: "Sala 11 - Coordenação de Execução Orçamentária e Financeira"},
-            {cod: "140.81", desc: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA", local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTÁRIA E FINANCEIRA", nomeCompleto: "Sala 11 - Coordenação de Execução Orçamentária e Financeira"},
-            {cod: "140.81", desc: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA", local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE CONTABILIDADE", nomeCompleto: "Sala 11 - Coordenação de Execução Orçamentária e Financeira"},
-            {cod: "140.90 / 91 / 92", desc: "FUNDO MUNICIPAL (ASSISTENCIA / CRIANÇA / IDOSO)", local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE GESTÃO DOS FUNDOS MUNICIPAIS VINCULADOS AOS CONSELHOS DE DIREITOS", nomeCompleto: "Sala 11 - Fundo Municipal (Assistência / Criança / Idoso)"},
-            {cod: "140.81", desc: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTARIA E FINANCEIRA", local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE PRESTAÇÃO DE CONTAS", nomeCompleto: "Sala 11 - Coordenação de Execução Orçamentária e Financeira"},
-            {cod: "140.85", desc: "GABINETE - SEMCAS", local: "1º ANDAR", sala: "SALA 12", tipo: "SALA CONJUNTA", setor: "GABINETE", nomeCompleto: "Sala 12 - Gabinete SEMCAS"},
-            {cod: "140.42", desc: "COORDENAÇAO E ASSESSORIA DE COMUNICAÇAO", local: "1º ANDAR", sala: "SALA 12", tipo: "SALA CONJUNTA", setor: "COMUNICAÇÃO", nomeCompleto: "Sala 12 - Coordenação e Assessoria de Comunicação"},
-            {cod: "140.74", desc: "GABINETE DA SECRETÁRIA ADJUNTA DE GESTÃO", local: "1º ANDAR", sala: "SALA 13", tipo: "SALA INDIVIDUAL", setor: "GABINETE DO SECRETÁRIO ADJUNTO DE ADMINISTRAÇÃO", nomeCompleto: "Sala 13 - Gabinete da Secretária Adjunta de Gestão"},
-            {cod: "140.2 / 140.86", desc: "COORDENAÇAO DE CONTRATOS E CONVENIOS / COORDENAÇAO DE CONTRATOS", local: "1º ANDAR", sala: "SALA 14", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE CONTRATOS", nomeCompleto: "Sala 14 - Coordenação de Contratos e Convênios"},
-            {cod: "140.70", desc: "CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE", local: "2º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE (CMDCA)", nomeCompleto: "Sala 1 - Conselho Municipal dos Direitos da Criança e do Adolescente"},
-            {cod: "140.71", desc: "CONSELHO MUNICIPAL DO IDOSO", local: "2º ANDAR", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DO IDOSO (CMDI)", nomeCompleto: "Sala 2 - Conselho Municipal do Idoso"},
-            {cod: "140.69", desc: "CONSELHO MUNICIPAL ASSISTENCIA SOCIAL", local: "2º ANDAR", sala: "SALA 3", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DE ASSISTÊNCIA SOCIAL (CMAS)", nomeCompleto: "Sala 3 - Conselho Municipal de Assistência Social"},
-            {cod: "140.97", desc: "AUDITÓRIO - SEMCAS", local: "2º ANDAR", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "AUDITÓRIO", nomeCompleto: "Sala 6 - Auditório SEMCAS"},
-            {cod: "140.97", desc: "AUDITÓRIO - SEMCAS", local: "3º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "AUDITÓRIO", nomeCompleto: "Sala 1 - Auditório SEMCAS"}
+            { local: "SUBSOLO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO" },
+            { local: "SUBSOLO", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE ARQUIVO E PROTOCOLO" },
+            { local: "SUBSOLO", sala: "SALA 3", tipo: "SALA INDIVIDUAL", setor: "SERVIÇOS GERAIS (LSL)" },
+            { local: "SUBSOLO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE ADMINISTRAÇÃO E PATRIMÔNIO" },
+            { local: "SUBSOLO", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setor: "ALMOXARIFADO" },
+            { local: "SUBSOLO", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE LOGÍSTICA E TRANSPORTE" },
+            { local: "SUBSOLO", sala: "SALA 7", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE MANUTENÇÃO" },
+            { local: "TÉRREO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "RECEPÇÃO" },
+            { local: "TÉRREO", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA" },
+            { local: "TÉRREO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE GESTÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS E TRANSFERÊNCIA DE RENDA" },
+            { local: "TÉRREO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE CADASTRO ÚNICO E TRANSFERÊNCIA DE RENDA" },
+            { local: "TÉRREO", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO ESPECIALIZADO À FAMÍLIA (PAEFI)" },
+            { local: "TÉRREO", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE" },
+            { local: "TÉRREO", sala: "SALA 5", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL" },
+            { local: "TÉRREO", sala: "SALA 6", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL ESPECIAL DE MÉDIA COMPLEXIDADE PARA PESSOAS COM DEFICIÊNCIA E IDOSAS" },
+            { local: "TÉRREO", sala: "SALA 7", tipo: "DIVIDIDA POR GESSO", setor: "AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL (AEPETI)" },
+            { local: "TÉRREO", sala: "SALA 8", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DE PESSOAS EM SITUAÇÃO DE RUA" },
+            { local: "TÉRREO", sala: "SALA 9", tipo: "DIVIDIDA POR GESSO", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL A ADOLESCENTES EM CUMPRIMENTO DE MEDIDAS SOCIOEDUCATIVAS DE LIBERDADE ASSISTIDA E PRESTAÇÃO DE SERVIÇO À COMUNIDADE" },
+            { local: "TÉRREO", sala: "SALA 10", tipo: "DIVIDIDA POR GESSO", setor: "MEDIDA SOCIOEDUCATIVA" },
+            { local: "MEZANINO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE BENEFÍCIOS SOCIOASSISTENCIAIS" },
+            { local: "MEZANINO", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE INFORMÁTICA" },
+            { local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE ARTICULAÇÃO INSTITUCIONAL" },
+            { local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS" },
+            { local: "MEZANINO", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE AÇÕES AFIRMATIVAS E DIREITOS HUMANOS" },
+            { local: "MEZANINO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setor: "SECRETÁRIA ADJUNTA DE PROTEÇÃO SOCIAL" },
+            { local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "ASSESSORIA TÉCNICA (ASTEC)" },
+            { local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "PROGRAMA DE CAPACITAÇÃO DE DIRIGENTES (PROCAD)" },
+            { local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setor: "PROGRAMA CRIANÇA FELIZ (PCF)" },
+            { local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE GESTÃO DO SISTEMA ÚNICO DE ASSISTÊNCIA SOCIAL (SUAS)" },
+            { local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE REGULAÇÃO DO SUAS" },
+            { local: "1º ANDAR", sala: "SALA 1", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DA REDE SOCIOASSISTENCIAL PRIVADA" },
+            { local: "1º ANDAR", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE" },
+            { local: "1º ANDAR", sala: "SALA 2", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DOS SERVIÇOS FAMILIAR E INSTITUCIONAL DE ACOLHIMENTO" },
+            { local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE ACOLHIMENTO INSTITUCIONAL" },
+            { local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DA CENTRAL DE ACOLHIMENTO" },
+            { local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE ACOLHIMENTO EM FAMÍLIA ACOLHEDORA" },
+            { local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "PAIF - COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO E ATENDIMENTO INTEGRAL À FAMÍLIA" },
+            { local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "SCFV - COORDENAÇÃO DO SERVIÇO DE CONVIVÊNCIA E FORTALECIMENTO DE VÍNCULOS" },
+            { local: "1º ANDAR", sala: "SALA 4", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL BÁSICA NO DOMICÍLIO" },
+            { local: "1º ANDAR", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setor: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL BÁSICA" },
+            { local: "1º ANDAR", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE GESTÃO DO TRABALHO E EDUCAÇÃO PERMANENTE (COGETEP)" },
+            { local: "1º ANDAR", sala: "SALA 7", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE RECURSOS HUMANOS" },
+            { local: "1º ANDAR", sala: "SALA 8", tipo: "SALA INDIVIDUAL", setor: "DIRETORIA TÉCNICA DE FOLHA DE PAGAMENTO" },
+            { local: "1º ANDAR", sala: "SALA 9", tipo: "SALA INDIVIDUAL", setor: "ASSESSORIA JURÍDICA" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE PLANEJAMENTO E VIGILÂNCIA SOCIOASSISTENCIAL" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "SUPERINTENDÊNCIA DE EXECUÇÃO ORÇAMENTÁRIA, FINANCEIRA E DE CONTABILIDADE" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE EXECUÇÃO ORÇAMENTÁRIA E FINANCEIRA" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "COORDENAÇÃO DE CONTABILIDADE" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE GESTÃO DOS FUNDOS MUNICIPAIS VINCULADOS AOS CONSELHOS DE DIREITOS" },
+            { local: "1º ANDAR", sala: "SALA 10", tipo: "SALA CONJUNTA", setor: "DIRETORIA TÉCNICA DE PRESTAÇÃO DE CONTAS" },
+            { local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "GABINETE" },
+            { local: "1º ANDAR", sala: "SALA 11", tipo: "SALA CONJUNTA", setor: "COMUNICAÇÃO" },
+            { local: "1º ANDAR", sala: "SALA 12", tipo: "SALA INDIVIDUAL", setor: "GABINETE DO SECRETÁRIO ADJUNTO DE ADMINISTRAÇÃO" },
+            { local: "1º ANDAR", sala: "SALA 13", tipo: "SALA INDIVIDUAL", setor: "COORDENAÇÃO DE CONTRATOS" },
+            { local: "2º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE (CMDCA)" },
+            { local: "2º ANDAR", sala: "SALA 2", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DO IDOSO (CMDI)" },
+            { local: "2º ANDAR", sala: "SALA 3", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DE ASSISTÊNCIA SOCIAL (CMAS)" },
+            { local: "2º ANDAR", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setor: "CONSELHO MUNICIPAL DOS DIREITOS DA PESSOA COM DEFICIÊNCIA (CMDEF)" },
+            { local: "2º ANDAR", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setor: "AUDITÓRIO" },
+            { local: "3º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setor: "AUDITÓRIO" }
         ];
         
         let currentSedeFilter = 'all';
+        let currentSedeFloor = 'Todos';
 
         function groupByFloorAndRoom(data) {
             const grouped = {};
             data.forEach(item => {
-                if (!grouped[item.local]) {
-                    grouped[item.local] = {};
-                }
-                if (!grouped[item.local][item.sala]) {
-                    grouped[item.local][item.sala] = {
+                const roomKey = `${item.local}-${item.sala}`;
+                if (!grouped[roomKey]) {
+                    grouped[roomKey] = {
+                        local: item.local,
+                        sala: item.sala,
                         tipo: item.tipo,
-                        nomeCompleto: item.nomeCompleto,
-                        departments: []
+                        setores: new Set()
                     };
                 }
-                grouped[item.local][item.sala].departments.push({
-                    cod: item.cod,
-                    desc: item.desc,
-                    setor: item.setor
-                });
+                grouped[roomKey].setores.add(item.setor);
             });
-            return grouped;
-        }
-
-        function getRoomTypeClass(tipo) {
-            if (tipo.includes('INDIVIDUAL')) return 'individual';
-            if (tipo.includes('CONJUNTA')) return 'conjunta';
-            if (tipo.includes('DIVIDIDA')) return 'dividida';
-            return '';
-        }
-
-        function getUniqueDescriptions(departments) {
-            return [...new Set(departments.map(dept => dept.desc))];
-        }
-
-        function hasNoRegistry(departments) {
-            return departments.some(dept => dept.cod === '-' || dept.desc.includes('SEM CÓDIGO NO SISTEMA'));
+            return Object.values(grouped);
         }
 
         function renderSedeReport() {
-            const container = document.getElementById('floors-container');
+            const floorNavContainer = document.getElementById('sede-floor-nav');
+            const roomsContainer = document.getElementById('sede-rooms-container');
             const noResults = document.getElementById('noResultsSede');
             const searchBox = document.getElementById('searchBoxSede');
             const searchTerm = searchBox.value.toLowerCase();
-            container.innerHTML = '';
-            
-            let hasResults = false;
-            const filteredData = sedeData.filter(item => {
-                if (currentSedeFilter === 'no-registry' && !(item.cod === '-' || item.desc.includes('SEM CÓDIGO NO SISTEMA'))) {
-                    return false;
-                }
-                if (searchTerm) {
-                    return item.sala.toLowerCase().includes(searchTerm) ||
-                           item.tipo.toLowerCase().includes(searchTerm) ||
-                           item.nomeCompleto.toLowerCase().includes(searchTerm) ||
-                           item.desc.toLowerCase().includes(searchTerm) ||
-                           item.setor.toLowerCase().includes(searchTerm) ||
-                           item.cod.toLowerCase().includes(searchTerm);
-                }
-                return true;
-            });
 
-            const groupedData = groupByFloorAndRoom(filteredData);
-            const floorOrder = ['SUBSOLO', 'TÉRREO', 'MEZANINO', '1º ANDAR', '2º ANDAR', '3º ANDAR'];
-
-            floorOrder.forEach(floor => {
-                if (!groupedData[floor]) return;
-                
-                const floorSection = document.createElement('div');
-                floorSection.className = 'floor-section';
-                
-                const rooms = groupedData[floor];
-                const roomKeys = Object.keys(rooms).sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
-                
-                let roomsInFloor = 0;
-                let noRegistryRooms = 0;
-                
-                const floorContent = document.createElement('div');
-                floorContent.className = 'floor-content active';
-                
-                roomKeys.forEach(roomKey => {
-                    const room = rooms[roomKey];
-                    const roomHasNoRegistry = hasNoRegistry(room.departments);
-                    
-                    hasResults = true;
-                    roomsInFloor++;
-                    if (roomHasNoRegistry) noRegistryRooms++;
-                    
-                    const roomCard = document.createElement('div');
-                    roomCard.className = `room-card ${roomHasNoRegistry ? 'no-registry' : ''}`;
-                    
-                    // --- LÓGICA DE CONSOLIDAÇÃO DE SETORES ---
-                    const consolidatedDepartments = new Map();
-                    room.departments.forEach(dept => {
-                        const key = dept.setor; // Usar o nome do setor como chave para agrupar
-                        if (!consolidatedDepartments.has(key)) {
-                            consolidatedDepartments.set(key, {
-                                setor: dept.setor,
-                                codes: new Set(),
-                                descs: new Set()
-                            });
-                        }
-                        consolidatedDepartments.get(key).codes.add(dept.cod);
-                        consolidatedDepartments.get(key).descs.add(dept.desc);
+            // Gerar navegação de andares (apenas uma vez)
+            if (floorNavContainer.children.length === 0) {
+                const floorOrder = ['Todos', 'SUBSOLO', 'TÉRREO', 'MEZANINO', '1º ANDAR', '2º ANDAR', '3º ANDAR'];
+                floorNavContainer.innerHTML = floorOrder.map(floor => `
+                    <button class="floor-nav-button ${floor === 'Todos' ? 'active' : ''}" data-floor="${floor}">
+                        ${floor}
+                    </button>
+                `).join('');
+                floorNavContainer.querySelectorAll('.floor-nav-button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        currentSedeFloor = btn.dataset.floor;
+                        floorNavContainer.querySelector('.active').classList.remove('active');
+                        btn.classList.add('active');
+                        renderSedeReport();
                     });
-                    
-                    roomCard.innerHTML = `
-                        <div class="room-header">
-                            <div class="room-info">
-                                <span class="room-number">${roomKey}</span>
-                                <div class="room-name">
-                                    📍 ${roomKey} - ${floor}
-                                    ${roomHasNoRegistry ? '<span class="no-registry-badge">Sem Registro</span>' : ''}
-                                </div>
-                                <div class="room-full-name">🏢 ${room.nomeCompleto}</div>
-                            </div>
-                            <span class="room-type ${getRoomTypeClass(room.tipo)}">${room.tipo}</span>
-                        </div>
-                        <div class="department-list">
-                            <div class="department-list-title">👥 Setores nesta sala:</div>
-                            ${Array.from(consolidatedDepartments.values()).map(dept => `
-                                <div class="department-item">
-                                    <div class="department-code">🔢 Código(s): ${Array.from(dept.codes).join(', ')}</div>
-                                    <div class="department-name">${dept.setor}</div>
-                                    <div class="system-description" style="padding-left: 1rem; margin-top: 0.25rem;">📋 ${Array.from(dept.descs).join(', ')}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                    floorContent.appendChild(roomCard);
                 });
-                
-                if (roomsInFloor > 0) {
-                    const floorHeader = document.createElement('div');
-                    floorHeader.className = 'floor-header';
-                    floorHeader.onclick = () => {
-                        const content = floorHeader.nextElementSibling;
-                        const icon = floorHeader.querySelector('.toggle-icon');
-                        const isActive = content.classList.toggle('active');
-                        content.style.display = isActive ? 'block' : 'none';
-                        icon.textContent = isActive ? '▼' : '▶';
-                    };
-                    
-                    floorHeader.innerHTML = `
-                        <div>
-                            <h2>${floor}</h2>
-                            <div class="floor-info">
-                                ${roomsInFloor} salas
-                                ${noRegistryRooms > 0 ? ` • ${noRegistryRooms} sem registro` : ''}
-                            </div>
-                        </div>
-                        <span class="toggle-icon">▼</span>
-                    `;
-                    
-                    floorSection.appendChild(floorHeader);
-                    floorSection.appendChild(floorContent);
-                    container.appendChild(floorSection);
-                }
-            });
+            }
             
-            noResults.style.display = hasResults ? 'none' : 'block';
-            updateSedeStats(filteredData);
+            let filteredData = sedeData.filter(item => {
+                const matchFloor = currentSedeFloor === 'Todos' || item.local === currentSedeFloor;
+                const matchSearch = searchTerm === '' || 
+                    item.sala.toLowerCase().includes(searchTerm) ||
+                    item.tipo.toLowerCase().includes(searchTerm) ||
+                    item.setor.toLowerCase().includes(searchTerm) ||
+                    item.local.toLowerCase().includes(searchTerm);
+                return matchFloor && matchSearch;
+            });
+
+            const groupedRooms = groupByFloorAndRoom(filteredData);
+            
+            if (groupedRooms.length === 0) {
+                roomsContainer.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+            roomsContainer.innerHTML = groupedRooms.map(room => {
+                const setoresHTML = Array.from(room.setores).map(setor => `
+                    <div class="department-item-sede">
+                        <p class="department-name-sede">${setor}</p>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="room-card-sede fade-in">
+                        <div class="room-card-header">
+                            <p class="room-card-subtitle">${room.local} - ${room.tipo}</p>
+                            <h3 class="room-card-title">${room.sala}</h3>
+                        </div>
+                        <div class="room-card-body">
+                            ${setoresHTML}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function updateSedeStats(data) {
-            const uniqueRooms = new Set(data.map(item => `${item.local}-${item.sala}`));
-            const uniqueSuperintendencias = new Set(data.filter(item => item.setor.toLowerCase().includes('superintendência')).map(item => item.setor));
-            const noRegistryRooms = new Set(data.filter(item => item.cod === '-' || item.desc.includes('SEM CÓDIGO NO SISTEMA')).map(item => `${item.local}-${item.sala}`));
-            
-            document.getElementById('total-rooms').textContent = uniqueRooms.size;
-            document.getElementById('total-superintendencias').textContent = uniqueSuperintendencias.size;
-            document.getElementById('no-registry-count').textContent = noRegistryRooms.size;
-        }
 
         function initSedeTab() {
-            document.getElementById('searchBoxSede').addEventListener('input', renderSedeReport);
+            document.getElementById('searchBoxSede').addEventListener('input', debounce(renderSedeReport, 300));
             document.getElementById('filterAllSede').addEventListener('click', function() {
                 currentSedeFilter = 'all';
                 document.querySelectorAll('#content-sede .filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -2030,4 +2010,3 @@
     </script>
 </body>
 </html>
-
