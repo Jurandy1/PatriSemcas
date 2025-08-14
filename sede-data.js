@@ -99,7 +99,7 @@ const sedeData = [
     { local: "PENDENTE", sala: "SETORES PENDENTES DE LOCALIZAÇÃO", tipo: "PENDENTE", setores: [
         { nome: "SUPERINTENDÊNCIA DE ENFRENTAMENTO À VIOLAÇÃO DE DIREITOS", registro: "140.30 - SUPERINTENDÊNCIA DE ENFRENTAMENTO À VIOLAÇÃO DE DIREITOS", observacao: "Localização na sede não confirmada." },
         { nome: "COORDENAÇÃO DE RESGATE E VIGILÂNCIA SOCIAL", registro: "140.45 - COORDENAÇÃO DE RESGATE E VIGILÂNCIA SOCIAL", observacao: "Localização na sede não confirmada." },
-        { nome: "COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", registro: "140.47 - COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", observacao: "Localização na sede não confirmada." },
-        { nome: "NÚCLEO INTERSETORIAL", registro: "140.83 - NÚCLEO INTERSETORIAL", observacao: "Localização na sede não confirmada." }
+        { nome: "COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", registro: "140.47 - COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", observacao: "Localização na sede não confirmada." }
+        
     ]}
 ];
