@@ -1309,9 +1309,40 @@
             }
         }
 
+        function populateTotalItensUnidades() {
+            const selectedCategoria = filtroTotalCategoriaEl.value;
+            let itemsToConsider = allItems;
+
+            // If a category is selected, filter the items
+            if (selectedCategoria) {
+                itemsToConsider = allItems.filter(item => item.type === selectedCategoria);
+            }
+
+            const unidades = [...new Set(itemsToConsider.map(item => formatUnitName(item)))].sort((a, b) => a.localeCompare(b));
+            
+            const currentUnidadeValue = filtroTotalUnidadeEl.value;
+            filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>';
+            
+            unidades.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u;
+                option.textContent = u.toUpperCase();
+                filtroTotalUnidadeEl.appendChild(option);
+            });
+
+            // Check if the previously selected value is still in the new list of options
+            if (unidades.includes(currentUnidadeValue)) {
+                filtroTotalUnidadeEl.value = currentUnidadeValue;
+            }
+        }
+
+
         function populateTotalItensFilters() {
             if (!filtroTotalCategoriaEl || !filtroTotalUnidadeEl || !filtroTotalEstadoEl || !allItems || allItems.length === 0) return;
+            
+            // Populate Categories
             const categorias = [...new Set(allItems.map(item => item.type))].filter(type => type && type !== 'N/A').sort((a, b) => a.localeCompare(b));
+            const currentCategoria = filtroTotalCategoriaEl.value;
             filtroTotalCategoriaEl.innerHTML = '<option value="">TODAS</option>';
             categorias.forEach(cat => {
                 const option = document.createElement('option');
@@ -1319,16 +1350,15 @@
                 option.textContent = cat.toUpperCase();
                 filtroTotalCategoriaEl.appendChild(option);
             });
-            const unidades = [...new Set(allItems.map(item => formatUnitName(item)))].sort((a, b) => a.localeCompare(b));
-            filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>';
-            unidades.forEach(u => {
-                const option = document.createElement('option');
-                option.value = u;
-                option.textContent = u.toUpperCase();
-                filtroTotalUnidadeEl.appendChild(option);
-            });
+            if (currentCategoria) filtroTotalCategoriaEl.value = currentCategoria;
+
+            // Populate Units based on selected category
+            populateTotalItensUnidades();
+
+            // Populate States
             const allStates = [...new Set(allItems.map(item => item.state))];
             const sortedStates = ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s));
+            const currentState = filtroTotalEstadoEl.value;
             filtroTotalEstadoEl.innerHTML = '<option value="">TODOS</option>';
             sortedStates.forEach(s => {
                 const option = document.createElement('option');
@@ -1336,6 +1366,7 @@
                 option.textContent = s.toUpperCase();
                 filtroTotalEstadoEl.appendChild(option);
             });
+            if (currentState) filtroTotalEstadoEl.value = currentState;
         }
 
         function renderTotalItens() {
@@ -1779,8 +1810,13 @@
             filtroEstoqueUnidadeEl.addEventListener('input', () => renderEstoque(allEstoqueItems));
             filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
             
-            const totalItensFilters = [filtroTotalCategoriaEl, filtroTotalUnidadeEl, filtroTotalEstadoEl];
-            totalItensFilters.forEach(el => el.addEventListener('change', renderTotalItens));
+            // Event Listeners for "Total de Itens" tab
+            filtroTotalCategoriaEl.addEventListener('change', () => {
+                populateTotalItensUnidades();
+                renderTotalItens();
+            });
+            filtroTotalUnidadeEl.addEventListener('change', renderTotalItens);
+            filtroTotalEstadoEl.addEventListener('change', renderTotalItens);
             filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
             
             openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); openUnidadeModal(); });
