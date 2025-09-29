@@ -390,7 +390,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
-                        <p class="text-sm text-slate-500">v.2.5 </p>
+                        <p class="text-sm text-slate-500">v.2.6 </p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -662,13 +662,6 @@
     <!-- Script Principal (Adaptado) -->
     <script type="text/javascript">
         // --- DADOS DA SEDE (INTEGRADO) ---
-        /**
-         * =================================================================
-         * ESTRUTURA DE DADOS DA SEDE - SEMCAS
-         * =================================================================
-         * Este arquivo centraliza os dados da organização das salas e setores na Sede.
-         * Para atualizar, basta editar as informações neste arquivo.
-         */
         const sedeData = [
             // SUBSOLO
             { local: "SUBSOLO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setores: [{ nome: "DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO", registro: "140.32 - SUPERINTENDÊNCIA DE ADMINISTRAÇÃO", observacao: "" }] },
@@ -976,8 +969,21 @@
                 const processedDonationSource = (rawDonationSource === '-' || normalizeString(rawDonationSource) === 'n/a' || rawDonationSource === '') ? '' : rawDonationSource;
                 const rawSupplier = (row.Fornecedor || '').trim();
                 const processedSupplier = (rawSupplier === '-' || normalizeString(rawSupplier) === 'n/a') ? '' : rawSupplier;
+
+                // **NOVA LÓGICA PARA TOMBAMENTO**
+                const rawTombamento = (row['Tombamento'] || '').trim();
+                let processedTombamento = 'S/T'; // Valor padrão
+                if (rawTombamento) {
+                    if (normalizeString(rawTombamento) === 'doacao do estado') {
+                        processedTombamento = 'Doação Estado';
+                    } else {
+                        processedTombamento = rawTombamento;
+                    }
+                }
+
                 return {
                     id: `${serviceKey}_${index}`,
+                    tombamento: processedTombamento, // **NOVO CAMPO**
                     type: row.Tipo || 'N/A',
                     description: row['Descrição'] || 'N/A',
                     unit_condition: standardizedUnitName,
@@ -1017,9 +1023,10 @@
             if (!items || items.length === 0) return [];
             const agrupados = items.reduce((acc, item) => {
                 const isDefective = item.state === 'Avariado';
+                // Adicionado tombamento à chave de agrupamento para itens avariados, para não agrupar itens diferentes
                 const key = isDefective 
-                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}`
-                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
+                    ? `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${normalizeString(item.observation) || 'no-obs'}-${normalizeString(item.supplier) || 'no-sup'}-${item.tombamento}`
+                    : `${normalizeString(item.type)}-${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}-${item.tombamento}`;
                 if (acc[key]) {
                     acc[key].quantity += parseInt(item.quantity, 10);
                 } else {
@@ -1075,7 +1082,7 @@
         function renderTable(itemsToDisplay, totalItemsCount, enablePagination = true) {
             if (!tableBodyEl) return;
             if (itemsToDisplay.length === 0) {
-                tableBodyEl.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
+                tableBodyEl.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-slate-500">Nenhum item encontrado com os filtros aplicados.</td></tr>`;
                 renderPagination(0, 0, enablePagination);
                 return;
             }
@@ -1091,6 +1098,7 @@
                 const finalSupplierText = (observationText && supplierText && normalizeString(observationText) === normalizeString(supplierText)) ? 'N/A' : (supplierText || 'N/A');
                 tableHTML += `
                     <tr class="border-b border-slate-200">
+                        <td class="px-6 py-4 font-mono text-xs">${item.tombamento}</td>
                         <td class="px-6 py-4">${item.type}</td>
                         <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
                         <td class="px-6 py-4">${unitDisplayName}</td>
@@ -1131,7 +1139,7 @@
                 const matchEstado = !estado || item.state === estado;
                 const source = normalizeString(item.donation_source);
                 const matchDoacao = !doacao || (doacao === 'sim' && item.donation_source && !['proprio', 'proprios'].includes(source)) || (doacao === 'nao' && (!item.donation_source || ['proprio', 'proprios'].includes(source)));
-                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca));
+                const matchBusca = !busca || item.description.toLowerCase().includes(busca) || item.type.toLowerCase().includes(busca) || item.location.toLowerCase().includes(busca) || (item.observation && item.observation.toLowerCase().includes(busca)) || (item.tombamento && item.tombamento.toLowerCase().includes(busca));
                 return matchServico && matchUnidade && matchEstado && matchDoacao && matchBusca;
             });
         }
@@ -1177,7 +1185,7 @@
             if (estadoChartInstance) { estadoChartInstance.destroy(); estadoChartInstance = null; }
             const currentFilteredData = getFilteredItems(dadosOriginais);
             const filteredAndGroupedItems = agruparItens(currentFilteredData);
-            const tableHeadersHTML = `<thead class="text-xs uppercase"><tr><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
+            const tableHeadersHTML = `<thead class="text-xs uppercase"><tr><th scope="col" class="px-6 py-3">Tombamento</th><th scope="col" class="px-6 py-3">Tipo</th><th scope="col" class="px-6 py-3">Descrição</th><th scope="col" class="px-6 py-3">Unidade</th><th scope="col" class="px-6 py-3 text-center">Qtd</th><th scope="col" class="px-6 py-3">Localização</th><th scope="col" class="px-6 py-3">Estado</th><th scope="col" class="px-6 py-3">Origem da Doação</th><th scope="col" class="px-6 py-3">Observação</th><th scope="col" class="px-6 py-3">Fornecedor</th></tr></thead>`;
             
             if (visaoAtiva === 'boasVindas') {
                 mainContentAreaEl.innerHTML = `<div class="text-center p-10 sm:p-20 card"><p class="text-xl text-slate-600">Selecione um <strong>Tipo de Unidade</strong> para ver os detalhes, ou clique em <strong>Ver Inventário Completo</strong> para uma visão geral.</p></div>`;
@@ -1459,7 +1467,7 @@
                 const location = item.location || 'N/D';
                 const key = `${unitName} >> ${location}`;
                 if (!distribution[key]) {
-                    distribution[key] = { quantity: 0, state: item.state };
+                    distribution[key] = { quantity: 0, state: item.state, tombamento: item.tombamento };
                 }
                 distribution[key].quantity += item.quantity;
             });
@@ -1477,6 +1485,7 @@
             const distributionHTML = Object.entries(distribution).sort((a, b) => a[0].localeCompare(b[0])).map(([key, value]) => `
                 <tr class="border-b border-slate-200">
                     <td class="px-4 py-2">${key.replace(' >> ', '<span class="text-slate-400 mx-2">›</span>')}</td>
+                    <td class="px-4 py-2 font-mono text-xs">${value.tombamento}</td>
                     <td class="px-4 py-2 text-center font-bold">${value.quantity}</td>
                     <td class="px-4 py-2 text-center"><span class="badge ${stateColors[value.state]?.bg}">${value.state}</span></td>
                 </tr>
@@ -1501,6 +1510,7 @@
                                 <thead class="sticky top-0 bg-slate-100">
                                     <tr>
                                         <th class="px-4 py-2">Unidade / Localização</th>
+                                        <th class="px-4 py-2">Tombamento</th>
                                         <th class="px-4 py-2 text-center">Qtd.</th>
                                         <th class="px-4 py-2 text-center">Estado</th>
                                     </tr>
@@ -1514,6 +1524,7 @@
                 </div>
             `;
         }
+
 
         // --- LÓGICA DA MODAL ---
         function openUnidadeModal() {
@@ -2166,5 +2177,4 @@
     </script>
 </body>
 </html>
-
 
