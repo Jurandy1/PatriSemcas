@@ -27,7 +27,7 @@ const sedeData = [
         { nome: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE", registro: "140.76 - SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL DE MÉDIA COMPLEXIDADE", observacao: "" }
     ]},
     { local: "TÉRREO", sala: "SALA 5", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "COORDENAÇÃO DO SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL", registro: "140.93 - SERVIÇO ESPECIALIZADO EM ABORDAGEM SOCIAL", observacao: "" }] },
-    { local: "TÉRREO", sala: "SALA 6", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊNCIA E IDOSAS", registro: "140.99 - COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊNCIA E IDOSAS", observacao: "" }] },
+    { local: "TÉRREO", sala: "SALA 6", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊNCIA E IDOSAS", registro: "140.99 - COORDENAÇÃO DE PROTEÇÃO PARA PESSOAS COM DEFICIÊncia E IDOSAS", observacao: "" }] },
     { local: "TÉRREO", sala: "SALA 7", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL (AEPETI)", registro: "140.89 - AÇÕES ESTRATÉGICAS DO PROGRAMA DE ERRADICAÇÃO DO TRABALHO INFANTIL", observacao: "" }] },
     { local: "TÉRREO", sala: "SALA 8", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "COORDENAÇÃO DE PESSOAS EM SITUAÇÃO DE RUA", registro: "140.40 - COORDENAÇÃO DE PESSOAS EM SITUAÇÃO DE RUA", observacao: "" }] },
     { local: "TÉRREO", sala: "SALA 9", tipo: "DIVIDIDA POR GESSO", setores: [{ nome: "COORDENAÇÃO DO SERVIÇO DE PROTEÇÃO SOCIAL A ADOLESCENTES EM CUMPRIMENTO DE MEDIDAS SOCIOEDUCATIVAS", registro: "140.33 - COORDENAÇÃO DE MEDIDAS SOCIOEDUCATIVAS", observacao: "" }] },
@@ -42,7 +42,6 @@ const sedeData = [
     ]},
     { local: "MEZANINO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setores: [{ nome: "SECRETÁRIA ADJUNTA DE PROTEÇÃO SOCIAL", registro: "", observacao: "Precisa criar identificação no sistema." }] },
     { local: "MEZANINO", sala: "SALA 5", tipo: "SALA CONJUNTA", setores: [
-        { nome: "ASSESSORIA TÉCNICA (ASTEC)", registro: "140.78 - ASSESSORIA TÉCNICA / COMUNICAÇÃO", observacao: "" },
         { nome: "PROGRAMA DE CAPACITAÇÃO DE DIRIGENTES (PROCAD)", registro: "140.36 - COORDENAÇÃO DE CAPACITAÇÃO", observacao: "" },
         { nome: "PROGRAMA CRIANÇA FELIZ (PCF)", registro: "", observacao: "Precisa criar identificação no sistema." }
     ]},
@@ -82,8 +81,9 @@ const sedeData = [
         { nome: "GABINETE", registro: "140.85 - GABINETE", observacao: "" },
         { nome: "COMUNICAÇÃO", registro: "140.42 - COORDENAÇÃO E ASSESSORIA DE COMUNICAÇÃO", observacao: "" }
     ]},
-    { local: "1º ANDAR", sala: "SALA 12", tipo: "SALA INDIVIDUAL", setores: [{ nome: "GABINETE DO SECRETÁRIO ADJUNTO DE ADMINISTRAÇÃO", registro: "140.74 - GABINETE DA SECRETÁRIA ADJUNTA DE GESTÃO", observacao: "" }] },
-    { local: "1º ANDAR", sala: "SALA 13", tipo: "SALA INDIVIDUAL", setores: [{ nome: "COORDENAÇÃO DE CONTRATOS", registro: "140.2 - COORDENAÇÃO DE CONTRATOS E CONVÊNIOS / 140.86 - COORDENAÇÃO DE CONTRATOS", observacao: "Recomenda-se unificar no sistema (sugerido: manter 140.86)." }] },
+    { local: "1º ANDAR", sala: "SALA 12", tipo: "SALA INDIVIDUAL", setores: [{ nome: "ASSESSORIA TÉCNICA (ASTEC)", registro: "140.78 - ASSESSORIA TÉCNICA / COMUNICAÇÃO", observacao: "" }] },
+    { local: "1º ANDAR", sala: "SALA 13", tipo: "SALA INDIVIDUAL", setores: [{ nome: "GABINETE DO SECRETÁRIO ADJUNTO DE ADMINISTRAÇÃO", registro: "140.74 - GABINETE DA SECRETÁRIA ADJUNTA DE GESTÃO", observacao: "" }] },
+    { local: "1º ANDAR", sala: "SALA 14", tipo: "SALA INDIVIDUAL", setores: [{ nome: "COORDENAÇÃO DE CONTRATOS", registro: "140.2 - COORDENAÇÃO DE CONTRATOS E CONVÊNIOS / 140.86 - COORDENAÇÃO DE CONTRATOS", observacao: "Recomenda-se unificar no sistema (sugerido: manter 140.86)." }] },
     
     // 2º ANDAR
     { local: "2º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setores: [{ nome: "CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE (CMDCA)", registro: "140.70 - CONSELHO MUNICIPAL DOS DIREITOS DA CRIANÇA E DO ADOLESCENTE DE SÃO LUÍS", observacao: "" }] },
@@ -103,3 +103,5 @@ const sedeData = [
         
     ]}
 ];
+
+export default sedeData;
