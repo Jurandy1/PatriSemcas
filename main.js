@@ -226,7 +226,7 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
 // --- LÓGICA PRINCIPAL (Antes em main.js) ---
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
+    let googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
     const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
     let allItems = [], dadosOriginais = [], allEstoqueItems = [];
@@ -360,6 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('dashboard-no-bebedouro-units-list').innerHTML = noBebedouro.length > 0 ? noBebedouro.map(u => `<p class="text-sm">${u.name}</p>`).join('') : '<p>Todas as unidades têm bebedouro.</p>';
     }
 
+    let currentSedeFilter = 'all', currentSedeFloor = 'Todos';
     function renderSedeReport() {
         const roomsContainer = document.getElementById('sede-rooms-container');
         const searchTerm = document.getElementById('searchBoxSede').value.toLowerCase();
@@ -432,7 +433,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         unidadeListContainer.addEventListener('click', (e) => { const li = e.target.closest('li[data-value]'); if (li) { selectedUnidadeValue = li.dataset.value; openUnidadeModalBtn.textContent = li.dataset.text; dadosOriginais = allItems.filter(i => i.unit_condition === selectedUnidadeValue); tituloDaVisao = `Inventário de ${li.dataset.text}`; visaoAtiva = 'unidade'; closeModal(); handleFilterChange(); } });
         clearUnidadeSelectionBtn.addEventListener('click', () => { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; dadosOriginais = allItems.filter(i => i.id.startsWith(`${filtroServicoEl.value}_`)); tituloDaVisao = `Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`; visaoAtiva = 'unidade'; closeModal(); handleFilterChange(); });
         
-        let currentSedeFilter = 'all', currentSedeFloor = 'Todos';
         document.getElementById('searchBoxSede').addEventListener('input', debounce(renderSedeReport, 300));
         document.getElementById('filterAllSede').addEventListener('click', function() { currentSedeFilter = 'all'; document.querySelectorAll('#content-sede .filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); renderSedeReport(); });
         document.getElementById('filterNoRegistrySede').addEventListener('click', function() { currentSedeFilter = 'no-registry'; document.querySelectorAll('#content-sede .filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); renderSedeReport(); });
@@ -465,12 +465,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         switchTab('dashboard');
     } catch (error) {
         console.error('Erro fatal ao inicializar:', error);
-        connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-red-500 rounded-full"></span> <span class="text-red-500">Erro</span>`;
+        connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-red-500 rounded-full"></span> <span class="text-red-500">Erro de Conexão</span>`;
+        
+        let userMessage = 'Não foi possível carregar os dados do patrimônio.';
+        let suggestedAction = 'Verifique se a Planilha Google está "Publicada na web". O erro pode ser causado por falta de permissão, conexão de internet ou alterações na planilha.';
+
+        if (error.message.includes("Failed to fetch")) {
+            userMessage = 'Ocorreu um erro de rede que impediu a conexão com o servidor de dados do Google.';
+            suggestedAction = `Isso pode ser causado por um problema de rede, firewall ou, mais provavelmente, um problema com a URL do Google Apps Script (erro de SSL/TLS). <strong>A solução mais comum é implantar novamente o projeto do Google Apps Script para obter uma nova URL e atualizá-la nesta linha do arquivo main.js: <code>const googleSheetPatrimonioUrl = '...'</code></strong>`;
+        } else if (error.message.includes("formato incorreto")) {
+            userMessage = 'A planilha de dados parece estar vazia ou com o formato incorreto.';
+        }
+
         const errorContainer = document.getElementById('content-dashboard');
         navButtons.forEach(btn => btn.disabled = true);
         document.querySelector('.nav-btn[data-tab="dashboard"]').classList.add('active');
         errorContainer.classList.remove('hidden');
-        errorContainer.innerHTML = `<div class="alert alert-error"><h2 class="font-bold text-lg">Falha ao Carregar Dados</h2><p class="mt-2">Não foi possível carregar os dados do patrimônio.</p><p class="text-sm mt-4"><strong>Ação Sugerida:</strong> Verifique se a Planilha Google está "Publicada na web". O erro pode ser causado por falta de permissão, conexão de internet ou alterações na planilha.</p><p class="text-xs mt-2 text-slate-500"><strong>Detalhe:</strong> ${error.message}</p></div>`;
+        errorContainer.innerHTML = `<div class="alert alert-error"><h2 class="font-bold text-lg">Falha Crítica ao Carregar Dados</h2><p class="mt-2">${userMessage}</p><p class="text-sm mt-4"><strong>Ação Sugerida:</strong> ${suggestedAction}</p><p class="text-xs mt-2 text-slate-500"><strong>Detalhe técnico:</strong> ${error.message}</p></div>`;
     }
 });
 
