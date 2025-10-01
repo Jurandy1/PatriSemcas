@@ -363,6 +363,88 @@
         @media (max-width: 480px) {
             .stats { grid-template-columns: 1fr 1fr; }
         }
+
+        /* --- ESTILOS PARA NOVA ABA "NOTA FISCAL" --- */
+        #nf-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        .nf-list-container {
+            position: sticky;
+            top: 160px;
+        }
+        .nf-button {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            background-color: white;
+            text-align: left;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .nf-button:hover {
+            border-color: var(--secondary-blue);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .nf-button.active {
+            border-color: var(--primary-blue);
+            background-color: #eef2ff;
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+        }
+        .nf-button .fornecedor {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 1rem;
+        }
+        .nf-button .details {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        #nf-details-container .kpi-nf {
+            text-align: center;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+        }
+        #nf-details-container .kpi-nf .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+        #nf-details-container .kpi-nf .label {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1024px) {
+            #nf-layout {
+                grid-template-columns: 1fr;
+            }
+            .nf-list-container {
+                position: static;
+                display: flex;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+            .nf-list-container::-webkit-scrollbar {
+                display: none; /* Safari and Chrome */
+            }
+            .nf-list-wrapper {
+                 display: flex;
+                 gap: 0.75rem;
+                 padding-bottom: 1rem;
+            }
+            .nf-button {
+                flex-shrink: 0;
+                width: 280px;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-700 antialiased">
@@ -390,7 +472,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
-                        <p class="text-sm text-slate-500">v.2.6 </p>
+                        <p class="text-sm text-slate-500">v.3.0</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4 text-sm">
@@ -408,8 +490,8 @@
                 <button class="nav-btn" data-tab="dashboard">📊 Dashboard</button>
                 <button class="nav-btn" data-tab="patrimonio">💼 Patrimônio</button>
                 <button class="nav-btn" data-tab="estoque">📦 Estoque</button>
+                <button class="nav-btn" data-tab="nota-fiscal">🧾 Nota Fiscal</button>
                 <button class="nav-btn" data-tab="total-itens">🔢 Total de Itens</button>
-                <button class="nav-btn" data-tab="analise">🔍 Análise</button>
                 <button class="nav-btn" data-tab="sede">🏢 Sede</button>
             </div>
         </div>
@@ -537,6 +619,26 @@
             </div>
             <main id="main-content-estoque" class="mt-8"></main>
         </div>
+
+        <!-- Conteúdo da Nota Fiscal (NOVA ABA) -->
+        <div id="content-nota-fiscal" class="hidden fade-in">
+            <div class="card mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Análise de Notas Fiscais</h2>
+                <p class="text-slate-500 mt-1">Dados carregados automaticamente da planilha de notas fiscais.</p>
+            </div>
+            
+            <div id="nf-layout">
+                <div class="nf-list-container">
+                    <h3 class="font-semibold text-slate-800 mb-3 lg:hidden">Selecione uma NF</h3>
+                    <div class="nf-list-wrapper" id="nf-list">
+                        <!-- Botões das notas fiscais serão renderizados aqui -->
+                    </div>
+                </div>
+                <div id="nf-details-container">
+                    <!-- Detalhes da NF selecionada aparecerão aqui -->
+                </div>
+            </div>
+        </div>
         
         <!-- Conteúdo do Total de Itens (NOVO LAYOUT) -->
         <div id="content-total-itens" class="hidden fade-in">
@@ -579,29 +681,6 @@
             </main>
         </div>
         
-        <!-- Conteúdo da Análise de Necessidades -->
-        <div id="content-analise" class="hidden fade-in">
-            <div class="card mb-8">
-                <div class="flex flex-wrap justify-between items-center gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Análise de Necessidades Essenciais</h2>
-                        <p class="text-slate-500 mt-1">Ferramenta para identificar a falta de itens essenciais (climatização e bebedouros) nas unidades.</p>
-                    </div>
-                </div>
-                <div class="mt-6 border-t border-slate-200 pt-4">
-                    <label for="analise-filter" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Filtrar por Necessidade</label>
-                    <select id="analise-filter" class="w-full max-w-xs p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                        <option value="todos">Todas as Necessidades</option>
-                        <option value="bebedouro">Falta de Bebedouro</option>
-                        <option value="climatizacao">Falta de Climatização</option>
-                    </select>
-                </div>
-            </div>
-            <div id="analise-summary" class="mb-6"></div>
-            <main id="analise-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
-            </main>
-        </div>
-
         <!-- Conteúdo da Estrutura da Sede -->
         <div id="content-sede" class="hidden fade-in">
             <div class="card mb-8">
@@ -764,6 +843,9 @@
         // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
         const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
         const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
+        const googleSheetNfEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=0&output=csv';
+        const googleSheetNfMovimentacoesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=1261246825&output=csv';
+
 
         let allItems = [];
         let dadosOriginais = []; 
@@ -774,8 +856,9 @@
         let estadoChartInstance, dashboardChartInstance, estoqueChartInstance;
         let allEstoqueItems = [];
         let selectedUnidadeValue = '';
-        let analysisResults = [];
         let dashboardEstadoChartInstance, dashboardTopItemsChartInstance;
+        let nfData = []; // Para armazenar os dados processados das NFs
+        let nfChartInstances = {}; // Para armazenar instâncias de gráficos da NF
 
 
         // --- Referências de Elementos ---
@@ -787,13 +870,12 @@
         let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl;
         let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
         let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
-        let analiseResultsContainer, analiseSummaryContainer, analiseFilterEl;
         let connectionStatusEl;
         
         // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
         class DataManager {
             constructor() {
-                this.cacheKey = 'dashboard_cache_v3';
+                this.cacheKey = 'dashboard_cache_v4'; // Versão do cache
                 this.cacheExpiry = 5 * 60 * 1000; // 5 minutos
                 this.loadingPromises = new Map();
             }
@@ -1567,109 +1649,281 @@
                 unidadeListContainer.innerHTML = `<li class="p-3 text-center text-slate-500">Nenhuma unidade encontrada.</li>`;
             }
         }
-
-        // --- LÓGICA DA ANÁLISE DE NECESSIDADES ---
-        function runNeedsAnalysis() {
-            const suitableLocations = ['recepção', 'sala', 'atendimento', 'cozinha', 'refeitório', 'copa', 'auditório', 'gabinete'];
+        
+        // --- LÓGICA DA ABA NOTA FISCAL (NOVA) ---
+        async function loadNfData() {
+            const listContainer = document.getElementById('nf-list');
+            const detailsContainer = document.getElementById('nf-details-container');
             
-            const itemsForAnalysis = allItems.filter(item => normalizeString(item.type) !== 'sede');
-            const units = [...new Set(itemsForAnalysis.map(item => formatUnitName(item)))];
-            
-            analysisResults = [];
+            if (document.body.classList.contains('nf-loading') || nfData.length > 0) return;
 
-            units.forEach(unitName => {
-                const unitItems = itemsForAnalysis.filter(item => formatUnitName(item) === unitName);
-                const unitNeeds = {
-                    unitName: unitName,
-                    missing: []
+            document.body.classList.add('nf-loading');
+            listContainer.innerHTML = '';
+            detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="loading-spinner"></div><p class="mt-4 text-slate-600">Carregando dados da planilha...</p></div>`;
+
+            try {
+                const [estoqueResponse, movResponse] = await Promise.all([
+                    fetch(googleSheetNfEstoqueUrl),
+                    fetch(googleSheetNfMovimentacoesUrl)
+                ]);
+
+                if (!estoqueResponse.ok) {
+                    throw new Error(`Erro HTTP ${estoqueResponse.status} ao buscar a aba 'Estoque' da planilha.`);
+                }
+                if (!movResponse.ok) {
+                    throw new Error(`Erro HTTP ${movResponse.status} ao buscar a aba 'Movimentações' da planilha.`);
+                }
+
+                const [estoqueCsv, movCsv] = await Promise.all([
+                    estoqueResponse.text(),
+                    movResponse.text()
+                ]);
+                
+                const rawData = {
+                    estoque: parseCsvData(estoqueCsv),
+                    movimentacoes: parseCsvData(movCsv)
+                };
+                
+                if (rawData.estoque.length === 0) {
+                     throw new Error("Nenhum dado de 'Estoque' encontrado na planilha. Verifique o formato e o link.");
+                }
+
+                nfData = processNfData(rawData);
+                renderNfTab(nfData);
+
+            } catch (error) {
+                console.error('Erro ao carregar ou processar dados da NF:', error);
+                detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="alert alert-error"><strong>Erro ao carregar dados:</strong> ${error.message}</div></div>`;
+            } finally {
+                document.body.classList.remove('nf-loading');
+            }
+        }
+
+        function processNfData(rawData) {
+             // 1. Group all rows by NF first
+            const groupedByNfRaw = rawData.estoque.reduce((acc, item) => {
+                const nf = item.NF;
+                if (!nf) return acc;
+                if (!acc[nf]) acc[nf] = [];
+                acc[nf].push(item);
+                return acc;
+            }, {});
+
+            const finalNfData = [];
+
+            // 2. Process each NF group
+            for (const nfNum in groupedByNfRaw) {
+                const itemsInNf = groupedByNfRaw[nfNum];
+                
+                // Group items within the NF by description
+                const groupedByDesc = itemsInNf.reduce((acc, item) => {
+                    const desc = item.Descrição;
+                    if (!acc[desc]) acc[desc] = [];
+                    acc[desc].push(item);
+                    return acc;
+                }, {});
+
+                const firstItem = itemsInNf[0];
+                const nfObject = {
+                    numero: nfNum,
+                    fornecedor: firstItem['Nome Fornecedor'],
+                    data: firstItem['Data NF'],
+                    valorTotal: 0,
+                    totalItens: 0,
+                    itens: {}
                 };
 
-                const hasBebedouro = unitItems.some(item => normalizeString(item.description).includes('bebedouro'));
-                if (!hasBebedouro) {
-                    unitNeeds.missing.push({ item: 'Bebedouro', location: 'Área Comum (Ex: Recepção ou Copa)' });
+                // 3. Process each description group within the NF
+                for (const desc in groupedByDesc) {
+                    const itemGroup = groupedByDesc[desc];
+                    const firstOfGroup = itemGroup[0];
+                    
+                    const quantidade = itemGroup.length; // Correct quantity is the number of rows
+                    
+                    const valorString = String(firstOfGroup['Valor NF'] || '0');
+                    const valorUnitario = parseFloat(valorString.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+
+                    nfObject.totalItens += quantidade;
+                    nfObject.valorTotal += quantidade * valorUnitario;
+
+                    nfObject.itens[desc] = {
+                        descricao: desc,
+                        quantidade: quantidade,
+                        valorUnitario: valorUnitario,
+                        tombamentos: itemGroup.map(i => i.TOMBAMENTO).filter(t => t)
+                    };
                 }
 
-                const locationsInUnit = [...new Set(unitItems.map(item => item.location))];
-                const relevantLocations = locationsInUnit.filter(loc => suitableLocations.some(sLoc => normalizeString(loc).includes(sLoc)));
-                
-                relevantLocations.forEach(location => {
-                    const itemsInLocation = unitItems.filter(item => item.location === location);
-                    const hasAC = itemsInLocation.some(item => normalizeString(item.description).includes('ar condicionado'));
-                    const hasVentilador = itemsInLocation.some(item => normalizeString(item.description).includes('ventilador'));
-
-                    if (!hasAC && !hasVentilador) {
-                        unitNeeds.missing.push({ item: 'Ar Condicionado ou Ventilador', location: location });
-                    }
+                // Add movimentacoes
+                Object.values(nfObject.itens).forEach(itemAgrupado => {
+                    itemAgrupado.unidades = {};
+                    itemAgrupado.tombamentos.forEach(tomb => {
+                        const mov = rawData.movimentacoes.find(m => m.Tombamento === tomb);
+                        if (mov) {
+                            const unidade = mov.Unidade || 'Não especificada';
+                            itemAgrupado.unidades[unidade] = (itemAgrupado.unidades[unidade] || 0) + 1;
+                        }
+                    });
                 });
 
-                if (unitNeeds.missing.length > 0) {
-                    analysisResults.push(unitNeeds);
-                }
-            });
+                finalNfData.push(nfObject);
+            }
+
+            return finalNfData.sort((a, b) => new Date(b.data) - new Date(a.data));
         }
 
-        function getFilteredAnalysisResults() {
-            const filterValue = analiseFilterEl.value;
-            if (filterValue === 'todos') {
-                return analysisResults;
-            }
-            if (filterValue === 'bebedouro') {
-                return analysisResults
-                    .map(unit => ({
-                        ...unit,
-                        missing: unit.missing.filter(need => need.item === 'Bebedouro')
-                    }))
-                    .filter(unit => unit.missing.length > 0);
-            }
-            if (filterValue === 'climatizacao') {
-                return analysisResults
-                    .map(unit => ({
-                        ...unit,
-                        missing: unit.missing.filter(need => need.item === 'Ar Condicionado ou Ventilador')
-                    }))
-                    .filter(unit => unit.missing.length > 0);
-            }
-            return [];
-        }
-
-        function renderNeedsAnalysisReport() {
-            analiseResultsContainer.innerHTML = '';
-            analiseSummaryContainer = document.getElementById('analise-summary');
+        function renderNfTab(processedData) {
+            const listContainer = document.getElementById('nf-list');
+            const detailsContainer = document.getElementById('nf-details-container');
+            if (!listContainer || !detailsContainer) return;
             
-            const filteredResults = getFilteredAnalysisResults();
-
-            if (filteredResults.length === 0) {
-                analiseSummaryContainer.innerHTML = '';
-                analiseResultsContainer.innerHTML = `<div class="col-span-full card text-center p-10"><p class="text-xl text-green-600 font-semibold">Tudo em ordem!</p><p class="text-slate-600 mt-2">Nenhuma necessidade encontrada para o filtro selecionado.</p></div>`;
+            if (processedData.length === 0) {
+                 if (!document.body.classList.contains('nf-loading')) {
+                    detailsContainer.innerHTML = `<div class="card text-center p-10"><p class="text-lg text-slate-600">Nenhum dado de nota fiscal foi carregado ainda.</p></div>`;
+                 }
                 return;
             }
+
+            listContainer.innerHTML = processedData.map(nf => `
+                <button class="nf-button" data-nf-numero="${nf.numero}">
+                    <p class="fornecedor">${nf.fornecedor}</p>
+                    <p class="details">NF: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+                    <p class="details font-bold">Valor: ${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </button>
+            `).join('');
+
+            listContainer.querySelectorAll('.nf-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    listContainer.querySelector('.active')?.classList.remove('active');
+                    btn.classList.add('active');
+                    const nfNumero = btn.dataset.nfNumero;
+                    const nf = processedData.find(n => n.numero === nfNumero);
+                    renderNfDetails(nf);
+                });
+            });
+
+            // Renderiza o detalhe da primeira NF por padrão, se não houver uma já ativa
+             if (!listContainer.querySelector('.active')) {
+                listContainer.querySelector('.nf-button')?.click();
+            }
+        }
+        
+        function renderNfDetails(nf) {
+            const detailsContainer = document.getElementById('nf-details-container');
+            if (!nf) {
+                detailsContainer.innerHTML = '';
+                return;
+            }
+
+            // Destroi gráficos antigos para evitar conflitos
+            Object.values(nfChartInstances).forEach(chart => chart.destroy());
+            nfChartInstances = {};
+
+            const itemsAgrupados = Object.values(nf.itens);
             
-            analiseSummaryContainer.innerHTML = `
-                <div class="card">
-                    <p class="text-slate-600 font-medium">
-                        Foram encontradas <span class="font-bold text-indigo-600">${filteredResults.length}</span> unidade(s) com necessidades para o filtro selecionado.
-                    </p>
+            // Lógica para agrupar tombamentos
+            const formatTombamentoRange = (tombamentos) => {
+                if (tombamentos.length === 0) return 'N/A';
+                if (tombamentos.length === 1) return tombamentos[0];
+                const sorted = tombamentos.map(t => parseInt(t, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+                if (sorted.length === 0) return 'N/A';
+                return `${sorted[0]} ao ${sorted[sorted.length - 1]}`;
+            };
+            
+            const tableRowsHTML = itemsAgrupados.map(item => `
+                <tr class="border-b border-slate-200">
+                    <td class="px-4 py-3 font-medium">${item.descricao}</td>
+                    <td class="px-4 py-3 text-center">${item.quantidade}</td>
+                    <td class="px-4 py-3">${formatTombamentoRange(item.tombamentos)}</td>
+                    <td class="px-4 py-3">${Object.entries(item.unidades).map(([unidade, qtd]) => `${unidade} (${qtd})`).join('<br>')}</td>
+                </tr>
+            `).join('');
+
+            detailsContainer.innerHTML = `
+                <div class="card fade-in">
+                    <h2 class="text-2xl font-bold text-slate-800">${nf.fornecedor}</h2>
+                    <p class="text-sm text-slate-500 mb-6">Nota Fiscal: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                        <div class="kpi-nf">
+                            <p class="value">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                            <p class="label">Valor Total</p>
+                        </div>
+                        <div class="kpi-nf">
+                            <p class="value">${nf.totalItens}</p>
+                            <p class="label">Qtd. de Itens</p>
+                        </div>
+                        <div class="kpi-nf col-span-2 lg:col-span-1">
+                             <p class="value">${itemsAgrupados.length}</p>
+                             <p class="label">Tipos de Itens</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                         <div class="card bg-slate-50/50">
+                            <h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição de Itens por Unidade</h4>
+                            <div class="chart-container" style="height: 300px;"><canvas id="nfUnidadesChart"></canvas></div>
+                         </div>
+                         <div class="card bg-slate-50/50">
+                            <h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição do Valor por Item</h4>
+                            <div class="chart-container" style="height: 300px;"><canvas id="nfValorChart"></canvas></div>
+                         </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-semibold text-slate-700 mb-2">Resumo dos Itens</h4>
+                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                            <table class="table w-full text-sm">
+                                <thead class="bg-slate-100">
+                                    <tr>
+                                        <th class="px-4 py-2">Descrição</th>
+                                        <th class="px-4 py-2 text-center">Quantidade</th>
+                                        <th class="px-4 py-2">Tombamento (Intervalo)</th>
+                                        <th class="px-4 py-2">Unidades de Destino</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${tableRowsHTML}</tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>`;
 
-            filteredResults.forEach(result => {
-                const needsList = result.missing.map(need => 
-                    `<li class="flex items-start space-x-3">
-                        <svg class="h-5 w-5 text-yellow-500 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.636-1.23 2.85-1.23 3.486 0l5.58 10.822c.636 1.23.056 2.829-1.342 2.829H4.013C2.615 16.75.035 15.151.67 13.921L6.257 3.099zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
-                        <div>
-                            <p class="font-semibold text-slate-700">${need.item}</p>
-                            <p class="text-sm text-slate-500">Sugestão de Local: ${need.location}</p>
-                        </div>
-                    </li>`
-                ).join('');
+            // Renderizar gráficos
+            // 1. Gráfico de Unidades
+            const unidadesData = itemsAgrupados.reduce((acc, item) => {
+                Object.entries(item.unidades).forEach(([unidade, qtd]) => {
+                    acc[unidade] = (acc[unidade] || 0) + qtd;
+                });
+                return acc;
+            }, {});
+            const unidadesChartCanvas = document.getElementById('nfUnidadesChart');
+            if (unidadesChartCanvas) {
+                nfChartInstances.unidades = new Chart(unidadesChartCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(unidadesData),
+                        datasets: [{ data: Object.values(unidadesData), borderWidth: 2 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}}
+                });
+            }
 
-                const cardHTML = `
-                    <div class="card flex flex-col">
-                        <h3 class="font-bold text-lg text-indigo-600 border-b border-slate-200 pb-2 mb-3">${result.unitName}</h3>
-                        <ul class="space-y-3">${needsList}</ul>
-                    </div>
-                `;
-                analiseResultsContainer.innerHTML += cardHTML;
-            });
+            // 2. Gráfico de Valor
+            const valorData = itemsAgrupados.map(item => ({
+                label: item.descricao,
+                value: item.quantidade * item.valorUnitario
+            })).sort((a,b) => b.value - a.value);
+            const valorChartCanvas = document.getElementById('nfValorChart');
+            if (valorChartCanvas) {
+                nfChartInstances.valor = new Chart(valorChartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: valorData.map(d => d.label),
+                        datasets: [{ label: 'Valor Total', data: valorData.map(d => d.value), backgroundColor: '#667eea' }]
+                    },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}}
+                });
+            }
         }
 
         // --- HANDLERS DE EVENTOS ---
@@ -1759,13 +2013,15 @@
                 } else {
                     renderEstoque(allEstoqueItems);
                 }
+            } else if (tabName === 'nota-fiscal') {
+                if (nfData.length === 0) {
+                    loadNfData();
+                } else {
+                    renderNfTab(nfData);
+                }
             } else if (tabName === 'total-itens') {
                 populateTotalItensFilters();
                 renderTotalItens();
-            } else if (tabName === 'analise') {
-                analiseFilterEl.value = 'todos';
-                runNeedsAnalysis();
-                renderNeedsAnalysisReport();
             } else if (tabName === 'sede') {
                 renderSedeReport();
             }
@@ -1800,8 +2056,6 @@
             unidadeSearchInput = document.getElementById('unidade-search-input');
             unidadeListContainer = document.getElementById('unidade-list-container');
             clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
-            analiseResultsContainer = document.getElementById('analise-results');
-            analiseFilterEl = document.getElementById('analise-filter');
             connectionStatusEl = document.getElementById('connectionStatus');
             
             openUnidadeModalBtn.disabled = true;
@@ -1849,7 +2103,6 @@
                 closeUnidadeModal();
                 handleUnidadeChange();
             });
-            analiseFilterEl.addEventListener('change', renderNeedsAnalysisReport);
         }
 
         // --- LÓGICA DO PAINEL DE PRIORIDADES (DASHBOARD) ---
