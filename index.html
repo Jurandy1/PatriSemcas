@@ -12,86 +12,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Estilos do Novo Design + Adaptações -->
+    <!-- Estilos -->
     <style>
         :root {
-            /* Cores principais SEMCAS */
             --primary-blue: #1e40af;
             --secondary-blue: #3b82f6;
             --light-blue: #60a5fa;
-            
-            /* Sistema de feedback */
             --success: #10b981;
             --warning: #f59e0b;
             --error: #ef4444;
-            --info: #3b82f6;
-
-            /* Estilos do painel antigo mantidos para consistência */
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
-            --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            --border-radius: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* bg-slate-100 */
+            background-color: #f1f5f9;
         }
 
-        /* Header Institucional */
-        .header-banner {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            color: white;
-        }
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-        }
-        .logo-img {
-            height: 60px;
-            width: auto;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            background: white;
-            padding: 4px;
-        }
-        .main-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            line-height: 1.2;
-            margin: 0;
-        }
-        .sub-title {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        /* Navegação por Abas */
-        .nav-btn {
-            padding: 0.75rem 1rem;
-            border: none;
-            background: none;
-            border-bottom: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 600;
-            color: #475569; /* text-slate-600 */
-            white-space: nowrap;
-        }
-        .nav-btn:hover {
-            background-color: #f8fafc; /* hover:bg-slate-50 */
-        }
-        .nav-btn.active {
-            color: var(--secondary-blue);
-            border-bottom-color: var(--secondary-blue);
-        }
-
-        /* Cards */
+        /* Componentes reusáveis */
         .card {
             background: white;
             border-radius: 0.75rem;
@@ -103,30 +40,35 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
-        /* Alertas */
-        .alert { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; border: 1px solid; }
+        .alert { padding: 1rem; border-radius: 0.5rem; border: 1px solid; }
         .alert-error { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-        .alert-success { background: #d1fae5; color: #166534; border-color: #a7f3d0; }
-        .alert-warning { background: #fef3c7; color: #92400e; border-color: #fde68a; }
-        .alert-info { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
-
-        /* Tabelas */
-        .table { width: 100%; border-collapse: collapse; }
-        .table th, .table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .table th { background: #f9fafb; font-weight: 600; color: #374151; }
-        .table tbody tr:hover { background: #f9fafb; }
-
-        /* Badges */
         .badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
         .badge-green { background: #d1fae5; color: #059669; }
         .badge-blue { background: #dbeafe; color: #2563eb; }
         .badge-yellow { background: #fef3c7; color: #d97706; }
         .badge-red { background: #fee2e2; color: #dc2626; }
 
+        /* Header */
+        .header-banner {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Navegação */
+        .nav-btn {
+            padding: 0.75rem 1rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            color: #475569;
+            white-space: nowrap;
+        }
+        .nav-btn:hover { background-color: #f8fafc; }
+        .nav-btn.active { color: var(--secondary-blue); border-bottom-color: var(--secondary-blue); }
+
         /* Animações */
         .loading-spinner {
-            border: 5px solid #e5e7eb; /* slate-200 */
+            border: 5px solid #e5e7eb;
             border-top: 5px solid var(--secondary-blue);
             border-radius: 50%;
             width: 50px;
@@ -135,355 +77,101 @@
             margin: auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .logo-container { flex-direction: column; text-align: center; gap: 0.75rem; }
-            .main-title { font-size: 1.25rem; text-align: center; }
-            .logo-img { height: 50px; }
-            .sub-header-controls { flex-direction: column; gap: 0.5rem; align-items: stretch; }
-            .sub-header-info { text-align: center; }
-        }
-
-        /* Estilos adicionais */
-        .tooltip { position: relative; display: inline-block; cursor: help; }
-        .tooltip .tooltip-text { visibility: hidden; width: 250px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 10; bottom: 125%; left: 50%; margin-left: -125px; opacity: 0; transition: opacity 0.3s; font-size: 0.875rem; line-height: 1.25rem; word-wrap: break-word; }
-        .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+        
         .modal-overlay { transition: opacity 0.3s ease; }
         .modal-container { transition: all 0.3s ease; max-height: 90vh; }
-        .dashboard-list { max-height: 300px; overflow-y: auto; }
         .chart-container { position: relative; width: 100%; height: 350px; }
 
         /* --- ESTILOS MODERNIZADOS PARA ABA SEDE --- */
-        .sede-layout {
-            display: grid;
-            grid-template-columns: 240px 1fr;
-            gap: 2rem;
-            align-items: flex-start;
-        }
-        .floor-nav {
-            position: sticky;
-            top: 160px;
-        }
-        .floor-nav-button {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            color: #475569;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-        }
-        .floor-nav-button:hover {
-            background-color: #f8fafc;
-            color: var(--primary-blue);
-        }
-        .floor-nav-button.active {
-            background-color: var(--primary-blue);
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3);
-        }
-        .room-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        .room-card-sede {
-            background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--light-blue);
-            display: flex;
-            flex-direction: column;
-        }
-        .room-card-sede:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        }
-        .room-card-sede.no-registry {
-            border-left-color: var(--warning);
-        }
-        .room-card-header {
-            padding: 1rem 1.25rem;
-        }
-        .room-card-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1e293b;
-        }
-        .room-card-subtitle {
-            font-size: 0.8rem;
-            color: #64748b;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        .room-card-body {
-            padding: 0 1.25rem 1.25rem;
-            flex-grow: 1;
-        }
-        .department-item-sede {
-            padding: 0.75rem;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-left: 2px solid #e2e8f0;
-        }
-        .department-name-sede {
-            font-weight: 600;
-            color: #334155;
-            font-size: 0.9rem;
-        }
-        .department-registro-sede {
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-        .department-observacao-sede {
-             font-size: 0.75rem;
-             color: #92400e; /* text-amber-700 */
-             background-color: #fef3c7; /* bg-amber-100 */
-             padding: 0.25rem 0.5rem;
-             border-radius: 0.25rem;
-             margin-top: 0.25rem;
-             display: inline-block;
-        }
-        .search-box { 
-            width: 100%; 
-            padding: 10px 18px; 
-            font-size: 16px; 
-            border: 2px solid #e2e8f0; 
-            border-radius: 50px; 
-            outline: none; 
-            transition: all 0.3s ease; 
-            background: #f8fafc; 
-        }
-        .search-box:focus { 
-            border-color: #667eea; 
-            background: white; 
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); 
-        }
-        .filter-btn { 
-            padding: 10px 20px; 
-            border: 2px solid #e2e8f0; 
-            border-radius: 50px; 
-            background: white; 
-            color: #64748b; 
-            font-weight: 500; 
-            cursor: pointer; 
-            transition: all 0.3s ease; 
-            white-space: nowrap; 
-        }
-        .filter-btn:hover { 
-            border-color: #667eea; 
-            color: #667eea; 
-        }
-        .filter-btn.active { 
-            background: linear-gradient(135deg, #667eea, #764ba2); 
-            color: white; 
-            border-color: transparent; 
-        }
-        
-        @media (max-width: 1024px) {
-            .sede-layout {
-                grid-template-columns: 1fr;
-            }
-            .floor-nav {
-                position: static;
-                display: flex;
-                overflow-x: auto;
-                padding-bottom: 1rem;
-                gap: 0.5rem;
-            }
-            .floor-nav-button {
-                flex-shrink: 0;
-            }
-        }
+        .sede-layout { display: grid; grid-template-columns: 240px 1fr; gap: 2rem; align-items: flex-start; }
+        .floor-nav { position: sticky; top: 160px; }
+        .floor-nav-button { display: flex; align-items: center; width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 500; color: #475569; transition: all 0.2s ease; border: 1px solid transparent; }
+        .floor-nav-button:hover { background-color: #f8fafc; color: var(--primary-blue); }
+        .floor-nav-button.active { background-color: var(--primary-blue); color: white; font-weight: 600; box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3); }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .room-card-sede { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s ease; border-left: 4px solid var(--light-blue); display: flex; flex-direction: column; }
+        .room-card-sede.no-registry { border-left-color: var(--warning); }
+        .department-item-sede { padding: 0.75rem; background-color: #f8fafc; border-radius: 0.5rem; margin-bottom: 0.5rem; border-left: 2px solid #e2e8f0; }
+        .search-box { width: 100%; padding: 10px 18px; font-size: 16px; border: 2px solid #e2e8f0; border-radius: 50px; outline: none; transition: all 0.3s ease; background: #f8fafc; }
+        .search-box:focus { border-color: #667eea; background: white; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .filter-btn { padding: 10px 20px; border: 2px solid #e2e8f0; border-radius: 50px; background: white; color: #64748b; font-weight: 500; cursor: pointer; transition: all 0.3s ease; white-space: nowrap; }
+        .filter-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-color: transparent; }
         
         /* --- ESTILOS PARA NOVA ABA "TOTAL DE ITENS" --- */
-        #total-itens-layout {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 1.5rem;
-            align-items: flex-start;
-        }
-        #total-itens-list-container {
-            background: white;
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            height: calc(100vh - 300px);
-            display: flex;
-            flex-direction: column;
-        }
-        #total-itens-list {
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-        .total-item-entry {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        .total-item-entry:hover {
-            background-color: #f8fafc;
-        }
-        .total-item-entry.selected {
-            background-color: #eef2ff;
-            border-left: 4px solid var(--primary-blue);
-            font-weight: 600;
-            color: var(--primary-blue);
-        }
-        #total-itens-details-container {
-            position: sticky;
-            top: 160px;
-        }
+        #total-itens-layout { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; align-items: flex-start; }
+        #total-itens-list-container { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); height: calc(100vh - 300px); display: flex; flex-direction: column; }
+        #total-itens-list { overflow-y: auto; flex-grow: 1; }
+        .total-item-entry { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background-color 0.2s ease; }
+        .total-item-entry.selected { background-color: #eef2ff; border-left: 4px solid var(--primary-blue); font-weight: 600; }
+        #total-itens-details-container { position: sticky; top: 160px; }
         
-        @media (max-width: 1024px) {
-            #total-itens-layout {
-                grid-template-columns: 1fr;
-            }
-            #total-itens-list-container {
-                height: auto;
-                max-height: 400px;
-            }
-            #total-itens-details-container {
-                position: static;
-                top: auto;
-            }
-        }
-        @media (max-width: 768px) {
-            .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
-        }
-        @media (max-width: 480px) {
-            .stats { grid-template-columns: 1fr 1fr; }
-        }
-
-        /* --- ESTILOS PARA NOVA ABA "NOTA FISCAL" --- */
-        #nf-layout {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 1.5rem;
-            align-items: flex-start;
-        }
-        .nf-list-container {
-            position: sticky;
-            top: 160px;
-        }
-        .nf-button {
-            display: block;
-            width: 100%;
+        /* --- ESTILOS PARA ABA "NOTA FISCAL" (Layout de Acordeão) --- */
+        .nf-accordion-item summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            background-color: white;
-            text-align: left;
-            transition: all 0.2s ease;
             cursor: pointer;
+            list-style: none; /* Remove a seta padrão */
         }
-        .nf-button:hover {
-            border-color: var(--secondary-blue);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        .nf-accordion-item[open] summary {
+            border-bottom: 1px solid #e5e7eb;
         }
-        .nf-button.active {
-            border-color: var(--primary-blue);
-            background-color: #eef2ff;
-            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+        .nf-accordion-item summary::-webkit-details-marker {
+            display: none; /* Chrome */
         }
-        .nf-button .fornecedor {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 1rem;
+        .nf-accordion-item summary::after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+            margin-left: 1rem;
         }
-        .nf-button .details {
-            font-size: 0.8rem;
-            color: #64748b;
+        .nf-accordion-item[open] summary::after {
+            transform: rotate(180deg);
         }
-        #nf-details-container .kpi-nf {
-            text-align: center;
-            padding: 1rem;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
+        .nf-details-content {
+             padding: 1.5rem;
         }
-        #nf-details-container .kpi-nf .value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--primary-blue);
-        }
-        #nf-details-container .kpi-nf .label {
-            font-size: 0.8rem;
-            color: #64748b;
-            text-transform: uppercase;
-        }
+        .kpi-nf { text-align: center; padding: 1rem; background-color: #f8fafc; border-radius: 0.5rem; }
+        .kpi-nf .value { font-size: 1.75rem; font-weight: 700; color: var(--primary-blue); }
+        .kpi-nf .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
 
+        /* --- RESPONSIVIDADE GERAL --- */
         @media (max-width: 1024px) {
-            #nf-layout {
-                grid-template-columns: 1fr;
-            }
-            .nf-list-container {
-                position: static;
-                display: flex;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none; /* Firefox */
-            }
-            .nf-list-container::-webkit-scrollbar {
-                display: none; /* Safari and Chrome */
-            }
-            .nf-list-wrapper {
-                 display: flex;
-                 gap: 0.75rem;
-                 padding-bottom: 1rem;
-            }
-            .nf-button {
-                flex-shrink: 0;
-                width: 280px;
-            }
+            .sede-layout, #total-itens-layout { grid-template-columns: 1fr; }
+            .floor-nav, #total-itens-details-container { position: static; }
+            .floor-nav { display: flex; overflow-x: auto; padding-bottom: 1rem; gap: 0.5rem; }
+            #total-itens-list-container { height: auto; max-height: 400px; }
         }
     </style>
 </head>
 <body class="text-slate-700 antialiased">
 
-    <!-- 1. Header Institucional -->
-    <header class="header-banner sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="logo-container">
-                <img src="https://www.saoluis.ma.gov.br/img/logo_mobile.png" alt="Logo Prefeitura de São Luís" class="logo-img" onerror="this.style.display='none'">
-                <div class="title-container">
-                    <h1 class="main-title">DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO</h1>
-                    <p class="sub-title">SEMCAS - Secretaria Municipal da Criança e Assistência Social</p>
-                </div>
+    <!-- Header -->
+    <header class="header-banner sticky top-0 z-50 text-white p-4">
+        <div class="container mx-auto flex items-center gap-4">
+            <img src="https://www.saoluis.ma.gov.br/img/logo_mobile.png" alt="Logo Prefeitura" class="h-14 bg-white p-1 rounded-md shadow-md">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold leading-tight">Diretoria de Almoxarifado e Patrimônio</h1>
+                <p class="text-sm opacity-90">SEMCAS - São Luís</p>
             </div>
         </div>
     </header>
 
-    <!-- 2. Sub-Header de Controles -->
+    <!-- Sub-Header de Status -->
     <div class="bg-white shadow-sm border-b border-slate-200">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center flex-wrap sub-header-controls">
-                <div class="flex items-center space-x-4 sub-header-info">
-                    <div class="bg-blue-500 text-white p-3 rounded-lg hidden sm:block">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20V16"/></svg>
-                    </div>
-                    <div>
-                        <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio</h2>
-                        <p class="text-sm text-slate-500">v.3.0</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4 text-sm">
-                    <div id="connectionStatus" class="flex items-center gap-2"></div>
-                    <p id="last-update-time" class="text-slate-500"></p>
-                </div>
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h2 class="font-bold text-lg text-slate-800">Sistema de Patrimônio <span class="text-sm font-normal">v.3.1</span></h2>
+            <div class="flex items-center space-x-4 text-sm">
+                <div id="connectionStatus" class="flex items-center gap-2 font-semibold"></div>
+                <p id="last-update-time" class="text-slate-500 hidden md:block"></p>
             </div>
         </div>
     </div>
 
-    <!-- 3. Sistema de Navegação -->
+    <!-- Navegação por Abas -->
     <nav class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky z-40 top-[92px] md:top-[88px]">
         <div class="container mx-auto px-4">
             <div class="flex space-x-1 overflow-x-auto">
@@ -497,248 +185,101 @@
         </div>
     </nav>
 
-    <!-- 4. Conteúdo Principal -->
+    <!-- Conteúdo Principal -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- Conteúdo do Dashboard -->
+        <!-- Dashboard -->
         <div id="content-dashboard" class="hidden fade-in">
-            <!-- KPI Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="card text-center">
-                    <p class="text-sm text-slate-500 uppercase">Total de Itens</p>
-                    <p id="kpi-total-itens" class="text-4xl font-bold text-blue-600 mt-2">0</p>
-                </div>
-                <div class="card text-center">
-                    <p class="text-sm text-slate-500 uppercase">Unidades Mapeadas</p>
-                    <p id="kpi-total-unidades" class="text-4xl font-bold text-blue-600 mt-2">0</p>
-                </div>
-                <div class="card text-center">
-                    <p class="text-sm text-slate-500 uppercase">Itens Avariados</p>
-                    <p id="kpi-total-avariados" class="text-4xl font-bold text-red-600 mt-2">0</p>
-                </div>
-                <div class="card text-center">
-                    <p class="text-sm text-slate-500 uppercase">Unidades em Atenção</p>
-                    <p id="kpi-unidades-atencao" class="text-4xl font-bold text-yellow-500 mt-2">0</p>
-                </div>
+                <div class="card text-center"><p class="text-sm text-slate-500 uppercase">Total de Itens</p><p id="kpi-total-itens" class="text-4xl font-bold text-blue-600 mt-2">0</p></div>
+                <div class="card text-center"><p class="text-sm text-slate-500 uppercase">Unidades Mapeadas</p><p id="kpi-total-unidades" class="text-4xl font-bold text-blue-600 mt-2">0</p></div>
+                <div class="card text-center"><p class="text-sm text-slate-500 uppercase">Itens Avariados</p><p id="kpi-total-avariados" class="text-4xl font-bold text-red-600 mt-2">0</p></div>
+                <div class="card text-center"><p class="text-sm text-slate-500 uppercase">Unidades em Atenção</p><p id="kpi-unidades-atencao" class="text-4xl font-bold text-yellow-500 mt-2">0</p></div>
             </div>
-
-            <!-- Charts and Lists -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 card">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Distribuição de Itens por Estado</h3>
-                    <div class="chart-container" style="height: 400px;">
-                        <canvas id="dashboardEstadoChart"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">⚠️ Top Unidades em Atenção</h3>
-                    <div id="dashboard-attention-units-list" class="space-y-3 dashboard-list"></div>
-                </div>
+                <div class="lg:col-span-2 card"><h3 class="text-lg font-semibold text-slate-800 mb-4">Distribuição por Estado</h3><div class="chart-container" style="height: 400px;"><canvas id="dashboardEstadoChart"></canvas></div></div>
+                <div class="card"><h3 class="text-lg font-semibold text-slate-800 mb-4">⚠️ Top Unidades em Atenção</h3><div id="dashboard-attention-units-list" class="space-y-3 overflow-y-auto" style="max-height: 350px;"></div></div>
             </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-                 <div class="lg:col-span-2 card">
-                    <h3 class="text-lg font-semibold text-slate-800 mb-4">Top 10 Itens Novos</h3>
-                    <div class="chart-container" style="height: 400px;">
-                        <canvas id="dashboardTopItemsChart"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                     <h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades sem Bebedouro Funcional</h3>
-                     <div id="dashboard-no-bebedouro-units-list" class="space-y-3 dashboard-list"></div>
-                </div>
+             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+                 <div class="lg:col-span-2 card"><h3 class="text-lg font-semibold text-slate-800 mb-4">Top 10 Itens Novos</h3><div class="chart-container" style="height: 400px;"><canvas id="dashboardTopItemsChart"></canvas></div></div>
+                <div class="card"><h3 class="text-lg font-semibold text-slate-800 mb-4">💧 Unidades sem Bebedouro</h3><div id="dashboard-no-bebedouro-units-list" class="space-y-3 overflow-y-auto" style="max-height: 350px;"></div></div>
             </div>
         </div>
 
-        <!-- Conteúdo do Patrimônio -->
+        <!-- Patrimônio -->
         <div id="content-patrimonio" class="hidden fade-in">
              <div class="card mb-8">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                    <div>
-                        <label for="filtro-servico" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Tipo de Unidade</label>
-                        <select id="filtro-servico" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                            <option value="">TODOS</option>
-                            <option value="conselho">CONSELHO</option>
-                            <option value="cras">CRAS</option>
-                            <option value="creas">CREAS</option>
-                            <option value="externa">UNIDADE EXTERNA</option>
-                            <option value="centro_pop">CENTRO POP</option>
-                            <option value="abrigo">ABRIGO</option>
-                            <option value="sede">SEDE</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="open-unidade-modal-btn" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Unidade</label>
-                        <button id="open-unidade-modal-btn" class="w-full p-2 border border-slate-300 rounded-lg bg-white text-left truncate disabled:opacity-50 disabled:cursor-not-allowed">
-                            Selecione uma Unidade...
-                        </button>
-                    </div>
-                    <div>
-                        <label for="filtro-estado" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Estado</label>
-                        <select id="filtro-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
-                    </div>
-                    <div>
-                        <label for="filtro-doacao" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Origem</label>
-                        <select id="filtro-doacao" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                            <option value="">TODAS</option>
-                            <option value="sim">APENAS DOAÇÕES</option>
-                            <option value="nao">APENAS PRÓPRIOS</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="filtro-busca" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Buscar Item</label>
-                        <input type="text" id="filtro-busca" placeholder="Ex: Cadeira, Mesa..." class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                    </div>
+                    <div><label for="filtro-servico" class="block text-sm font-medium mb-1">Tipo</label><select id="filtro-servico" class="w-full p-2 border rounded-lg"><option value="">TODOS</option><option value="conselho">CONSELHO</option><option value="cras">CRAS</option><option value="creas">CREAS</option><option value="externa">UNIDADE EXTERNA</option><option value="centro_pop">CENTRO POP</option><option value="abrigo">ABRIGO</option><option value="sede">SEDE</option></select></div>
+                    <div><label for="open-unidade-modal-btn" class="block text-sm font-medium mb-1">Unidade</label><button id="open-unidade-modal-btn" class="w-full p-2 border rounded-lg text-left truncate disabled:opacity-50">Selecione...</button></div>
+                    <div><label for="filtro-estado" class="block text-sm font-medium mb-1">Estado</label><select id="filtro-estado" class="w-full p-2 border rounded-lg"></select></div>
+                    <div><label for="filtro-doacao" class="block text-sm font-medium mb-1">Origem</label><select id="filtro-doacao" class="w-full p-2 border rounded-lg"><option value="">TODAS</option><option value="sim">DOAÇÕES</option><option value="nao">PRÓPRIOS</option></select></div>
+                    <div><label for="filtro-busca" class="block text-sm font-medium mb-1">Buscar</label><input type="text" id="filtro-busca" placeholder="Ex: Cadeira..." class="w-full p-2 border rounded-lg"></div>
                 </div>
-                <div class="w-full md:w-auto mt-4">
-                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">VER INVENTÁRIO COMPLETO</button>
-                </div>
+                <div class="mt-4"><button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">VER INVENTÁRIO COMPLETO</button></div>
             </div>
             <main id="main-content-area" class="mt-8"></main>
         </div>
 
-        <!-- Conteúdo do Estoque -->
+        <!-- Estoque -->
         <div id="content-estoque" class="hidden fade-in">
              <div class="card mb-8">
-                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 items-end">
-                     <div>
-                        <label for="filtro-estoque-unidade" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Filtrar por Unidade</label>
-                        <select id="filtro-estoque-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
-                    </div>
-                    <div>
-                        <label for="filtro-estoque-busca" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Buscar no Estoque</label>
-                        <input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                    </div>
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div><label for="filtro-estoque-unidade" class="block text-sm font-medium mb-1">Unidade</label><select id="filtro-estoque-unidade" class="w-full p-2 border rounded-lg"></select></div>
+                    <div><label for="filtro-estoque-busca" class="block text-sm font-medium mb-1">Buscar</label><input type="text" id="filtro-estoque-busca" placeholder="Ex: Café, Papel A4..." class="w-full p-2 border rounded-lg"></div>
                  </div>
             </div>
-            <div class="card mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-slate-800">TOP 10 ITENS EM ESTOQUE</h3>
-                </div>
-                <div class="chart-container" data-chart-name="estoqueBarChart"><canvas id="estoqueBarChart"></canvas></div>
-            </div>
+            <div class="card mb-8"><h3 class="text-lg font-semibold mb-4">TOP 10 ITENS EM ESTOQUE</h3><div class="chart-container"><canvas id="estoqueBarChart"></canvas></div></div>
             <main id="main-content-estoque" class="mt-8"></main>
         </div>
 
-        <!-- Conteúdo da Nota Fiscal (NOVA ABA) -->
+        <!-- Nota Fiscal -->
         <div id="content-nota-fiscal" class="hidden fade-in">
             <div class="card mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">Análise de Notas Fiscais</h2>
-                <p class="text-slate-500 mt-1">Dados carregados automaticamente da planilha de notas fiscais.</p>
+                <p class="text-slate-500 mt-1">Clique em uma nota para expandir os detalhes.</p>
             </div>
-            
-            <div id="nf-layout">
-                <div class="nf-list-container">
-                    <h3 class="font-semibold text-slate-800 mb-3 lg:hidden">Selecione uma NF</h3>
-                    <div class="nf-list-wrapper" id="nf-list">
-                        <!-- Botões das notas fiscais serão renderizados aqui -->
-                    </div>
-                </div>
-                <div id="nf-details-container">
-                    <!-- Detalhes da NF selecionada aparecerão aqui -->
-                </div>
+            <div id="nf-accordion-container">
+                <!-- Acordeão de Notas Fiscais será renderizado aqui -->
             </div>
         </div>
         
-        <!-- Conteúdo do Total de Itens (NOVO LAYOUT) -->
+        <!-- Total de Itens -->
         <div id="content-total-itens" class="hidden fade-in">
-            <div class="card mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label for="filtro-total-categoria" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Categoria (Tipo)</label>
-                        <select id="filtro-total-categoria" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
-                    </div>
-                    <div>
-                        <label for="filtro-total-item" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Buscar por Descrição</label>
-                        <input type="text" id="filtro-total-item" placeholder="Ex: Fogão, Cadeira..." class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label for="filtro-total-unidade" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Unidade</label>
-                        <select id="filtro-total-unidade" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
-                    </div>
-                    <div>
-                        <label for="filtro-total-estado" class="block text-sm font-medium text-slate-600 mb-1 uppercase">Estado</label>
-                        <select id="filtro-total-estado" class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500"></select>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="total-itens-summary" class="mb-6"></div>
-
+            <div class="card mb-8"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"><div><label for="filtro-total-categoria" class="block text-sm font-medium mb-1">Categoria</label><select id="filtro-total-categoria" class="w-full p-2 border rounded-lg"></select></div><div><label for="filtro-total-item" class="block text-sm font-medium mb-1">Buscar Item</label><input type="text" id="filtro-total-item" placeholder="Ex: Fogão..." class="w-full p-2 border rounded-lg"></div><div><label for="filtro-total-unidade" class="block text-sm font-medium mb-1">Unidade</label><select id="filtro-total-unidade" class="w-full p-2 border rounded-lg"></select></div><div><label for="filtro-total-estado" class="block text-sm font-medium mb-1">Estado</label><select id="filtro-total-estado" class="w-full p-2 border rounded-lg"></select></div></div></div>
             <main id="total-itens-layout">
-                <div id="total-itens-list-container">
-                    <div class="p-4 border-b border-slate-200">
-                        <h3 class="font-semibold text-slate-800">Itens Agrupados</h3>
-                        <p class="text-sm text-slate-500" id="total-itens-list-count">0 itens encontrados</p>
-                    </div>
-                    <div id="total-itens-list">
-                        <!-- A lista de itens será renderizada aqui -->
-                    </div>
-                </div>
-                <div id="total-itens-details-container">
-                    <!-- Os detalhes do item selecionado aparecerão aqui -->
-                </div>
+                <div id="total-itens-list-container"><div class="p-4 border-b"><h3 class="font-semibold">Itens Agrupados</h3><p class="text-sm text-slate-500" id="total-itens-list-count">0</p></div><div id="total-itens-list"></div></div>
+                <div id="total-itens-details-container"></div>
             </main>
         </div>
         
-        <!-- Conteúdo da Estrutura da Sede -->
+        <!-- Sede -->
         <div id="content-sede" class="hidden fade-in">
-            <div class="card mb-8">
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <input type="text" class="search-box" id="searchBoxSede" placeholder="🔍 Pesquisar por setor, sala, ou tipo...">
-                    <div class="flex items-center space-x-2">
-                        <label class="text-sm font-medium">Filtro:</label>
-                        <button class="filter-btn active" id="filterAllSede">Todas</button>
-                        <button class="filter-btn" id="filterNoRegistrySede">Sem Registro</button>
-                    </div>
-                </div>
-            </div>
-
+            <div class="card mb-8"><div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center"><input type="text" class="search-box" id="searchBoxSede" placeholder="🔍 Pesquisar por setor, sala..."><div class="flex items-center space-x-2"><label class="text-sm font-medium">Filtro:</label><button class="filter-btn active" id="filterAllSede">Todas</button><button class="filter-btn" id="filterNoRegistrySede">Pendentes</button></div></div></div>
             <div class="sede-layout">
-                <nav id="sede-floor-nav" class="floor-nav space-y-2">
-                    <!-- Navegação dos andares será gerada aqui -->
-                </nav>
-                <div id="sede-rooms-container" class="room-grid">
-                     <!-- Cards das salas serão gerados aqui -->
-                </div>
+                <nav id="sede-floor-nav" class="floor-nav space-y-2"></nav>
+                <div id="sede-rooms-container" class="room-grid"></div>
             </div>
-
-            <div class="no-results" id="noResultsSede" style="display: none;">
-                <h3 class="text-2xl font-bold">❌ Nenhum resultado encontrado</h3>
-                <p>Tente ajustar os termos da sua pesquisa ou filtros.</p>
-            </div>
+            <div id="noResultsSede" style="display: none;" class="text-center card mt-6"><h3 class="text-xl font-bold">Nenhum resultado encontrado</h3><p>Tente ajustar sua pesquisa ou filtros.</p></div>
         </div>
     </main>
 
-    <!-- 5. Rodapé -->
+    <!-- Rodapé -->
     <footer class="text-center mt-12 mb-6 text-sm text-slate-500">
-        <p>Painel desenvolvido por: Jurandy </p>
-        <p>Secretaria Municipal da Criança e Assistência Social (SEMCAS)</p>
+        <p>Painel desenvolvido por: Jurandy | SEMCAS</p>
     </footer>
 
     <!-- Modal de Seleção de Unidade -->
     <div id="unidade-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div id="modal-overlay" class="absolute inset-0 bg-black/60 modal-overlay opacity-0"></div>
+        <div id="modal-overlay" class="absolute inset-0 bg-black/60 opacity-0"></div>
         <div class="modal-container bg-white w-full max-w-2xl rounded-lg shadow-2xl flex flex-col transform scale-95 opacity-0">
-            <div class="flex items-center justify-between p-4 border-b border-slate-200">
-                <h3 class="text-xl font-semibold text-slate-800">Selecionar Unidade</h3>
-                <button id="close-modal-btn" class="p-2 rounded-full hover:bg-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <div class="p-4 border-b border-slate-200">
-                <input type="text" id="unidade-search-input" placeholder="Pesquisar pelo nome da unidade..." class="w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div class="p-4 overflow-y-auto flex-1">
-                <ul id="unidade-list-container" class="space-y-2"></ul>
-            </div>
-            <div class="flex justify-end p-4 border-t border-slate-200">
-                <button id="clear-unidade-selection-btn" class="px-4 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg hover:bg-slate-300">Limpar Seleção</button>
-            </div>
+            <div class="flex items-center justify-between p-4 border-b"><h3 class="text-xl font-semibold">Selecionar Unidade</h3><button id="close-modal-btn" class="p-2 rounded-full hover:bg-slate-200">&times;</button></div>
+            <div class="p-4 border-b"><input type="text" id="unidade-search-input" placeholder="Pesquisar..." class="w-full p-2 border rounded-lg"></div>
+            <div class="p-4 overflow-y-auto flex-1"><ul id="unidade-list-container" class="space-y-2"></ul></div>
+            <div class="flex justify-end p-4 border-t"><button id="clear-unidade-selection-btn" class="px-4 py-2 bg-slate-200 font-semibold rounded-lg hover:bg-slate-300">Limpar Seleção</button></div>
         </div>
     </div>
 
-    <!-- Script Principal Consolidado -->
     <script type="module" src="./main.js"></script>
 </body>
 </html>
