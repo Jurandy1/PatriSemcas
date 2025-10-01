@@ -1,9 +1,9 @@
 // =================================================================
 // ARQUIVO JAVASCRIPT CONSOLIDADO PARA O PAINEL DE PATRIMÔNIO
-// Versão Corrigida e Otimizada
+// Versão 3.1 - Otimizada e Responsiva
 // =================================================================
 
-// --- DADOS DA SEDE (Antes em sede-data.js) ---
+// --- DADOS DA SEDE ---
 const sedeData = [
     // SUBSOLO
     { local: "SUBSOLO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setores: [{ nome: "DIRETORIA TÉCNICA DE ALMOXARIFADO E PATRIMÔNIO", registro: "140.32 - SUPERINTENDÊNCIA DE ADMINISTRAÇÃO", observacao: "" }] },
@@ -52,7 +52,7 @@ const sedeData = [
         { nome: "COORDENAÇÃO DA REDE SOCIOASSISTENCIAL PRIVADA", registro: "140.49 - COORDENAÇÃO DE ARTICULAÇÃO DA REDE DE PROTEÇÃO", observacao: "" }
     ]},
     { local: "1º ANDAR", sala: "SALA 2", tipo: "SALA CONJUNTA", setores: [
-        { nome: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", registro: "140.26 - SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", observacao: "" },
+        { nome: "SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXIDADE", registro: "140.26 - SUPERINTENDÊNCIA DE PROTEÇÃO SOCIAL ESPECIAL DE ALTA COMPLEXidade", observacao: "" },
         { nome: "COORDENAÇÃO DOS SERVIÇOS FAMILIAR E INSTITUCIONAL DE ACOLHIMENTO", registro: "140.46 - COORDENAÇÃO ACOLHIMENTO INSTITUCIONAL", observacao: "" }
     ]},
     { local: "1º ANDAR", sala: "SALA 3", tipo: "SALA CONJUNTA", setores: [
@@ -94,21 +94,18 @@ const sedeData = [
     // 3º ANDAR
     { local: "3º ANDAR", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setores: [{ nome: "AUDITÓRIO", registro: "140.97 - AUDITÓRIO", observacao: "Repetido no 2º andar, sala 6. Verificar se é o mesmo espaço." }] },
     
-    // SETORES PENDENTES DE LOCALIZAÇÃO
+    // SETORES PENDENTES
     { local: "PENDENTE", sala: "SETORES PENDENTES DE LOCALIZAÇÃO", tipo: "PENDENTE", setores: [
         { nome: "SUPERINTENDÊNCIA DE ENFRENTAMENTO À VIOLAÇÃO DE DIREITOS", registro: "140.30 - SUPERINTENDÊNCIA DE ENFRENTAMENTO À VIOLAÇÃO DE DIREITOS", observacao: "Localização na sede não confirmada." },
         { nome: "COORDENAÇÃO DE RESGATE E VIGILÂNCIA SOCIAL", registro: "140.45 - COORDENAÇÃO DE RESGATE E VIGILÂNCIA SOCIAL", observacao: "Localização na sede não confirmada." },
         { nome: "COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", registro: "140.47 - COORDENAÇÃO DE INCLUSÃO SOCIOPRODUTIVA", observacao: "Localização na sede não confirmada." }
-        
     ]}
 ];
 
-// --- LÓGICA DA ABA NOTA FISCAL (Antes em notas-fiscais.js) ---
+// --- LÓGICA DA ABA NOTA FISCAL (Layout de Acordeão) ---
 async function handleNotaFiscalTab(state, setState, dependencies) {
     const { parseCsvData } = dependencies;
-    const listContainer = document.getElementById('nf-list');
-    const detailsContainer = document.getElementById('nf-details-container');
-
+    const accordionContainer = document.getElementById('nf-accordion-container');
     const googleSheetNfEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=0&output=csv';
     const googleSheetNfMovimentacoesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=1261246825&output=csv';
 
@@ -121,109 +118,139 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
     function processNfData(rawData, parseCsvDataFunc) {
         const estoque = parseCsvDataFunc(rawData.estoque);
         const movimentacoes = parseCsvDataFunc(rawData.movimentacoes);
-        const groupedByNfRaw = estoque.reduce((acc, item) => {
+        const groupedByNf = estoque.reduce((acc, item) => {
             const nf = item.NF;
-            if (!nf) return acc;
-            if (!acc[nf]) acc[nf] = [];
-            acc[nf].push(item);
+            if (nf) {
+                if (!acc[nf]) acc[nf] = [];
+                acc[nf].push(item);
+            }
             return acc;
         }, {});
-        const finalNfData = [];
-        for (const nfNum in groupedByNfRaw) {
-            const itemsInNf = groupedByNfRaw[nfNum];
+
+        return Object.entries(groupedByNf).map(([nfNum, itemsInNf]) => {
+            const firstItem = itemsInNf[0];
+            const nfObject = {
+                numero: nfNum,
+                fornecedor: firstItem['Nome Fornecedor'],
+                data: firstItem['Data NF'],
+                valorTotal: 0,
+                totalItens: 0,
+                itens: {}
+            };
+
             const groupedByDesc = itemsInNf.reduce((acc, item) => {
                 const desc = item.Descrição;
-                if (!acc[desc]) acc[desc] = [];
-                acc[desc].push(item);
+                if(desc) {
+                    if (!acc[desc]) acc[desc] = [];
+                    acc[desc].push(item);
+                }
                 return acc;
             }, {});
-            const firstItem = itemsInNf[0];
-            const nfObject = { numero: nfNum, fornecedor: firstItem['Nome Fornecedor'], data: firstItem['Data NF'], valorTotal: 0, totalItens: 0, itens: {} };
-            for (const desc in groupedByDesc) {
-                const itemGroup = groupedByDesc[desc];
+
+            for (const [desc, itemGroup] of Object.entries(groupedByDesc)) {
                 const firstOfGroup = itemGroup[0];
                 const quantidade = itemGroup.length;
-                const valorString = String(firstOfGroup['Valor NF'] || '0');
-                const valorUnitario = parseFloat(valorString.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+                const valorUnitario = parseFloat(String(firstOfGroup['Valor NF'] || '0').replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+                
                 nfObject.totalItens += quantidade;
                 nfObject.valorTotal += quantidade * valorUnitario;
-                nfObject.itens[desc] = { descricao: desc, quantidade: quantidade, valorUnitario: valorUnitario, tombamentos: itemGroup.map(i => i.TOMBAMENTO).filter(t => t) };
-            }
-            Object.values(nfObject.itens).forEach(itemAgrupado => {
-                itemAgrupado.unidades = {};
-                itemAgrupado.tombamentos.forEach(tomb => {
+                
+                const tombamentos = itemGroup.map(i => i.TOMBAMENTO).filter(Boolean);
+                const unidades = tombamentos.reduce((acc, tomb) => {
                     const mov = movimentacoes.find(m => m.Tombamento === tomb);
                     if (mov) {
                         const unidade = mov.Unidade || 'Não especificada';
-                        itemAgrupado.unidades[unidade] = (itemAgrupado.unidades[unidade] || 0) + 1;
+                        acc[unidade] = (acc[unidade] || 0) + 1;
                     }
-                });
-            });
-            finalNfData.push(nfObject);
-        }
-        return finalNfData.sort((a, b) => new Date(b.data) - new Date(a.data));
-    }
+                    return acc;
+                }, {});
 
-    function renderNfDetails(nf, nfChartInstances) {
-        if (!nf || !detailsContainer) return;
-        Object.values(nfChartInstances).forEach(chart => chart.destroy());
-        nfChartInstances = {};
+                nfObject.itens[desc] = { descricao: desc, quantidade, valorUnitario, tombamentos, unidades };
+            }
+            return nfObject;
+        }).sort((a, b) => new Date(b.data) - new Date(a.data));
+    }
+    
+    function renderAccordionItemContent(contentDiv, nf) {
+        if (contentDiv.innerHTML !== '') return; // Previne re-renderização
+
         const itemsAgrupados = Object.values(nf.itens);
         const formatTombamentoRange = (tombamentos) => {
             if (!tombamentos || tombamentos.length === 0) return 'N/A';
-            if (tombamentos.length === 1) return tombamentos[0];
             const sorted = tombamentos.map(t => parseInt(t, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
-            if (sorted.length === 0) return 'N/A';
-            return `${sorted[0]} ao ${sorted[sorted.length - 1]}`;
+            return sorted.length > 0 ? `${sorted[0]} ao ${sorted[sorted.length - 1]}` : 'N/A';
         };
-        const tableRowsHTML = itemsAgrupados.map(item => `<tr class="border-b border-slate-200"><td class="px-4 py-3 font-medium">${item.descricao}</td><td class="px-4 py-3 text-center">${item.quantidade}</td><td class="px-4 py-3">${formatTombamentoRange(item.tombamentos)}</td><td class="px-4 py-3">${Object.entries(item.unidades).map(([unidade, qtd]) => `${unidade} (${qtd})`).join('<br>')}</td></tr>`).join('');
-        detailsContainer.innerHTML = `<div class="card fade-in"><h2 class="text-2xl font-bold text-slate-800">${nf.fornecedor}</h2><p class="text-sm text-slate-500 mb-6">Nota Fiscal: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p><div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8"><div class="kpi-nf"><p class="value">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="label">Valor Total</p></div><div class="kpi-nf"><p class="value">${nf.totalItens}</p><p class="label">Qtd. de Itens</p></div><div class="kpi-nf col-span-2 lg:col-span-1"><p class="value">${itemsAgrupados.length}</p><p class="label">Tipos de Itens</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"><div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição de Itens por Unidade</h4><div class="chart-container" style="height: 300px;"><canvas id="nfUnidadesChart"></canvas></div></div><div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição do Valor por Item</h4><div class="chart-container" style="height: 300px;"><canvas id="nfValorChart"></canvas></div></div></div><div><h4 class="font-semibold text-slate-700 mb-2">Resumo dos Itens</h4><div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="table w-full text-sm"><thead class="bg-slate-100"><tr><th class="px-4 py-2">Descrição</th><th class="px-4 py-2 text-center">Quantidade</th><th class="px-4 py-2">Tombamento (Intervalo)</th><th class="px-4 py-2">Unidades de Destino</th></tr></thead><tbody>${tableRowsHTML}</tbody></table></div></div></div>`;
-        const unidadesData = itemsAgrupados.reduce((acc, item) => { Object.entries(item.unidades).forEach(([unidade, qtd]) => { acc[unidade] = (acc[unidade] || 0) + qtd; }); return acc; }, {});
-        const unidadesChartCanvas = document.getElementById('nfUnidadesChart');
-        if (unidadesChartCanvas) nfChartInstances.unidades = new Chart(unidadesChartCanvas, { type: 'doughnut', data: { labels: Object.keys(unidadesData), datasets: [{ data: Object.values(unidadesData), borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}} });
+        const tableRowsHTML = itemsAgrupados.map(item => `
+            <tr class="border-b"><td class="p-2">${item.descricao}</td><td class="p-2 text-center">${item.quantidade}</td><td class="p-2">${formatTombamentoRange(item.tombamentos)}</td><td class="p-2">${Object.entries(item.unidades).map(([u, q]) => `${u} (${q})`).join('<br>')}</td></tr>
+        `).join('');
+
+        contentDiv.innerHTML = `
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div class="kpi-nf"><p class="value">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="label">Valor Total</p></div>
+                <div class="kpi-nf"><p class="value">${nf.totalItens}</p><p class="label">Qtd. de Itens</p></div>
+                <div class="kpi-nf col-span-2 lg:col-span-1"><p class="value">${itemsAgrupados.length}</p><p class="label">Tipos de Itens</p></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div><h4 class="font-semibold text-center mb-2">Itens por Unidade</h4><canvas id="nfUnidadesChart-${nf.numero}"></canvas></div>
+                <div><h4 class="font-semibold text-center mb-2">Valor por Item</h4><canvas id="nfValorChart-${nf.numero}"></canvas></div>
+            </div>
+            <div><h4 class="font-semibold mb-2">Resumo dos Itens</h4><div class="overflow-x-auto border rounded-lg"><table class="w-full text-sm"><thead><tr class="bg-slate-100"><th class="p-2">Descrição</th><th class="p-2 text-center">Qtd</th><th class="p-2">Tombamento</th><th class="p-2">Destino</th></tr></thead><tbody>${tableRowsHTML}</tbody></table></div></div>
+        `;
+        
+        // Renderiza Gráficos
+        const unidadesData = itemsAgrupados.reduce((acc, item) => { Object.entries(item.unidades).forEach(([u, q]) => { acc[u] = (acc[u] || 0) + q; }); return acc; }, {});
+        new Chart(document.getElementById(`nfUnidadesChart-${nf.numero}`), { type: 'doughnut', data: { labels: Object.keys(unidadesData), datasets: [{ data: Object.values(unidadesData) }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
+        
         const valorData = itemsAgrupados.map(item => ({ label: item.descricao, value: item.quantidade * item.valorUnitario })).sort((a,b) => b.value - a.value);
-        const valorChartCanvas = document.getElementById('nfValorChart');
-        if (valorChartCanvas) nfChartInstances.valor = new Chart(valorChartCanvas, { type: 'bar', data: { labels: valorData.map(d => d.label), datasets: [{ label: 'Valor Total', data: valorData.map(d => d.value), backgroundColor: '#667eea' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}} });
+        new Chart(document.getElementById(`nfValorChart-${nf.numero}`), { type: 'bar', data: { labels: valorData.map(d => d.label), datasets: [{ data: valorData.map(d => d.value), backgroundColor: '#667eea' }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } } });
     }
 
-    function renderNfTab() {
-        if (!listContainer || !detailsContainer) return;
-        if (state.data.length === 0) {
-            if (!document.body.classList.contains('nf-loading')) detailsContainer.innerHTML = `<div class="card text-center p-10"><p class="text-lg text-slate-600">Nenhuma nota fiscal foi carregada.</p></div>`;
-            return;
-        }
-        listContainer.innerHTML = state.data.map(nf => `<button class="nf-button" data-nf-numero="${nf.numero}"><p class="fornecedor">${nf.fornecedor}</p><p class="details">NF: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p><p class="details font-bold">Valor: ${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></button>`).join('');
-        listContainer.querySelectorAll('.nf-button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                listContainer.querySelector('.active')?.classList.remove('active');
-                btn.classList.add('active');
-                const nfNumero = btn.dataset.nfNumero;
-                const nf = state.data.find(n => n.numero === nfNumero);
-                renderNfDetails(nf, state.charts);
+    function renderNfView(nfData) {
+        if (!accordionContainer) return;
+        accordionContainer.innerHTML = nfData.map(nf => `
+            <details class="nf-accordion-item bg-white rounded-lg shadow-sm mb-3" data-nf-numero="${nf.numero}">
+                <summary>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between w-full">
+                        <div>
+                            <p class="font-bold text-slate-800">${nf.fornecedor}</p>
+                            <p class="text-sm text-slate-500">NF: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+                        </div>
+                        <p class="font-semibold text-blue-600 mt-2 md:mt-0">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                    </div>
+                </summary>
+                <div class="nf-details-content"></div>
+            </details>
+        `).join('');
+
+        accordionContainer.querySelectorAll('.nf-accordion-item').forEach(detailsEl => {
+            detailsEl.addEventListener('toggle', (event) => {
+                if (event.target.open) {
+                    const nf = nfData.find(n => n.numero === event.target.dataset.nfNumero);
+                    renderAccordionItemContent(event.target.querySelector('.nf-details-content'), nf);
+                }
             });
         });
-        if (!listContainer.querySelector('.active')) listContainer.querySelector('.nf-button')?.click();
     }
 
-    if (state.data.length > 0) { renderNfTab(); return; }
+    if (state.data.length > 0) { renderNfView(state.data); return; }
     if (document.body.classList.contains('nf-loading')) return;
+
     document.body.classList.add('nf-loading');
-    listContainer.innerHTML = '';
-    detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="loading-spinner"></div><p class="mt-4 text-slate-600">Carregando dados...</p></div>`;
+    accordionContainer.innerHTML = `<div class="card text-center p-10"><div class="loading-spinner"></div><p class="mt-4">Carregando dados...</p></div>`;
+    
     try {
         const [estoqueCsv, movCsv] = await Promise.all([fetchData(googleSheetNfEstoqueUrl), fetchData(googleSheetNfMovimentacoesUrl)]);
         const newData = processNfData({ estoque: estoqueCsv, movimentacoes: movCsv }, parseCsvData);
         setState({ ...state, data: newData }); 
-        renderNfTab();
+        renderNfView(newData);
     } catch (error) {
-        console.error('Erro ao carregar dados da NF:', error);
-        detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="alert alert-error"><strong>Erro:</strong> ${error.message}</div></div>`;
+        accordionContainer.innerHTML = `<div class="card text-center p-10"><div class="alert alert-error"><strong>Erro:</strong> ${error.message}</div></div>`;
     } finally {
         document.body.classList.remove('nf-loading');
     }
 }
 
-// --- LÓGICA PRINCIPAL (Antes em main.js) ---
+// --- LÓGICA PRINCIPAL ---
 document.addEventListener('DOMContentLoaded', async () => {
 
     let googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
@@ -231,8 +258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let allItems = [], dadosOriginais = [], allEstoqueItems = [];
     let visaoAtiva = 'dashboard', tituloDaVisao = 'Dashboard', selectedUnidadeValue = '';
-    let currentPage = 1;
-    const itemsPerPage = 20;
+    let currentPage = 1, itemsPerPage = 20;
     let estadoChartInstance, estoqueChartInstance, dashboardEstadoChartInstance, dashboardTopItemsChartInstance;
     let nfState = { data: [], charts: {} };
     const setNfState = (newState) => { nfState = newState; };
@@ -240,14 +266,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl, mainContentAreaEl, verResumoGeralBtn, tableBodyEl, paginationControlsEl, navButtons, contentPanes, mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn, connectionStatusEl;
 
     class DataManager {
-        constructor() { this.cacheKey = 'dashboard_cache_v5'; this.cacheExpiry = 5 * 60 * 1000; this.loadingPromises = new Map(); }
-        async fetchWithCache(url, key, type = 'json') { const cached = this.getFromCache(key); if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) return cached.data; if (this.loadingPromises.has(key)) return this.loadingPromises.get(key); const promise = this.fetchData(url, type).then(data => { this.saveToCache(key, data); this.loadingPromises.delete(key); return data; }).catch(error => { this.loadingPromises.delete(key); throw error; }); this.loadingPromises.set(key, promise); return promise; }
+        constructor() { this.cacheKey = 'dashboard_cache_v6'; this.cacheExpiry = 5 * 60 * 1000; this.loadingPromises = new Map(); }
+        async fetchWithCache(url, key, type = 'json') {
+            const cached = this.getFromCache(key);
+            if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
+                console.log(`Loading ${key} from cache.`);
+                updateLastUpdateTime(true);
+                return cached.data;
+            }
+            console.log(`Fetching ${key} from network.`);
+            updateLastUpdateTime(false);
+            if (this.loadingPromises.has(key)) return this.loadingPromises.get(key);
+            const promise = this.fetchData(url, type).then(data => { this.saveToCache(key, data); this.loadingPromises.delete(key); return data; }).catch(error => { this.loadingPromises.delete(key); throw error; });
+            this.loadingPromises.set(key, promise);
+            return promise;
+        }
         async fetchData(url, type) { const response = await fetch(url); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); if (type === 'json') { const rawData = await response.json(); if (rawData && rawData.error) throw new Error(`Erro do Apps Script: ${rawData.error}`); return Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null; } return response.text(); }
         saveToCache(key, data) { try { const cache = this.getAllCache(); cache[key] = { data, timestamp: Date.now() }; localStorage.setItem(this.cacheKey, JSON.stringify(cache)); } catch (e) { console.warn("Cache full, clearing."); localStorage.removeItem(this.cacheKey); } }
         getFromCache(key) { const cache = this.getAllCache(); return cache[key] || null; }
         getAllCache() { try { return JSON.parse(localStorage.getItem(this.cacheKey)) || {}; } catch { return {}; } }
     }
     const dataManager = new DataManager();
+
+    function updateLastUpdateTime(isCached) {
+        const timeEl = document.getElementById('last-update-time');
+        if (timeEl) {
+            const cacheText = isCached ? `<span class="font-normal text-slate-400">(dados em cache)</span>` : '';
+            timeEl.innerHTML = `Dados de ${new Date().toLocaleDateString('pt-BR')} ${cacheText}`;
+        }
+    }
 
     function parseCsvData(csvText) {
         const lines = csvText.trim().split(/\r\n|\n/);
@@ -459,7 +506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!patrimonioData || !Array.isArray(patrimonioData) || patrimonioData.length === 0) throw new Error("A planilha de dados pode estar vazia ou com formato incorreto.");
         allItems = formatSheetData(patrimonioData);
         connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-green-500 rounded-full"></span> <span>Conectado</span>`;
-        document.getElementById('last-update-time').textContent = `Dados de ${new Date().toLocaleDateString('pt-BR')}`;
+        
         const allStates = [...new Set(allItems.map(item => item.state))];
         filtroEstadoEl.innerHTML = '<option value="">TODOS</option>' + ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s)).map(s => `<option value="${s}">${s.toUpperCase()}</option>`).join('');
         switchTab('dashboard');
