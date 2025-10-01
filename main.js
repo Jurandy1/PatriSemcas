@@ -1,11 +1,7 @@
 // =================================================================
 // ARQUIVO JAVASCRIPT CONSOLIDADO PARA O PAINEL DE PATRIMÔNIO
-// Este arquivo combina a lógica de:
-// - main.js (lógica principal, abas, filtros)
-// - sede-data.js (dados estáticos da Sede)
-// - notas-fiscais.js (lógica da aba de Notas Fiscais)
+// Versão Corrigida e Otimizada
 // =================================================================
-
 
 // --- DADOS DA SEDE (Antes em sede-data.js) ---
 const sedeData = [
@@ -16,7 +12,7 @@ const sedeData = [
     { local: "SUBSOLO", sala: "SALA 4", tipo: "SALA INDIVIDUAL", setores: [{ nome: "COORDENAÇÃO DE ADMINISTRAÇÃO E PATRIMÔNIO", registro: "140.1 - COORDENAÇÃO DE MATERIAL E PATRIMÔNIO", observacao: "" }] },
     { local: "SUBSOLO", sala: "SALA 5", tipo: "SALA INDIVIDUAL", setores: [{ nome: "ALMOXARIFADO", registro: "", observacao: "Precisa criar identificação no sistema." }] },
     { local: "SUBSOLO", sala: "SALA 6", tipo: "SALA INDIVIDUAL", setores: [{ nome: "DIRETORIA TÉCNICA DE LOGÍSTICA E TRANSPORTE", registro: "140.73 - COORDENAÇÃO DE SUPORTE E LOGÍSTICA / 140.82 - SETOR DE TRANSPORTE", observacao: "Confirmado como mesmo setor. Recomenda-se unificar no sistema (sugerido: manter 140.73)." }] },
-    { local: "SUBSOLO", sala: "SALA 7", tipo: "SALA INDIVIDUAL", setores: [{ nome: "DIRETORIA TÉCNICA DE MANUTENÇÃO", registro: "140.96 - DIRETORIA TÉCNICA DE MANUTENÇÃO", observacao: "" }] },
+    { local: "SUBSOLO", sala: "SALA 7", tipo: "SALA INDIVIDUAL", setores: [{ nome: "DIRETORIA TÉCNICA DE MANUTENÇÃO", registro: "140.96 - DIREToria TÉCNICA DE MANUTENÇÃO", observacao: "" }] },
     
     // TÉRREO
     { local: "TÉRREO", sala: "SALA 1", tipo: "SALA INDIVIDUAL", setores: [{ nome: "RECEPÇÃO", registro: "140.94 - RECEPÇÃO", observacao: "" }] },
@@ -107,32 +103,24 @@ const sedeData = [
     ]}
 ];
 
-
 // --- LÓGICA DA ABA NOTA FISCAL (Antes em notas-fiscais.js) ---
-
-// URLs das planilhas de Nota Fiscal
-const googleSheetNfEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=0&output=csv';
-const googleSheetNfMovimentacoesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=1261246825&output=csv';
-
 async function handleNotaFiscalTab(state, setState, dependencies) {
     const { parseCsvData } = dependencies;
     const listContainer = document.getElementById('nf-list');
     const detailsContainer = document.getElementById('nf-details-container');
-    
-    // Função auxiliar para buscar os dados da planilha
+
+    const googleSheetNfEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=0&output=csv';
+    const googleSheetNfMovimentacoesUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtSzFDAc1vJ4oIKsHCCe2xnw2OmUBdLCMIP4lPS1JTT5b2cnIctkRVK_0qe5yklF1EiR56QZeiBSfE/pub?gid=1261246825&output=csv';
+
     async function fetchData(url) {
         const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Erro HTTP ${response.status} ao buscar dados.`);
-        }
+        if (!response.ok) throw new Error(`Erro HTTP ${response.status} ao buscar dados.`);
         return response.text();
     }
 
-    // Lógica de processamento dos dados da NF
     function processNfData(rawData, parseCsvDataFunc) {
         const estoque = parseCsvDataFunc(rawData.estoque);
         const movimentacoes = parseCsvDataFunc(rawData.movimentacoes);
-
         const groupedByNfRaw = estoque.reduce((acc, item) => {
             const nf = item.NF;
             if (!nf) return acc;
@@ -140,9 +128,7 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
             acc[nf].push(item);
             return acc;
         }, {});
-
         const finalNfData = [];
-
         for (const nfNum in groupedByNfRaw) {
             const itemsInNf = groupedByNfRaw[nfNum];
             const groupedByDesc = itemsInNf.reduce((acc, item) => {
@@ -151,35 +137,18 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
                 acc[desc].push(item);
                 return acc;
             }, {});
-
             const firstItem = itemsInNf[0];
-            const nfObject = {
-                numero: nfNum,
-                fornecedor: firstItem['Nome Fornecedor'],
-                data: firstItem['Data NF'],
-                valorTotal: 0,
-                totalItens: 0,
-                itens: {}
-            };
-
+            const nfObject = { numero: nfNum, fornecedor: firstItem['Nome Fornecedor'], data: firstItem['Data NF'], valorTotal: 0, totalItens: 0, itens: {} };
             for (const desc in groupedByDesc) {
                 const itemGroup = groupedByDesc[desc];
                 const firstOfGroup = itemGroup[0];
                 const quantidade = itemGroup.length;
                 const valorString = String(firstOfGroup['Valor NF'] || '0');
                 const valorUnitario = parseFloat(valorString.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
-
                 nfObject.totalItens += quantidade;
                 nfObject.valorTotal += quantidade * valorUnitario;
-
-                nfObject.itens[desc] = {
-                    descricao: desc,
-                    quantidade: quantidade,
-                    valorUnitario: valorUnitario,
-                    tombamentos: itemGroup.map(i => i.TOMBAMENTO).filter(t => t)
-                };
+                nfObject.itens[desc] = { descricao: desc, quantidade: quantidade, valorUnitario: valorUnitario, tombamentos: itemGroup.map(i => i.TOMBAMENTO).filter(t => t) };
             }
-
             Object.values(nfObject.itens).forEach(itemAgrupado => {
                 itemAgrupado.unidades = {};
                 itemAgrupado.tombamentos.forEach(tomb => {
@@ -190,30 +159,40 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
                     }
                 });
             });
-
             finalNfData.push(nfObject);
         }
         return finalNfData.sort((a, b) => new Date(b.data) - new Date(a.data));
     }
 
-    // Funções de Renderização
+    function renderNfDetails(nf, nfChartInstances) {
+        if (!nf || !detailsContainer) return;
+        Object.values(nfChartInstances).forEach(chart => chart.destroy());
+        nfChartInstances = {};
+        const itemsAgrupados = Object.values(nf.itens);
+        const formatTombamentoRange = (tombamentos) => {
+            if (!tombamentos || tombamentos.length === 0) return 'N/A';
+            if (tombamentos.length === 1) return tombamentos[0];
+            const sorted = tombamentos.map(t => parseInt(t, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+            if (sorted.length === 0) return 'N/A';
+            return `${sorted[0]} ao ${sorted[sorted.length - 1]}`;
+        };
+        const tableRowsHTML = itemsAgrupados.map(item => `<tr class="border-b border-slate-200"><td class="px-4 py-3 font-medium">${item.descricao}</td><td class="px-4 py-3 text-center">${item.quantidade}</td><td class="px-4 py-3">${formatTombamentoRange(item.tombamentos)}</td><td class="px-4 py-3">${Object.entries(item.unidades).map(([unidade, qtd]) => `${unidade} (${qtd})`).join('<br>')}</td></tr>`).join('');
+        detailsContainer.innerHTML = `<div class="card fade-in"><h2 class="text-2xl font-bold text-slate-800">${nf.fornecedor}</h2><p class="text-sm text-slate-500 mb-6">Nota Fiscal: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p><div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8"><div class="kpi-nf"><p class="value">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="label">Valor Total</p></div><div class="kpi-nf"><p class="value">${nf.totalItens}</p><p class="label">Qtd. de Itens</p></div><div class="kpi-nf col-span-2 lg:col-span-1"><p class="value">${itemsAgrupados.length}</p><p class="label">Tipos de Itens</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"><div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição de Itens por Unidade</h4><div class="chart-container" style="height: 300px;"><canvas id="nfUnidadesChart"></canvas></div></div><div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição do Valor por Item</h4><div class="chart-container" style="height: 300px;"><canvas id="nfValorChart"></canvas></div></div></div><div><h4 class="font-semibold text-slate-700 mb-2">Resumo dos Itens</h4><div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="table w-full text-sm"><thead class="bg-slate-100"><tr><th class="px-4 py-2">Descrição</th><th class="px-4 py-2 text-center">Quantidade</th><th class="px-4 py-2">Tombamento (Intervalo)</th><th class="px-4 py-2">Unidades de Destino</th></tr></thead><tbody>${tableRowsHTML}</tbody></table></div></div></div>`;
+        const unidadesData = itemsAgrupados.reduce((acc, item) => { Object.entries(item.unidades).forEach(([unidade, qtd]) => { acc[unidade] = (acc[unidade] || 0) + qtd; }); return acc; }, {});
+        const unidadesChartCanvas = document.getElementById('nfUnidadesChart');
+        if (unidadesChartCanvas) nfChartInstances.unidades = new Chart(unidadesChartCanvas, { type: 'doughnut', data: { labels: Object.keys(unidadesData), datasets: [{ data: Object.values(unidadesData), borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}} });
+        const valorData = itemsAgrupados.map(item => ({ label: item.descricao, value: item.quantidade * item.valorUnitario })).sort((a,b) => b.value - a.value);
+        const valorChartCanvas = document.getElementById('nfValorChart');
+        if (valorChartCanvas) nfChartInstances.valor = new Chart(valorChartCanvas, { type: 'bar', data: { labels: valorData.map(d => d.label), datasets: [{ label: 'Valor Total', data: valorData.map(d => d.value), backgroundColor: '#667eea' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}} });
+    }
+
     function renderNfTab() {
         if (!listContainer || !detailsContainer) return;
         if (state.data.length === 0) {
-            if (!document.body.classList.contains('nf-loading')) {
-                detailsContainer.innerHTML = `<div class="card text-center p-10"><p class="text-lg text-slate-600">Nenhuma nota fiscal foi carregada ainda.</p></div>`;
-            }
+            if (!document.body.classList.contains('nf-loading')) detailsContainer.innerHTML = `<div class="card text-center p-10"><p class="text-lg text-slate-600">Nenhuma nota fiscal foi carregada.</p></div>`;
             return;
         }
-
-        listContainer.innerHTML = state.data.map(nf => `
-            <button class="nf-button" data-nf-numero="${nf.numero}">
-                <p class="fornecedor">${nf.fornecedor}</p>
-                <p class="details">NF: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
-                <p class="details font-bold">Valor: ${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-            </button>
-        `).join('');
-
+        listContainer.innerHTML = state.data.map(nf => `<button class="nf-button" data-nf-numero="${nf.numero}"><p class="fornecedor">${nf.fornecedor}</p><p class="details">NF: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p><p class="details font-bold">Valor: ${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></button>`).join('');
         listContainer.querySelectorAll('.nf-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 listContainer.querySelector('.active')?.classList.remove('active');
@@ -223,183 +202,48 @@ async function handleNotaFiscalTab(state, setState, dependencies) {
                 renderNfDetails(nf, state.charts);
             });
         });
-
-         if (!listContainer.querySelector('.active')) {
-            listContainer.querySelector('.nf-button')?.click();
-        }
+        if (!listContainer.querySelector('.active')) listContainer.querySelector('.nf-button')?.click();
     }
 
-    function renderNfDetails(nf, nfChartInstances) {
-        if (!nf) {
-            detailsContainer.innerHTML = '';
-            return;
-        }
-
-        Object.values(nfChartInstances).forEach(chart => chart.destroy());
-        nfChartInstances = {};
-
-        const itemsAgrupados = Object.values(nf.itens);
-        
-        const formatTombamentoRange = (tombamentos) => {
-            if (tombamentos.length === 0) return 'N/A';
-            if (tombamentos.length === 1) return tombamentos[0];
-            const sorted = tombamentos.map(t => parseInt(t, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
-            if (sorted.length === 0) return 'N/A';
-            return `${sorted[0]} ao ${sorted[sorted.length - 1]}`;
-        };
-        
-        const tableRowsHTML = itemsAgrupados.map(item => `
-            <tr class="border-b border-slate-200">
-                <td class="px-4 py-3 font-medium">${item.descricao}</td>
-                <td class="px-4 py-3 text-center">${item.quantidade}</td>
-                <td class="px-4 py-3">${formatTombamentoRange(item.tombamentos)}</td>
-                <td class="px-4 py-3">${Object.entries(item.unidades).map(([unidade, qtd]) => `${unidade} (${qtd})`).join('<br>')}</td>
-            </tr>
-        `).join('');
-
-        detailsContainer.innerHTML = `
-            <div class="card fade-in">
-                <h2 class="text-2xl font-bold text-slate-800">${nf.fornecedor}</h2>
-                <p class="text-sm text-slate-500 mb-6">Nota Fiscal: ${nf.numero} | Data: ${new Date(nf.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
-                
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                    <div class="kpi-nf"><p class="value">${nf.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p><p class="label">Valor Total</p></div>
-                    <div class="kpi-nf"><p class="value">${nf.totalItens}</p><p class="label">Qtd. de Itens</p></div>
-                    <div class="kpi-nf col-span-2 lg:col-span-1"><p class="value">${itemsAgrupados.length}</p><p class="label">Tipos de Itens</p></div>
-                </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                     <div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição de Itens por Unidade</h4><div class="chart-container" style="height: 300px;"><canvas id="nfUnidadesChart"></canvas></div></div>
-                     <div class="card bg-slate-50/50"><h4 class="font-semibold text-slate-700 mb-3 text-center">Distribuição do Valor por Item</h4><div class="chart-container" style="height: 300px;"><canvas id="nfValorChart"></canvas></div></div>
-                </div>
-
-                <div>
-                    <h4 class="font-semibold text-slate-700 mb-2">Resumo dos Itens</h4>
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg"><table class="table w-full text-sm"><thead class="bg-slate-100"><tr><th class="px-4 py-2">Descrição</th><th class="px-4 py-2 text-center">Quantidade</th><th class="px-4 py-2">Tombamento (Intervalo)</th><th class="px-4 py-2">Unidades de Destino</th></tr></thead><tbody>${tableRowsHTML}</tbody></table></div>
-                </div>
-            </div>`;
-
-        const unidadesData = itemsAgrupados.reduce((acc, item) => {
-            Object.entries(item.unidades).forEach(([unidade, qtd]) => { acc[unidade] = (acc[unidade] || 0) + qtd; });
-            return acc;
-        }, {});
-        if (document.getElementById('nfUnidadesChart')) {
-            nfChartInstances.unidades = new Chart(document.getElementById('nfUnidadesChart'), { type: 'doughnut', data: { labels: Object.keys(unidadesData), datasets: [{ data: Object.values(unidadesData), borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }}} });
-        }
-        const valorData = itemsAgrupados.map(item => ({ label: item.descricao, value: item.quantidade * item.valorUnitario })).sort((a,b) => b.value - a.value);
-        if (document.getElementById('nfValorChart')) {
-            nfChartInstances.valor = new Chart(document.getElementById('nfValorChart'), { type: 'bar', data: { labels: valorData.map(d => d.label), datasets: [{ label: 'Valor Total', data: valorData.map(d => d.value), backgroundColor: '#667eea' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }}} });
-        }
-    }
-
-    // --- Execução Principal da Aba ---
-    if (state.data.length > 0) {
-        renderNfTab();
-        return;
-    }
+    if (state.data.length > 0) { renderNfTab(); return; }
     if (document.body.classList.contains('nf-loading')) return;
-
     document.body.classList.add('nf-loading');
     listContainer.innerHTML = '';
-    detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="loading-spinner"></div><p class="mt-4 text-slate-600">Carregando dados da planilha...</p></div>`;
-
+    detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="loading-spinner"></div><p class="mt-4 text-slate-600">Carregando dados...</p></div>`;
     try {
-        const [estoqueCsv, movCsv] = await Promise.all([
-            fetchData(googleSheetNfEstoqueUrl),
-            fetchData(googleSheetNfMovimentacoesUrl)
-        ]);
-        const rawData = { estoque: estoqueCsv, movimentacoes: movCsv };
-        const newData = processNfData(rawData, parseCsvData);
+        const [estoqueCsv, movCsv] = await Promise.all([fetchData(googleSheetNfEstoqueUrl), fetchData(googleSheetNfMovimentacoesUrl)]);
+        const newData = processNfData({ estoque: estoqueCsv, movimentacoes: movCsv }, parseCsvData);
         setState({ ...state, data: newData }); 
         renderNfTab();
     } catch (error) {
-        console.error('Erro ao carregar ou processar dados da NF:', error);
-        detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="alert alert-error"><strong>Erro ao carregar dados:</strong> ${error.message}</div></div>`;
+        console.error('Erro ao carregar dados da NF:', error);
+        detailsContainer.innerHTML = `<div class="card text-center p-10"><div class="alert alert-error"><strong>Erro:</strong> ${error.message}</div></div>`;
     } finally {
         document.body.classList.remove('nf-loading');
     }
 }
 
-
 // --- LÓGICA PRINCIPAL (Antes em main.js) ---
-
 document.addEventListener('DOMContentLoaded', async () => {
 
-    // --- CONFIGURAÇÃO E VARIÁVEIS GLOBAIS ---
     const googleSheetPatrimonioUrl = 'https://script.google.com/macros/s/AKfycbypxSVE9syiII4H4DumAfxWEgFm1AE7qLpuQgqHTNLMi4B7I8dWF0Het7V2Cd4_aL58Mg/exec';
     const googleSheetEstoqueUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtgMcUrrMlaEW0BvLD1466J1geRMzLkv6iZ5QpdY53BH6bc38SMinDvC1C-iI9RKHIcWqTjRf4ccdk/pub?output=csv';
 
-    let allItems = [];
-    let dadosOriginais = [];
-    let visaoAtiva = 'dashboard';
-    let tituloDaVisao = 'Dashboard';
+    let allItems = [], dadosOriginais = [], allEstoqueItems = [];
+    let visaoAtiva = 'dashboard', tituloDaVisao = 'Dashboard', selectedUnidadeValue = '';
     let currentPage = 1;
     const itemsPerPage = 20;
-    let estadoChartInstance, dashboardChartInstance, estoqueChartInstance;
-    let allEstoqueItems = [];
-    let selectedUnidadeValue = '';
-    let dashboardEstadoChartInstance, dashboardTopItemsChartInstance;
+    let estadoChartInstance, estoqueChartInstance, dashboardEstadoChartInstance, dashboardTopItemsChartInstance;
+    let nfState = { data: [], charts: {} };
+    const setNfState = (newState) => { nfState = newState; };
 
-    // Estado da Aba Nota Fiscal
-    let nfState = {
-        data: [],
-        charts: {}
-    };
-    const setNfState = (newState) => {
-        nfState = newState;
-    };
+    let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl, mainContentAreaEl, verResumoGeralBtn, tableBodyEl, paginationControlsEl, navButtons, contentPanes, mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn, connectionStatusEl;
 
-    // --- Referências de Elementos ---
-    let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl;
-    let mainContentAreaEl, verResumoGeralBtn;
-    let tableBodyEl, paginationControlsEl;
-    let navButtons;
-    let contentPanes;
-    let mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl;
-    let filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl;
-    let openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn;
-    let connectionStatusEl;
-
-    // --- FUNÇÕES DE BUSCA E PROCESSAMENTO DE DADOS ---
     class DataManager {
-        constructor() {
-            this.cacheKey = 'dashboard_cache_v4';
-            this.cacheExpiry = 5 * 60 * 1000;
-            this.loadingPromises = new Map();
-        }
-
-        async fetchWithCache(url, key, type = 'json') {
-            const cached = this.getFromCache(key);
-            if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) {
-                console.log(`Loading ${key} from cache.`);
-                return cached.data;
-            }
-            console.log(`Fetching ${key} from network.`);
-            if (this.loadingPromises.has(key)) return this.loadingPromises.get(key);
-
-            const promise = this.fetchData(url, type).then(data => {
-                this.saveToCache(key, data);
-                this.loadingPromises.delete(key);
-                return data;
-            }).catch(error => {
-                this.loadingPromises.delete(key);
-                throw error;
-            });
-            this.loadingPromises.set(key, promise);
-            return promise;
-        }
-
-        async fetchData(url, type) {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            if (type === 'json') {
-                const rawData = await response.json();
-                if (rawData && rawData.error) throw new Error(`Erro do Apps Script: ${rawData.error}`);
-                return Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null;
-            }
-            return response.text();
-        }
-        saveToCache(key, data) { try { const cache = this.getAllCache(); cache[key] = { data, timestamp: Date.now() }; localStorage.setItem(this.cacheKey, JSON.stringify(cache)); } catch (e) { console.warn("Could not save to cache, it might be full. Clearing cache."); localStorage.removeItem(this.cacheKey); } }
+        constructor() { this.cacheKey = 'dashboard_cache_v5'; this.cacheExpiry = 5 * 60 * 1000; this.loadingPromises = new Map(); }
+        async fetchWithCache(url, key, type = 'json') { const cached = this.getFromCache(key); if (cached && (Date.now() - cached.timestamp < this.cacheExpiry)) return cached.data; if (this.loadingPromises.has(key)) return this.loadingPromises.get(key); const promise = this.fetchData(url, type).then(data => { this.saveToCache(key, data); this.loadingPromises.delete(key); return data; }).catch(error => { this.loadingPromises.delete(key); throw error; }); this.loadingPromises.set(key, promise); return promise; }
+        async fetchData(url, type) { const response = await fetch(url); if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); if (type === 'json') { const rawData = await response.json(); if (rawData && rawData.error) throw new Error(`Erro do Apps Script: ${rawData.error}`); return Array.isArray(rawData) ? rawData : (rawData && Array.isArray(rawData.content)) ? rawData.content : null; } return response.text(); }
+        saveToCache(key, data) { try { const cache = this.getAllCache(); cache[key] = { data, timestamp: Date.now() }; localStorage.setItem(this.cacheKey, JSON.stringify(cache)); } catch (e) { console.warn("Cache full, clearing."); localStorage.removeItem(this.cacheKey); } }
         getFromCache(key) { const cache = this.getAllCache(); return cache[key] || null; }
         getAllCache() { try { return JSON.parse(localStorage.getItem(this.cacheKey)) || {}; } catch { return {}; } }
     }
@@ -408,352 +252,225 @@ document.addEventListener('DOMContentLoaded', async () => {
     function parseCsvData(csvText) {
         const lines = csvText.trim().split(/\r\n|\n/);
         if (lines.length < 2) return [];
-        const headerLine = lines[0];
-        const delimiter = headerLine.includes(';') ? ';' : ',';
+        const headerLine = lines[0]; const delimiter = headerLine.includes(';') ? ';' : ',';
         const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-        const data = [];
-        for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === '') continue;
-            const values = lines[i].split(new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`));
+        return lines.slice(1).map(line => {
+            if (line.trim() === '') return null;
+            const values = line.split(new RegExp(`${delimiter}(?=(?:(?:[^"]*"){2})*[^"]*$)`));
             const item = {};
-            for (let j = 0; j < headers.length; j++) {
-                let value = values[j] ? values[j].trim().replace(/^"|"$/g, '') : '';
-                item[headers[j]] = value;
-            }
-            data.push(item);
-        }
-        return data;
+            headers.forEach((header, i) => item[header] = values[i] ? values[i].trim().replace(/^"|"$/g, '') : '');
+            return item;
+        }).filter(Boolean);
     }
 
-    // Funções de formatação, normalização e utilitários
     const normalizeString = (str) => str ? String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
-    const debounce = (func, delay) => { let timeout; return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); }; };
-    const capitalizeWords = (str) => str ? str.toLowerCase().replace(/([^\s/]+)/g, word => word.charAt(0).toUpperCase() + word.slice(1)) : "";
-    const getServiceKey = (serviceName) => { const name = (serviceName || '').toLowerCase().trim(); if (name === 'conselho' || name === 'ct') return 'conselho'; if (name.includes('cras')) return 'cras'; if (name.includes('creas')) return 'creas'; if (name.includes('externa')) return 'externa'; if (name.includes('centro pop')) return 'centro_pop'; if (name.includes('abrigo')) return 'abrigo'; if (name.includes('sede')) return 'sede'; return 'item'; };
-    const stateColors = { 'Novo': { bg: 'badge-green', hex: '#16a34a' }, 'Bom': { bg: 'badge-blue', hex: '#2563eb' }, 'Regular': { bg: 'badge-yellow', hex: '#facc15' }, 'Avariado': { bg: 'badge-red', hex: '#dc2626' } };
+    const debounce = (func, delay) => { let t; return function(...a) { clearTimeout(t); t = setTimeout(() => func.apply(this, a), delay); }; };
+    const capitalizeWords = (str) => str ? str.toLowerCase().replace(/([^\s/]+)/g, w => w.charAt(0).toUpperCase() + w.slice(1)) : "";
+    const getServiceKey = (s) => { const n = (s || '').toLowerCase().trim(); if (n === 'conselho' || n === 'ct') return 'conselho'; if (n.includes('cras')) return 'cras'; if (n.includes('creas')) return 'creas'; if (n.includes('externa')) return 'externa'; if (n.includes('centro pop')) return 'centro_pop'; if (n.includes('abrigo')) return 'abrigo'; if (n.includes('sede')) return 'sede'; return 'item'; };
+    const stateColors = { 'Novo': { bg: 'badge-green', text: 'text-green-800', hex: '#16a34a' }, 'Bom': { bg: 'badge-blue', text: 'text-blue-800', hex: '#2563eb' }, 'Regular': { bg: 'badge-yellow', text: 'text-yellow-800', hex: '#facc15' }, 'Avariado': { bg: 'badge-red', text: 'text-red-800', hex: '#dc2626' } };
     
     function formatSheetData(sheetData) {
         return sheetData.map((row, index) => {
             let finalState = row.Estado || 'Regular';
-            if (/(avariado|defeito|danificado|não funciona|nao funciona)/.test((row['Observação'] || '').toLowerCase()) || /(defeito|avaria|danificado|nao funciona)/.test(normalizeString(finalState))) {
-                finalState = 'Avariado';
-            }
-            return {
-                id: `${getServiceKey(row.Tipo)}_${index}`,
-                tombamento: (row['Tombamento'] || '').trim() || 'S/T',
-                type: row.Tipo || 'N/A',
-                description: row['Descrição'] || 'N/A',
-                unit_condition: capitalizeWords((row.Unidade || 'N/A').trim()),
-                quantity: parseInt(row.Quantidade, 10) || 1,
-                location: row['Localização'] || 'N/A',
-                state: finalState,
-                donation_source: (row['Origem da Doação'] || '').trim().replace(/(-|N\/A)/i, ''),
-                observation: (row['Observação'] || '').trim().replace(/(-|N\/A)/i, ''),
-                supplier: (row.Fornecedor || '').trim().replace(/(-|N\/A)/i, ''),
-            };
+            if (/(avariado|defeito|danificado|não funciona|nao funciona)/.test((row['Observação'] || '').toLowerCase()) || /(defeito|avaria|danificado|nao funciona)/.test(normalizeString(finalState))) finalState = 'Avariado';
+            return { id: `${getServiceKey(row.Tipo)}_${index}`, tombamento: (row['Tombamento'] || '').trim() || 'S/T', type: row.Tipo || 'N/A', description: row['Descrição'] || 'N/A', unit_condition: capitalizeWords((row.Unidade || 'N/A').trim()), quantity: parseInt(row.Quantidade, 10) || 1, location: row['Localização'] || 'N/A', state: finalState, donation_source: (row['Origem da Doação'] || '').trim().replace(/^-$|N\/A/i, ''), observation: (row['Observação'] || '').trim().replace(/^-$|N\/A/i, ''), supplier: (row.Fornecedor || '').trim().replace(/^-$|N\/A/i, '') };
         });
     }
 
     function agruparItens(items) {
-        if (!items || items.length === 0) return [];
-        const agrupados = items.reduce((acc, item) => {
+        return Object.values((items || []).reduce((acc, item) => {
             const key = `${normalizeString(item.description)}-${item.state}-${normalizeString(item.unit_condition)}-${normalizeString(item.location)}`;
-            if (acc[key]) {
-                acc[key].quantity += item.quantity;
-            } else {
-                acc[key] = { ...item, quantity: item.quantity };
-            }
+            if (acc[key]) acc[key].quantity += item.quantity;
+            else acc[key] = { ...item };
             return acc;
-        }, {});
-        return Object.values(agrupados);
+        }, {}));
     }
 
     function formatUnitName(item) {
-        let nomeUnidade = item.unit_condition;
-        const type = item.type.toUpperCase();
-        if ((type === 'CRAS' || type === 'CREAS' || type === 'CT') && !nomeUnidade.toUpperCase().startsWith(type)) {
-            return `${type} ${nomeUnidade}`;
-        }
-        return nomeUnidade;
+        let name = item.unit_condition; const type = item.type.toUpperCase();
+        if ((type === 'CRAS' || type === 'CREAS' || type === 'CT') && !name.toUpperCase().startsWith(type)) return `${type} ${name}`;
+        return name;
     }
 
-    // --- FUNÇÕES DE RENDERIZAÇÃO ---
     function renderTable(itemsToDisplay, totalItemsCount) {
         if (!tableBodyEl) return;
-        tableBodyEl.innerHTML = itemsToDisplay.length === 0 
-            ? `<tr><td colspan="10" class="text-center py-10 text-slate-500">Nenhum item encontrado.</td></tr>`
-            : itemsToDisplay.map(item => `
-                <tr class="border-b border-slate-200">
-                    <td class="px-6 py-4 font-mono text-xs">${item.tombamento}</td>
-                    <td class="px-6 py-4">${item.type}</td>
-                    <td class="px-6 py-4 font-medium text-slate-900">${item.description}</td>
-                    <td class="px-6 py-4">${formatUnitName(item)}</td>
-                    <td class="px-6 py-4 text-center">${item.quantity}</td>
-                    <td class="px-6 py-4">${item.location}</td>
-                    <td class="px-6 py-4"><span class="badge ${stateColors[item.state]?.bg}">${item.state}</span></td>
-                    <td class="px-6 py-4">${item.donation_source || 'N/A'}</td>
-                    <td class="px-6 py-4">${item.observation || 'N/A'}</td>
-                    <td class="px-6 py-4">${item.supplier || 'N/A'}</td>
-                </tr>`).join('');
+        tableBodyEl.innerHTML = itemsToDisplay.length === 0 ? `<tr><td colspan="10" class="text-center py-10 text-slate-500">Nenhum item encontrado.</td></tr>` : itemsToDisplay.map(item => `<tr class="border-b border-slate-200"><td class="px-6 py-4 font-mono text-xs">${item.tombamento}</td><td class="px-6 py-4">${item.type}</td><td class="px-6 py-4 font-medium text-slate-900">${item.description}</td><td class="px-6 py-4">${formatUnitName(item)}</td><td class="px-6 py-4 text-center">${item.quantity}</td><td class="px-6 py-4">${item.location}</td><td class="px-6 py-4"><span class="badge ${stateColors[item.state]?.bg} ${stateColors[item.state]?.text}">${item.state}</span></td><td class="px-6 py-4">${item.donation_source || 'N/A'}</td><td class="px-6 py-4">${item.observation || 'N/A'}</td><td class="px-6 py-4">${item.supplier || 'N/A'}</td></tr>`).join('');
         renderPagination(totalItemsCount, Math.ceil(totalItemsCount / itemsPerPage));
     }
 
     function renderPagination(totalItems, totalPages) {
-        if (!paginationControlsEl || totalPages <= 1) {
-             if(paginationControlsEl) paginationControlsEl.innerHTML = '';
-             return;
-        };
-        paginationControlsEl.innerHTML = `
-            <span class="text-sm text-slate-600">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems}</span>
-            <div class="inline-flex"><button data-page="${currentPage - 1}" class="px-4 py-2 text-sm border rounded-l-lg hover:bg-slate-100 disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button><button data-page="${currentPage + 1}" class="px-4 py-2 text-sm border rounded-r-lg hover:bg-slate-100 disabled:opacity-50" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button></div>`;
+        if (!paginationControlsEl) return;
+        paginationControlsEl.innerHTML = (totalPages <= 1) ? '' : `<span class="text-sm text-slate-600">Mostrando ${Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} a ${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems}</span><div class="inline-flex"><button data-page="${currentPage - 1}" class="px-4 py-2 text-sm border rounded-l-lg hover:bg-slate-100 disabled:opacity-50" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button><button data-page="${currentPage + 1}" class="px-4 py-2 text-sm border rounded-r-lg hover:bg-slate-100 disabled:opacity-50" ${currentPage === totalPages ? 'disabled' : ''}>Próximo</button></div>`;
     }
 
     function getFilteredItems(sourceData) {
         const servico = filtroServicoEl.value, unidade = selectedUnidadeValue, estado = filtroEstadoEl.value, doacao = filtroDoacaoEl.value, busca = filtroBuscaEl.value.toLowerCase();
         if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
-        return sourceData.filter(item => 
-            (!servico || item.id.startsWith(`${servico}_`)) &&
-            (!unidade || item.unit_condition === unidade) &&
-            (!estado || item.state === estado) &&
-            (!doacao || (doacao === 'sim' && item.donation_source) || (doacao === 'nao' && !item.donation_source)) &&
-            (!busca || Object.values(item).some(val => String(val).toLowerCase().includes(busca)))
-        );
+        return sourceData.filter(item => (!servico || item.id.startsWith(`${servico}_`)) && (!unidade || item.unit_condition === unidade) && (!estado || item.state === estado) && (!doacao || (doacao === 'sim' && item.donation_source) || (doacao === 'nao' && !item.donation_source)) && (!busca || Object.values(item).some(val => String(val).toLowerCase().includes(busca))));
     }
     
+    function GerarRelatorioUnidade(dados) {
+        if (!dados || dados.length === 0) return "Nenhum dado disponível.";
+        const stateCounts = dados.reduce((acc, item) => { acc[item.state] = (acc[item.state] || 0) + item.quantity; return acc; }, {Novo:0, Bom:0, Regular:0, Avariado:0});
+        const total = Object.values(stateCounts).reduce((s, c) => s + c, 0);
+        return `A unidade possui <strong>${total}</strong> itens (filtro atual).<br>Situação: <strong>${stateCounts.Novo}</strong> novos, <strong>${stateCounts.Bom}</strong> bons, <strong>${stateCounts.Regular}</strong> regulares e <strong>${stateCounts.Avariado}</strong> avariados.`;
+    }
+
     function renderApp() {
         if (estadoChartInstance) estadoChartInstance.destroy();
         const currentFilteredData = getFilteredItems(dadosOriginais);
         const filteredAndGroupedItems = agruparItens(currentFilteredData);
-        
-        if (visaoAtiva === 'boasVindas') {
-             mainContentAreaEl.innerHTML = `<div class="text-center p-10 card"><p class="text-xl">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Inventário Completo</strong>.</p></div>`;
-        } else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
+        if (visaoAtiva === 'boasVindas') mainContentAreaEl.innerHTML = `<div class="text-center p-10 card"><p class="text-xl">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Inventário Completo</strong>.</p></div>`;
+        else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
             const reportContent = visaoAtiva === 'unidade' ? `<div class="lg:col-span-3 card"><h3 class="text-xl font-bold mb-4">Relatório Descritivo</h3><div class="text-slate-600 space-y-2">${GerarRelatorioUnidade(currentFilteredData)}</div></div>` : '';
             mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 card"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div>${reportContent}</div><h2 class="text-2xl font-bold mt-8 mb-6">Inventário Detalhado</h2><div class="card p-0 overflow-x-auto"><table class="table w-full text-sm"><thead><tr><th>Tomb.</th><th>Tipo</th><th>Descrição</th><th>Unidade</th><th class="text-center">Qtd</th><th>Local</th><th>Estado</th><th>Doação</th><th>Obs.</th><th>Forn.</th></tr></thead><tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
             updateDynamicDOMReferences();
             renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length);
             const chartData = ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => currentFilteredData.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0));
-            new Chart(document.getElementById('estadoChart'), { type: 'bar', data: { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ label: 'Qtd.', data: chartData, backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            estadoChartInstance = new Chart(document.getElementById('estadoChart'), { type: 'bar', data: { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ label: 'Qtd.', data: chartData, backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
         }
     }
     
-    function GerarRelatorioUnidade(dados) {
-        if (!dados || dados.length === 0) return "Nenhum dado disponível.";
-        const stateCounts = dados.reduce((acc, item) => { acc[item.state] = (acc[item.state] || 0) + item.quantity; return acc; }, {});
-        const total = Object.values(stateCounts).reduce((s, c) => s + c, 0);
-        return `A unidade possui <strong>${total}</strong> itens. Situação: <strong>${stateCounts.Novo || 0}</strong> novos, <strong>${stateCounts.Bom || 0}</strong> bons, <strong>${stateCounts.Regular || 0}</strong> regulares e <strong>${stateCounts.Avariado || 0}</strong> avariados.`;
-    }
-
-    function renderEstoque(items) {
+    function renderEstoque() {
+        if (!mainContentEstoqueEl) return;
         mainContentEstoqueEl.innerHTML = '';
-        if (items.length === 0) {
-            mainContentEstoqueEl.innerHTML = `<div class="card text-center p-10"><p>Nenhum item de estoque encontrado.</p></div>`;
-            return;
-        }
+        if (allEstoqueItems.length === 0) { mainContentEstoqueEl.innerHTML = `<div class="card text-center p-10"><p>Nenhum item de estoque encontrado.</p></div>`; return; }
         const busca = filtroEstoqueBuscaEl.value.toLowerCase(), unidade = filtroEstoqueUnidadeEl.value;
-        const filteredItems = items.filter(item => (!unidade || item.Unidade === unidade) && (!busca || (item.Item || '').toLowerCase().includes(busca)));
-        if (filteredItems.length === 0) {
-            mainContentEstoqueEl.innerHTML = `<div class="card text-center p-10"><p>Nenhum item de estoque encontrado para os filtros aplicados.</p></div>`;
-            return;
-        }
+        const filteredItems = allEstoqueItems.filter(item => (!unidade || item.Unidade === unidade) && (!busca || (item.Item || '').toLowerCase().includes(busca)));
+        if (filteredItems.length === 0) { mainContentEstoqueEl.innerHTML = `<div class="card text-center p-10"><p>Nenhum item encontrado para os filtros.</p></div>`; return; }
         const headers = Object.keys(filteredItems[0] || {});
         mainContentEstoqueEl.innerHTML = `<div class="card p-0 overflow-x-auto"><table class="table w-full text-sm"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${filteredItems.map(item => `<tr>${headers.map(h => `<td>${item[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+        const estoqueData = filteredItems.reduce((acc, item) => { const desc = item.Item || 'N/D'; const qty = parseInt(item.Quantidade, 10) || 0; acc[desc] = (acc[desc] || 0) + qty; return acc; }, {});
+        const top10 = Object.entries(estoqueData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+        if (estoqueChartInstance) estoqueChartInstance.destroy();
+        estoqueChartInstance = new Chart(document.getElementById('estoqueBarChart'), { type: 'bar', data: { labels: top10.map(i => i[0]), datasets: [{ label: 'Qtd.', data: top10.map(i => i[1]), backgroundColor: '#36a2eb' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
     }
 
     function renderDashboard() {
         if (!allItems || allItems.length === 0) return;
-        const totalItens = allItems.reduce((sum, item) => sum + item.quantity, 0);
-        const totalUnidades = new Set(allItems.map(item => item.unit_condition)).size;
-        const totalAvariados = allItems.filter(i => i.state === 'Avariado').reduce((sum, i) => sum + i.quantity, 0);
-        
-        const unitsData = [...allItems.reduce((map, item) => {
-            if (item.type !== 'Sede') {
-                const name = formatUnitName(item);
-                if (!map.has(name)) map.set(name, { name, avariados: 0, regulares: 0, totalItems: 0, items: [] });
-                const unit = map.get(name);
-                unit.items.push(item);
-                unit.totalItems += item.quantity;
-                if (item.state === 'Avariado') unit.avariados += item.quantity;
-                if (item.state === 'Regular') unit.regulares += item.quantity;
-            }
-            return map;
-        }, new Map()).values()];
-
+        const totalItens = allItems.reduce((s, i) => s + i.quantity, 0), totalUnidades = new Set(allItems.map(i => i.unit_condition)).size, totalAvariados = allItems.filter(i => i.state === 'Avariado').reduce((s, i) => s + i.quantity, 0);
+        const unitsData = [...allItems.reduce((map, item) => { if (item.type !== 'Sede') { const name = formatUnitName(item); if (!map.has(name)) map.set(name, { name, avariados: 0, regulares: 0, totalItems: 0, items: [] }); const unit = map.get(name); unit.items.push(item); unit.totalItems += item.quantity; if (item.state === 'Avariado') unit.avariados += item.quantity; if (item.state === 'Regular') unit.regulares += item.quantity; } return map; }, new Map()).values()];
         unitsData.forEach(u => u.attentionScore = u.totalItems > 0 ? ((u.avariados * 3) + u.regulares) / u.totalItems : 0);
         const attention = unitsData.filter(u => u.attentionScore > 0).sort((a,b) => b.attentionScore - a.attentionScore).slice(0, 10);
         const noBebedouro = unitsData.filter(u => !u.items.some(i => normalizeString(i.description).includes('bebedouro') && i.state !== 'Avariado')).slice(0, 10);
-
-        document.getElementById('kpi-total-itens').textContent = totalItens;
-        document.getElementById('kpi-total-unidades').textContent = totalUnidades;
-        document.getElementById('kpi-total-avariados').textContent = totalAvariados;
-        document.getElementById('kpi-unidades-atencao').textContent = attention.length;
-
+        document.getElementById('kpi-total-itens').textContent = totalItens; document.getElementById('kpi-total-unidades').textContent = totalUnidades; document.getElementById('kpi-total-avariados').textContent = totalAvariados; document.getElementById('kpi-unidades-atencao').textContent = attention.length;
         if(dashboardEstadoChartInstance) dashboardEstadoChartInstance.destroy();
-        dashboardEstadoChartInstance = new Chart(document.getElementById('dashboardEstadoChart'), { type: 'doughnut', data: { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ data: [allItems.filter(i=>i.state==='Novo').length, allItems.filter(i=>i.state==='Bom').length, allItems.filter(i=>i.state==='Regular').length, totalAvariados], backgroundColor: Object.values(stateColors).map(c=>c.hex) }] }, options: { responsive: true, maintainAspectRatio: false } });
-        
-        document.getElementById('dashboard-attention-units-list').innerHTML = attention.length > 0 ? attention.map(u => `<p class="text-sm">${u.name} <span class="font-bold text-yellow-500">(${u.avariados} avariados)</span></p>`).join('') : '<p>Nenhuma unidade em atenção.</p>';
+        dashboardEstadoChartInstance = new Chart(document.getElementById('dashboardEstadoChart'), { type: 'doughnut', data: { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ data: ['Novo','Bom','Regular','Avariado'].map(s=>allItems.filter(i=>i.state===s).reduce((sum,i)=>sum+i.quantity,0)), backgroundColor: Object.values(stateColors).map(c=>c.hex) }] }, options: { responsive: true, maintainAspectRatio: false } });
+        document.getElementById('dashboard-attention-units-list').innerHTML = attention.length > 0 ? attention.map(u => `<p class="text-sm">${u.name} <span class="font-bold text-yellow-500">(${u.avariados} avariados, ${u.regulares} reg.)</span></p>`).join('') : '<p>Nenhuma unidade em atenção.</p>';
         document.getElementById('dashboard-no-bebedouro-units-list').innerHTML = noBebedouro.length > 0 ? noBebedouro.map(u => `<p class="text-sm">${u.name}</p>`).join('') : '<p>Todas as unidades têm bebedouro.</p>';
     }
 
     function renderSedeReport() {
         const roomsContainer = document.getElementById('sede-rooms-container');
         const searchTerm = document.getElementById('searchBoxSede').value.toLowerCase();
-        const filteredData = sedeData.filter(item => (currentSedeFloor === 'Todos' || item.local === currentSedeFloor) && (JSON.stringify(item).toLowerCase().includes(searchTerm)) && (currentSedeFilter !== 'no-registry' || item.setores.some(s => !s.registro)));
+        const filteredData = sedeData.filter(item => (currentSedeFloor === 'Todos' || item.local === currentSedeFloor) && (item.sala.toLowerCase().includes(searchTerm) || item.tipo.toLowerCase().includes(searchTerm) || item.local.toLowerCase().includes(searchTerm) || item.setores.some(s=>s.nome.toLowerCase().includes(searchTerm) || (s.registro && s.registro.toLowerCase().includes(searchTerm)))) && (currentSedeFilter !== 'no-registry' || item.setores.some(s => !s.registro || s.observacao)));
         document.getElementById('noResultsSede').style.display = filteredData.length === 0 ? 'block' : 'none';
-        roomsContainer.innerHTML = filteredData.map(room => `
-            <div class="room-card-sede ${room.setores.some(s => !s.registro) ? 'no-registry' : ''}">
-                <div class="room-card-header"><p class="room-card-subtitle">${room.local} - ${room.tipo}</p><h3 class="room-card-title">${room.sala}</h3></div>
-                <div class="room-card-body">${room.setores.map(setor => `<div class="department-item-sede"><p class="department-name-sede">${setor.nome}</p><p class="department-registro-sede">Registro: ${setor.registro || 'N/A'}</p>${setor.observacao ? `<p class="department-observacao-sede">${setor.observacao}</p>` : ''}</div>`).join('')}</div>
-            </div>`).join('');
+        roomsContainer.innerHTML = filteredData.map(room => `<div class="room-card-sede ${room.setores.some(s => !s.registro || s.observacao) ? 'no-registry' : ''}"><div class="room-card-header"><p class="room-card-subtitle">${room.local} - ${room.tipo}</p><h3 class="room-card-title">${room.sala}</h3></div><div class="room-card-body">${room.setores.map(setor => `<div class="department-item-sede"><p class="department-name-sede">${setor.nome}</p><p class="department-registro-sede">Registro: ${setor.registro || 'N/A'}</p>${setor.observacao ? `<p class="department-observacao-sede">${setor.observacao}</p>` : ''}</div>`).join('')}</div></div>`).join('');
     }
 
-    // --- HANDLERS DE EVENTOS E INICIALIZAÇÃO ---
+    function populateTotalItensFilters() { if (!allItems || allItems.length === 0) return; const cats = [...new Set(allItems.map(i => i.type))].sort(); filtroTotalCategoriaEl.innerHTML = '<option value="">TODAS</option>' + cats.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join(''); populateTotalItensUnidades(); const states = [...new Set(allItems.map(i => i.state))]; filtroTotalEstadoEl.innerHTML = '<option value="">TODOS</option>' + ['Novo','Bom','Regular','Avariado'].filter(s=>states.includes(s)).map(s=>`<option value="${s}">${s.toUpperCase()}</option>`).join(''); }
+    function populateTotalItensUnidades() { const cat = filtroTotalCategoriaEl.value; let items = cat ? allItems.filter(i => i.type === cat) : allItems; const unidades = [...new Set(items.map(formatUnitName))].sort(); filtroTotalUnidadeEl.innerHTML = '<option value="">TODAS</option>' + unidades.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join(''); }
+    function renderTotalItens() {
+        const list = document.getElementById('total-itens-list'), details = document.getElementById('total-itens-details-container'), countEl = document.getElementById('total-itens-list-count');
+        if(!list || !details) return;
+        const cat = filtroTotalCategoriaEl.value, search = filtroTotalItemEl.value.toLowerCase(), unidade = filtroTotalUnidadeEl.value, estado = filtroTotalEstadoEl.value;
+        let data = allItems.filter(i => (!cat || i.type === cat) && (!unidade || formatUnitName(i) === unidade) && (!estado || i.state === estado) && (!search || i.description.toLowerCase().includes(search)));
+        const grouped = data.reduce((acc, item) => { const d = item.description; if(!acc[d]) acc[d] = {total:0, type:item.type, items:[]}; acc[d].total+=item.quantity; acc[d].items.push(item); return acc; }, {});
+        const sorted = Object.keys(grouped).sort();
+        countEl.textContent = `${sorted.length} itens encontrados`;
+        list.innerHTML = sorted.length === 0 ? `<div class="p-4 text-center">Nenhum item.</div>` : sorted.map(d => `<div class="total-item-entry" data-item-name="${d}"><div class="flex justify-between items-center"><span class="font-medium truncate pr-2">${d}</span><span class="text-sm font-bold bg-slate-200 rounded-full px-2 py-0.5">${grouped[d].total}</span></div><div class="text-xs text-slate-500">${grouped[d].type}</div></div>`).join('');
+        list.querySelectorAll('.total-item-entry').forEach(el => el.addEventListener('click', e => { list.querySelector('.selected')?.classList.remove('selected'); const item = e.currentTarget; item.classList.add('selected'); renderTotalItemDetails(item.dataset.itemName, grouped[item.dataset.itemName]); }));
+        if (sorted.length > 0) list.querySelector('.total-item-entry')?.click();
+        else details.innerHTML = '';
+    }
+    function renderTotalItemDetails(name, data) {
+        const details = document.getElementById('total-itens-details-container');
+        if(!data) { details.innerHTML = ''; return; }
+        const counts = data.items.reduce((acc, i) => { acc[i.state] = (acc[i.state] || 0) + i.quantity; return acc; }, {});
+        const dist = data.items.reduce((acc, i) => { const key = `${formatUnitName(i)} >> ${i.location || 'N/D'}`; if(!acc[key]) acc[key] = {qty:0, states: new Set()}; acc[key].qty += i.quantity; acc[key].states.add(i.state); return acc; }, {});
+        const statesHTML = Object.entries(stateColors).map(([s, c]) => (counts[s]||0) > 0 ? `<div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full" style="background-color:${c.hex}"></span><span>${s}:</span><span class="font-bold">${counts[s]}</span></div>` : '').join('');
+        const distHTML = Object.entries(dist).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v]) => `<tr class="border-b"><td class="px-4 py-2">${k.replace('>>', '<span class="text-slate-400 mx-2">›</span>')}</td><td class="px-4 py-2 text-center font-bold">${v.qty}</td><td class="px-4 py-2 text-center">${[...v.states].map(s=>`<span class="badge ${stateColors[s]?.bg}">${s}</span>`).join(' ')}</td></tr>`).join('');
+        details.innerHTML = `<div class="card fade-in"><h2 class="text-2xl font-bold">${name}</h2><p class="text-sm text-slate-500 mb-4">Total de ${data.total} unidades</p><div class="card bg-slate-50 mb-6"><h4 class="font-semibold mb-2">Resumo por Estado</h4><div class="grid grid-cols-2 gap-2 text-sm">${statesHTML}</div></div><div><h4 class="font-semibold mb-2">Distribuição</h4><div class="max-h-96 overflow-y-auto border rounded-lg"><table class="table w-full text-sm"><thead class="sticky top-0 bg-slate-100"><tr><th>Unidade/Local</th><th class="text-center">Qtd.</th><th class="text-center">Estado</th></tr></thead><tbody>${distHTML}</tbody></table></div></div></div>`;
+    }
+
     async function switchTab(tabName) {
         navButtons.forEach(btn => btn.classList.remove('active'));
         document.querySelector(`.nav-btn[data-tab="${tabName}"]`).classList.add('active');
         contentPanes.forEach(pane => pane.classList.add('hidden'));
         document.getElementById(`content-${tabName}`).classList.remove('hidden');
         visaoAtiva = tabName;
-
         if (tabName === 'dashboard') renderDashboard();
-        else if (tabName === 'estoque' && allEstoqueItems.length === 0) {
-            try {
-                const csvText = await dataManager.fetchWithCache(googleSheetEstoqueUrl, 'estoque', 'text');
-                allEstoqueItems = parseCsvData(csvText);
-                const unidadesEstoque = [...new Set(allEstoqueItems.map(item => item.Unidade || 'N/A'))].sort();
-                filtroEstoqueUnidadeEl.innerHTML = '<option value="">TODAS</option>' + unidadesEstoque.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join('');
-                renderEstoque(allEstoqueItems);
-            } catch(e) { mainContentEstoqueEl.innerHTML = `<div class="card p-10 text-center text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</div>`; }
-        } else if (tabName === 'estoque') renderEstoque(allEstoqueItems);
+        else if (tabName === 'patrimonio') { if(!selectedUnidadeValue && !filtroServicoEl.value) { visaoAtiva = 'boasVindas'; renderApp(); } else { handleFilterChange(); } }
+        else if (tabName === 'estoque') { if (allEstoqueItems.length === 0) { try { const csv = await dataManager.fetchWithCache(googleSheetEstoqueUrl, 'estoque', 'text'); allEstoqueItems = parseCsvData(csv); const unidades = [...new Set(allEstoqueItems.map(i => i.Unidade || 'N/A'))].sort(); filtroEstoqueUnidadeEl.innerHTML = '<option value="">TODAS</option>' + unidades.map(u => `<option value="${u}">${u.toUpperCase()}</option>`).join(''); } catch(e) { mainContentEstoqueEl.innerHTML = `<div class="card p-10 text-center text-red-600"><strong>Erro:</strong> Não foi possível carregar o estoque.</div>`; } } renderEstoque(); }
         else if (tabName === 'nota-fiscal') handleNotaFiscalTab(nfState, setNfState, { parseCsvData });
+        else if (tabName === 'total-itens') { populateTotalItensFilters(); renderTotalItens(); }
         else if (tabName === 'sede') renderSedeReport();
     }
 
-    function initApp() {
-        // Obter referências
-        filtroServicoEl = document.getElementById('filtro-servico');
-        filtroEstadoEl = document.getElementById('filtro-estado');
-        filtroBuscaEl = document.getElementById('filtro-busca');
-        filtroDoacaoEl = document.getElementById('filtro-doacao');
-        mainContentAreaEl = document.getElementById('main-content-area');
-        verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn');
-        navButtons = document.querySelectorAll('.nav-btn');
-        contentPanes = document.querySelectorAll('main > div[id^="content-"]');
-        mainContentEstoqueEl = document.getElementById('main-content-estoque');
-        filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
-        filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
-        connectionStatusEl = document.getElementById('connectionStatus');
-        openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn');
-        unidadeModal = document.getElementById('unidade-modal');
-        modalOverlay = document.getElementById('modal-overlay');
-        closeModalBtn = document.getElementById('close-modal-btn');
-        unidadeSearchInput = document.getElementById('unidade-search-input');
-        unidadeListContainer = document.getElementById('unidade-list-container');
-        clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
+    function handleFilterChange() { currentPage = 1; if(visaoAtiva === 'unidade' || visaoAtiva === 'resumo') { renderApp(); } }
 
-        // Adicionar Listeners
-        [filtroEstadoEl, filtroDoacaoEl].forEach(el => el.addEventListener('change', () => {currentPage = 1; renderApp();}));
-        filtroBuscaEl.addEventListener('input', debounce(() => {currentPage = 1; renderApp();}, 400));
-        filtroServicoEl.addEventListener('change', function() {
-            selectedUnidadeValue = '';
-            openUnidadeModalBtn.textContent = 'Selecione uma Unidade...';
-            openUnidadeModalBtn.disabled = !this.value;
-            if (!this.value) { visaoAtiva = 'boasVindas'; renderApp(); }
-            else { mainContentAreaEl.innerHTML = `<div class="card text-center p-10"><p>Agora, por favor, <strong>selecione uma Unidade</strong>.</p></div>`; }
-        });
-        verResumoGeralBtn.addEventListener('click', () => { dadosOriginais = allItems; tituloDaVisao = 'Inventário Geral Completo'; visaoAtiva = 'resumo'; currentPage = 1; filtroServicoEl.value = ""; openUnidadeModalBtn.disabled = true; renderApp(); });
+    function initApp() {
+        filtroServicoEl = document.getElementById('filtro-servico'); filtroEstadoEl = document.getElementById('filtro-estado'); filtroBuscaEl = document.getElementById('filtro-busca'); filtroDoacaoEl = document.getElementById('filtro-doacao'); mainContentAreaEl = document.getElementById('main-content-area'); verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); navButtons = document.querySelectorAll('.nav-btn'); contentPanes = document.querySelectorAll('main > div[id^="content-"]'); mainContentEstoqueEl = document.getElementById('main-content-estoque'); filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade'); filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca'); filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria'); filtroTotalItemEl = document.getElementById('filtro-total-item'); filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade'); filtroTotalEstadoEl = document.getElementById('filtro-total-estado'); connectionStatusEl = document.getElementById('connectionStatus'); openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn'); unidadeModal = document.getElementById('unidade-modal'); modalOverlay = document.getElementById('modal-overlay'); closeModalBtn = document.getElementById('close-modal-btn'); unidadeSearchInput = document.getElementById('unidade-search-input'); unidadeListContainer = document.getElementById('unidade-list-container'); clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
+        
+        filtroServicoEl.addEventListener('change', function() { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; openUnidadeModalBtn.disabled = !this.value; if (!this.value) { visaoAtiva = 'boasVindas'; dadosOriginais = []; renderApp(); } else { visaoAtiva = 'unidade'; dadosOriginais = allItems.filter(item => item.id.startsWith(`${this.value}_`)); tituloDaVisao = `Inventário de Todas as Unidades (${this.options[this.selectedIndex].text})`; mainContentAreaEl.innerHTML = `<div class="card text-center p-10"><p>Selecione uma <strong>Unidade</strong> para ver detalhes ou veja o resumo de todas as unidades do tipo <strong>${this.options[this.selectedIndex].text}</strong> abaixo.</p></div>`; handleFilterChange(); } });
+        [filtroEstadoEl, filtroDoacaoEl].forEach(el => el.addEventListener('change', handleFilterChange));
+        filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
+        verResumoGeralBtn.addEventListener('click', () => { dadosOriginais = allItems; tituloDaVisao = 'Inventário Geral Completo'; visaoAtiva = 'resumo'; selectedUnidadeValue = ''; filtroServicoEl.value = ""; openUnidadeModalBtn.disabled = true; handleFilterChange(); });
         document.addEventListener('click', (e) => { if (e.target.dataset.page) { currentPage = parseInt(e.target.dataset.page); renderApp(); } });
         navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
-        filtroEstoqueBuscaEl.addEventListener('input', debounce(() => renderEstoque(allEstoqueItems), 400));
-        filtroEstoqueUnidadeEl.addEventListener('change', () => renderEstoque(allEstoqueItems));
+        filtroEstoqueBuscaEl.addEventListener('input', debounce(renderEstoque, 400));
+        filtroEstoqueUnidadeEl.addEventListener('change', renderEstoque);
         
-        // Modal Listeners
-        openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); unidadeModal.classList.remove('hidden'); });
-        closeModalBtn.addEventListener('click', () => unidadeModal.classList.add('hidden'));
-        modalOverlay.addEventListener('click', () => unidadeModal.classList.add('hidden'));
+        [filtroTotalCategoriaEl, filtroTotalUnidadeEl, filtroTotalEstadoEl].forEach(el => el.addEventListener('change', renderTotalItens));
+        filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
+        filtroTotalCategoriaEl.addEventListener('change', populateTotalItensUnidades);
+
+        openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); unidadeModal.classList.remove('hidden'); setTimeout(() => { modalOverlay.classList.remove('opacity-0'); unidadeModal.querySelector('.modal-container').classList.remove('scale-95', 'opacity-0'); }, 10); });
+        const closeModal = () => { unidadeModal.querySelector('.modal-container').classList.add('scale-95', 'opacity-0'); modalOverlay.classList.add('opacity-0'); setTimeout(() => unidadeModal.classList.add('hidden'), 300); };
+        closeModalBtn.addEventListener('click', closeModal); modalOverlay.addEventListener('click', closeModal);
         unidadeSearchInput.addEventListener('input', debounce((e) => populateUnidadeModalList(e.target.value), 300));
-        unidadeListContainer.addEventListener('click', (e) => {
-            const li = e.target.closest('li[data-value]');
-            if (li) {
-                selectedUnidadeValue = li.dataset.value;
-                openUnidadeModalBtn.textContent = li.dataset.text;
-                unidadeModal.classList.add('hidden');
-                currentPage=1;
-                dadosOriginais = allItems.filter(item => item.unit_condition === selectedUnidadeValue && item.id.startsWith(`${filtroServicoEl.value}_`));
-                tituloDaVisao = `Inventário de ${openUnidadeModalBtn.textContent}`;
-                visaoAtiva = 'unidade';
-                renderApp();
-            }
-        });
-        clearUnidadeSelectionBtn.addEventListener('click', () => { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; unidadeModal.classList.add('hidden'); });
+        unidadeListContainer.addEventListener('click', (e) => { const li = e.target.closest('li[data-value]'); if (li) { selectedUnidadeValue = li.dataset.value; openUnidadeModalBtn.textContent = li.dataset.text; dadosOriginais = allItems.filter(i => i.unit_condition === selectedUnidadeValue); tituloDaVisao = `Inventário de ${li.dataset.text}`; visaoAtiva = 'unidade'; closeModal(); handleFilterChange(); } });
+        clearUnidadeSelectionBtn.addEventListener('click', () => { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; dadosOriginais = allItems.filter(i => i.id.startsWith(`${filtroServicoEl.value}_`)); tituloDaVisao = `Todas as Unidades (${filtroServicoEl.options[filtroServicoEl.selectedIndex].text})`; visaoAtiva = 'unidade'; closeModal(); handleFilterChange(); });
         
-        // Sede Tab Listeners
         let currentSedeFilter = 'all', currentSedeFloor = 'Todos';
         document.getElementById('searchBoxSede').addEventListener('input', debounce(renderSedeReport, 300));
         document.getElementById('filterAllSede').addEventListener('click', function() { currentSedeFilter = 'all'; document.querySelectorAll('#content-sede .filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); renderSedeReport(); });
         document.getElementById('filterNoRegistrySede').addEventListener('click', function() { currentSedeFilter = 'no-registry'; document.querySelectorAll('#content-sede .filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); renderSedeReport(); });
-        const floorNavContainer = document.getElementById('sede-floor-nav');
-        floorNavContainer.innerHTML = ['Todos', 'SUBSOLO', 'TÉRREO', 'MEZANINO', '1º ANDAR', '2º ANDAR', '3º ANDAR', 'PENDENTE'].map(f => `<button class="floor-nav-button ${f === 'Todos' ? 'active' : ''}" data-floor="${f}">${f}</button>`).join('');
-        floorNavContainer.querySelectorAll('.floor-nav-button').forEach(btn => btn.addEventListener('click', () => { currentSedeFloor = btn.dataset.floor; floorNavContainer.querySelector('.active').classList.remove('active'); btn.classList.add('active'); renderSedeReport(); }));
+        const floorNav = document.getElementById('sede-floor-nav');
+        floorNav.innerHTML = ['Todos', 'SUBSOLO', 'TÉRREO', 'MEZANINO', '1º ANDAR', '2º ANDAR', '3º ANDAR', 'PENDENTE'].map(f => `<button class="floor-nav-button ${f === 'Todos' ? 'active' : ''}" data-floor="${f}">${f}</button>`).join('');
+        floorNav.querySelectorAll('.floor-nav-button').forEach(btn => btn.addEventListener('click', () => { currentSedeFloor = btn.dataset.floor; floorNav.querySelector('.active').classList.remove('active'); btn.classList.add('active'); renderSedeReport(); }));
 
         function populateUnidadeModalList(searchTerm = "") {
             const servico = filtroServicoEl.value;
+            if(!servico) return;
             const unidades = [...new Set(allItems.filter(i => i.id.startsWith(`${servico}_`)).map(i => i.unit_condition))].map(u => ({value: u, text: formatUnitName(allItems.find(i=>i.unit_condition === u))})).sort((a,b) => a.text.localeCompare(b.text));
             const filtered = unidades.filter(u => normalizeString(u.text).includes(normalizeString(searchTerm)));
             unidadeListContainer.innerHTML = filtered.length > 0 ? filtered.map(u => `<li data-value="${u.value}" data-text="${u.text}" class="p-3 rounded-md hover:bg-slate-100 cursor-pointer">${u.text}</li>`).join('') : `<li class="p-3 text-center">Nenhuma unidade.</li>`;
         }
     }
     
-    function updateDynamicDOMReferences() {
-        tableBodyEl = document.getElementById('inventory-table-body');
-        paginationControlsEl = document.getElementById('pagination-controls');
-    }
+    function updateDynamicDOMReferences() { tableBodyEl = document.getElementById('inventory-table-body'); paginationControlsEl = document.getElementById('pagination-controls'); }
     
-    // --- CARGA INICIAL DOS DADOS ---
     initApp();
     connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-yellow-400 rounded-full animate-pulse"></span> <span>A conectar...</span>`;
 
     try {
         const patrimonioData = await dataManager.fetchWithCache(googleSheetPatrimonioUrl, 'patrimonio');
-        if (!patrimonioData || !Array.isArray(patrimonioData)) {
-            throw new Error("Nenhum dado de patrimônio foi retornado. Verifique a planilha e o script.");
-        }
+        if (!patrimonioData || !Array.isArray(patrimonioData) || patrimonioData.length === 0) throw new Error("A planilha de dados pode estar vazia ou com formato incorreto.");
         allItems = formatSheetData(patrimonioData);
         connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-green-500 rounded-full"></span> <span>Conectado</span>`;
         document.getElementById('last-update-time').textContent = `Dados de ${new Date().toLocaleDateString('pt-BR')}`;
-        
-        // Popular filtros com base nos dados carregados
         const allStates = [...new Set(allItems.map(item => item.state))];
         filtroEstadoEl.innerHTML = '<option value="">TODOS</option>' + ['Novo', 'Bom', 'Regular', 'Avariado'].filter(s => allStates.includes(s)).map(s => `<option value="${s}">${s.toUpperCase()}</option>`).join('');
-
         switchTab('dashboard');
     } catch (error) {
-        console.error('Erro fatal ao inicializar o painel:', error);
-        connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-red-500 rounded-full"></span> <span class="text-red-500">Erro de Conexão</span>`;
-        
-        let userMessage = 'Não foi possível carregar os dados do patrimônio.';
-        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            userMessage = 'Ocorreu um erro de rede. Verifique sua conexão com a internet e se o acesso às Planilhas Google não está bloqueado.';
-        } else if (error.message.includes('Nenhum dado de patrimônio foi retornado')) {
-            userMessage = 'A planilha de dados parece estar vazia ou com o formato incorreto.';
-        }
-
+        console.error('Erro fatal ao inicializar:', error);
+        connectionStatusEl.innerHTML = `<span class="h-3 w-3 bg-red-500 rounded-full"></span> <span class="text-red-500">Erro</span>`;
         const errorContainer = document.getElementById('content-dashboard');
-        if (errorContainer) {
-            navButtons.forEach(btn => btn.disabled = true);
-            document.querySelector('.nav-btn[data-tab="dashboard"]').classList.add('active');
-            errorContainer.classList.remove('hidden');
-            errorContainer.innerHTML = `
-                <div class="alert alert-error">
-                    <h2 class="font-bold text-lg">Falha ao Carregar os Dados</h2>
-                    <p class="mt-2">${userMessage}</p>
-                    <p class="text-sm mt-4">
-                        <strong>Ação Sugerida:</strong> Verifique se a Planilha Google está "Publicada na web". Se o erro persistir, a planilha pode estar offline ou suas permissões foram alteradas.
-                    </p>
-                    <p class="text-xs mt-2 text-slate-500">
-                        <strong>Detalhe técnico:</strong> ${error.message}
-                    </p>
-                </div>`;
-        }
+        navButtons.forEach(btn => btn.disabled = true);
+        document.querySelector('.nav-btn[data-tab="dashboard"]').classList.add('active');
+        errorContainer.classList.remove('hidden');
+        errorContainer.innerHTML = `<div class="alert alert-error"><h2 class="font-bold text-lg">Falha ao Carregar Dados</h2><p class="mt-2">Não foi possível carregar os dados do patrimônio.</p><p class="text-sm mt-4"><strong>Ação Sugerida:</strong> Verifique se a Planilha Google está "Publicada na web". O erro pode ser causado por falta de permissão, conexão de internet ou alterações na planilha.</p><p class="text-xs mt-2 text-slate-500"><strong>Detalhe:</strong> ${error.message}</p></div>`;
     }
 });
+
