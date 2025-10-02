@@ -8,6 +8,8 @@
     <!-- Scripts e Links -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -304,6 +306,39 @@
         </div>
     </div>
 
+    <!-- Modal de Exportação de PDF -->
+    <div id="export-pdf-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 hidden">
+        <div id="export-modal-overlay" class="absolute inset-0 bg-black/60 opacity-0"></div>
+        <div class="modal-container bg-white w-full max-w-2xl rounded-lg shadow-2xl flex flex-col transform scale-95 opacity-0">
+            <div class="flex items-center justify-between p-4 border-b">
+                <h3 class="text-xl font-semibold">Exportar Relatório PDF</h3>
+                <button id="close-export-modal-btn" class="p-2 rounded-full hover:bg-slate-200">&times;</button>
+            </div>
+            <div class="p-6">
+                <p class="mb-4 text-slate-600">Selecione as colunas que deseja incluir no relatório:</p>
+                <div id="export-columns-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="tombamento" data-name="Tomb." class="rounded" checked><span>Tomb.</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="type" data-name="Tipo" class="rounded" checked><span>Tipo</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="description" data-name="Descrição" class="rounded" checked><span>Descrição</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="unit_condition" data-name="Unidade" class="rounded" checked><span>Unidade</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="quantity" data-name="Qtd" class="rounded" checked><span>Qtd</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="location" data-name="Local" class="rounded" checked><span>Local</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="state" data-name="Estado" class="rounded" checked><span>Estado</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="donation_source" data-name="Doação" class="rounded"><span>Doação</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="observation" data-name="Obs." class="rounded"><span>Obs.</span></label>
+                     <label class="flex items-center space-x-2"><input type="checkbox" value="supplier" data-name="Forn." class="rounded"><span>Forn.</span></label>
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t bg-slate-50 rounded-b-lg space-x-2">
+                <button id="cancel-export-btn" class="px-4 py-2 bg-slate-200 font-semibold rounded-lg hover:bg-slate-300">Cancelar</button>
+                <button id="confirm-export-btn" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Exportar</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="./main.js"></script>
 </body>
 </html>
+
+
+
