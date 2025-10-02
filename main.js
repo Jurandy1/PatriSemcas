@@ -264,6 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setNfState = (newState) => { nfState = newState; };
 
     let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl, mainContentAreaEl, verResumoGeralBtn, tableBodyEl, paginationControlsEl, navButtons, contentPanes, mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn, connectionStatusEl;
+    let toggleAdvancedFiltersBtn, advancedFiltersContainerEl, filtroTombamentoEl, filtroDescricaoEl, filtroLocalEl, filtroFornecedorEl, filtroObservacaoEl;
 
     class DataManager {
         constructor() { this.cacheKey = 'dashboard_cache_v6'; this.cacheExpiry = 5 * 60 * 1000; this.loadingPromises = new Map(); }
@@ -351,9 +352,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function getFilteredItems(sourceData) {
-        const servico = filtroServicoEl.value, unidade = selectedUnidadeValue, estado = filtroEstadoEl.value, doacao = filtroDoacaoEl.value, busca = filtroBuscaEl.value.toLowerCase();
-        if (!servico && !unidade && !estado && !busca && !doacao) return sourceData;
-        return sourceData.filter(item => (!servico || item.id.startsWith(`${servico}_`)) && (!unidade || item.unit_condition === unidade) && (!estado || item.state === estado) && (!doacao || (doacao === 'sim' && item.donation_source) || (doacao === 'nao' && !item.donation_source)) && (!busca || Object.values(item).some(val => String(val).toLowerCase().includes(busca))));
+        const servico = filtroServicoEl.value;
+        const unidade = selectedUnidadeValue;
+        const estado = filtroEstadoEl.value;
+        const doacao = filtroDoacaoEl.value;
+        const busca = filtroBuscaEl.value.toLowerCase();
+        const tombamento = filtroTombamentoEl.value.toLowerCase();
+        const descricao = filtroDescricaoEl.value.toLowerCase();
+        const local = filtroLocalEl.value.toLowerCase();
+        const fornecedor = filtroFornecedorEl.value.toLowerCase();
+        const observacao = filtroObservacaoEl.value.toLowerCase();
+    
+        const hasActiveFilter = servico || unidade || estado || doacao || busca || tombamento || descricao || local || fornecedor || observacao;
+        if (!hasActiveFilter) return sourceData;
+    
+        return sourceData.filter(item => 
+            (!servico || item.id.startsWith(`${servico}_`)) &&
+            (!unidade || item.unit_condition === unidade) &&
+            (!estado || item.state === estado) &&
+            (!doacao || (doacao === 'sim' && item.donation_source) || (doacao === 'nao' && !item.donation_source)) &&
+            (!tombamento || (item.tombamento || '').toLowerCase().includes(tombamento)) &&
+            (!descricao || (item.description || '').toLowerCase().includes(descricao)) &&
+            (!local || (item.location || '').toLowerCase().includes(local)) &&
+            (!fornecedor || (item.supplier || '').toLowerCase().includes(fornecedor)) &&
+            (!observacao || (item.observation || '').toLowerCase().includes(observacao)) &&
+            (!busca || Object.values(item).some(val => String(val).toLowerCase().includes(busca)))
+        );
     }
     
     function GerarRelatorioUnidade(dados) {
@@ -460,6 +484,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     function initApp() {
         filtroServicoEl = document.getElementById('filtro-servico'); filtroEstadoEl = document.getElementById('filtro-estado'); filtroBuscaEl = document.getElementById('filtro-busca'); filtroDoacaoEl = document.getElementById('filtro-doacao'); mainContentAreaEl = document.getElementById('main-content-area'); verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); navButtons = document.querySelectorAll('.nav-btn'); contentPanes = document.querySelectorAll('main > div[id^="content-"]'); mainContentEstoqueEl = document.getElementById('main-content-estoque'); filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade'); filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca'); filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria'); filtroTotalItemEl = document.getElementById('filtro-total-item'); filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade'); filtroTotalEstadoEl = document.getElementById('filtro-total-estado'); connectionStatusEl = document.getElementById('connectionStatus'); openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn'); unidadeModal = document.getElementById('unidade-modal'); modalOverlay = document.getElementById('modal-overlay'); closeModalBtn = document.getElementById('close-modal-btn'); unidadeSearchInput = document.getElementById('unidade-search-input'); unidadeListContainer = document.getElementById('unidade-list-container'); clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
         
+        // Elementos dos novos filtros avançados
+        toggleAdvancedFiltersBtn = document.getElementById('toggle-advanced-filters-btn');
+        advancedFiltersContainerEl = document.getElementById('advanced-filters-container');
+        filtroTombamentoEl = document.getElementById('filtro-tombamento');
+        filtroDescricaoEl = document.getElementById('filtro-descricao');
+        filtroLocalEl = document.getElementById('filtro-local');
+        filtroFornecedorEl = document.getElementById('filtro-fornecedor');
+        filtroObservacaoEl = document.getElementById('filtro-observacao');
+
         filtroServicoEl.addEventListener('change', function() { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; openUnidadeModalBtn.disabled = !this.value; if (!this.value) { visaoAtiva = 'boasVindas'; dadosOriginais = []; renderApp(); } else { visaoAtiva = 'unidade'; dadosOriginais = allItems.filter(item => item.id.startsWith(`${this.value}_`)); tituloDaVisao = `Inventário de Todas as Unidades (${this.options[this.selectedIndex].text})`; mainContentAreaEl.innerHTML = `<div class="card text-center p-10"><p>Selecione uma <strong>Unidade</strong> para ver detalhes ou veja o resumo de todas as unidades do tipo <strong>${this.options[this.selectedIndex].text}</strong> abaixo.</p></div>`; handleFilterChange(); } });
         [filtroEstadoEl, filtroDoacaoEl].forEach(el => el.addEventListener('change', handleFilterChange));
         filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
@@ -472,6 +505,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         [filtroTotalCategoriaEl, filtroTotalUnidadeEl, filtroTotalEstadoEl].forEach(el => el.addEventListener('change', renderTotalItens));
         filtroTotalItemEl.addEventListener('input', debounce(renderTotalItens, 400));
         filtroTotalCategoriaEl.addEventListener('change', populateTotalItensUnidades);
+
+        // Listeners dos filtros avançados
+        toggleAdvancedFiltersBtn.addEventListener('click', () => {
+            advancedFiltersContainerEl.classList.toggle('hidden');
+            const isHidden = advancedFiltersContainerEl.classList.contains('hidden');
+            toggleAdvancedFiltersBtn.textContent = isHidden ? 'Filtros Avançados' : 'Ocultar Filtros';
+        });
+        [filtroTombamentoEl, filtroDescricaoEl, filtroLocalEl, filtroFornecedorEl, filtroObservacaoEl].forEach(el => {
+            el.addEventListener('input', debounce(handleFilterChange, 400));
+        });
 
         openUnidadeModalBtn.addEventListener('click', () => { populateUnidadeModalList(); unidadeModal.classList.remove('hidden'); setTimeout(() => { modalOverlay.classList.remove('opacity-0'); unidadeModal.querySelector('.modal-container').classList.remove('scale-95', 'opacity-0'); }, 10); });
         const closeModal = () => { unidadeModal.querySelector('.modal-container').classList.add('scale-95', 'opacity-0'); modalOverlay.classList.add('opacity-0'); setTimeout(() => unidadeModal.classList.add('hidden'), 300); };
@@ -531,4 +574,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         errorContainer.innerHTML = `<div class="alert alert-error"><h2 class="font-bold text-lg">Falha Crítica ao Carregar Dados</h2><p class="mt-2">${userMessage}</p><p class="text-sm mt-4"><strong>Ação Sugerida:</strong> ${suggestedAction}</p><p class="text-xs mt-2 text-slate-500"><strong>Detalhe técnico:</strong> ${error.message}</p></div>`;
     }
 });
-
