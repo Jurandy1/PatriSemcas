@@ -209,14 +209,38 @@
         <!-- Patrimônio -->
         <div id="content-patrimonio" class="hidden fade-in">
              <div class="card mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                <!-- Linha 1: Filtros principais -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                     <div><label for="filtro-servico" class="block text-sm font-medium mb-1">Tipo</label><select id="filtro-servico" class="w-full p-2 border rounded-lg"><option value="">TODOS</option><option value="conselho">CONSELHO</option><option value="cras">CRAS</option><option value="creas">CREAS</option><option value="externa">UNIDADE EXTERNA</option><option value="centro_pop">CENTRO POP</option><option value="abrigo">ABRIGO</option><option value="sede">SEDE</option></select></div>
                     <div><label for="open-unidade-modal-btn" class="block text-sm font-medium mb-1">Unidade</label><button id="open-unidade-modal-btn" class="w-full p-2 border rounded-lg text-left truncate disabled:opacity-50">Selecione...</button></div>
                     <div><label for="filtro-estado" class="block text-sm font-medium mb-1">Estado</label><select id="filtro-estado" class="w-full p-2 border rounded-lg"></select></div>
                     <div><label for="filtro-doacao" class="block text-sm font-medium mb-1">Origem</label><select id="filtro-doacao" class="w-full p-2 border rounded-lg"><option value="">TODAS</option><option value="sim">DOAÇÕES</option><option value="nao">PRÓPRIOS</option></select></div>
-                    <div><label for="filtro-busca" class="block text-sm font-medium mb-1">Buscar</label><input type="text" id="filtro-busca" placeholder="Ex: Cadeira..." class="w-full p-2 border rounded-lg"></div>
                 </div>
-                <div class="mt-4"><button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">VER INVENTÁRIO COMPLETO</button></div>
+                <!-- Linha 2: Busca e botão de filtros avançados -->
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="filtro-busca" class="block text-sm font-medium mb-1">Busca Geral</label>
+                        <input type="text" id="filtro-busca" placeholder="Buscar em todos os campos..." class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div class="self-end">
+                        <button id="toggle-advanced-filters-btn" class="w-full p-2 border border-slate-300 font-semibold rounded-lg hover:bg-slate-100 transition h-[42px]">Filtros Avançados</button>
+                    </div>
+                </div>
+                <!-- Linha 3: Filtros avançados (escondidos por padrão) -->
+                <div id="advanced-filters-container" class="hidden mt-4 pt-4 border-t border-slate-200">
+                    <p class="text-sm font-semibold mb-3 text-slate-600">Filtros Específicos:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div><label for="filtro-tombamento" class="block text-sm font-medium mb-1">Tombamento</label><input type="text" id="filtro-tombamento" placeholder="Filtrar por tomb..." class="w-full p-2 border rounded-lg"></div>
+                        <div><label for="filtro-descricao" class="block text-sm font-medium mb-1">Descrição</label><input type="text" id="filtro-descricao" placeholder="Filtrar por desc..." class="w-full p-2 border rounded-lg"></div>
+                        <div><label for="filtro-local" class="block text-sm font-medium mb-1">Local na Unidade</label><input type="text" id="filtro-local" placeholder="Filtrar por local..." class="w-full p-2 border rounded-lg"></div>
+                        <div><label for="filtro-fornecedor" class="block text-sm font-medium mb-1">Fornecedor</label><input type="text" id="filtro-fornecedor" placeholder="Filtrar por forn..." class="w-full p-2 border rounded-lg"></div>
+                        <div class="sm:col-span-2"><label for="filtro-observacao" class="block text-sm font-medium mb-1">Observação</label><input type="text" id="filtro-observacao" placeholder="Filtrar por obs..." class="w-full p-2 border rounded-lg"></div>
+                    </div>
+                </div>
+                <!-- Linha 4: Botão de Resumo Geral -->
+                <div class="mt-6">
+                    <button id="ver-resumo-geral-btn" class="w-full p-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">VER INVENTÁRIO COMPLETO</button>
+                </div>
             </div>
             <main id="main-content-area" class="mt-8"></main>
         </div>
@@ -283,4 +307,3 @@
     <script type="module" src="./main.js"></script>
 </body>
 </html>
-
