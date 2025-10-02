@@ -265,6 +265,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let filtroServicoEl, filtroEstadoEl, filtroBuscaEl, filtroDoacaoEl, mainContentAreaEl, verResumoGeralBtn, tableBodyEl, paginationControlsEl, navButtons, contentPanes, mainContentEstoqueEl, filtroEstoqueUnidadeEl, filtroEstoqueBuscaEl, filtroTotalCategoriaEl, filtroTotalItemEl, filtroTotalUnidadeEl, filtroTotalEstadoEl, openUnidadeModalBtn, unidadeModal, modalOverlay, closeModalBtn, unidadeSearchInput, unidadeListContainer, clearUnidadeSelectionBtn, connectionStatusEl;
     let toggleAdvancedFiltersBtn, advancedFiltersContainerEl, filtroTombamentoEl, filtroDescricaoEl, filtroLocalEl, filtroFornecedorEl, filtroObservacaoEl;
+    let patrimonioActionsContainer, exportPdfBtn, exportPdfModal, exportModalOverlay, closeExportModalBtn, confirmExportBtn, cancelExportBtn;
+
 
     class DataManager {
         constructor() { this.cacheKey = 'dashboard_cache_v6'; this.cacheExpiry = 5 * 60 * 1000; this.loadingPromises = new Map(); }
@@ -391,14 +393,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (estadoChartInstance) estadoChartInstance.destroy();
         const currentFilteredData = getFilteredItems(dadosOriginais);
         const filteredAndGroupedItems = agruparItens(currentFilteredData);
-        if (visaoAtiva === 'boasVindas') mainContentAreaEl.innerHTML = `<div class="text-center p-10 card"><p class="text-xl">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Inventário Completo</strong>.</p></div>`;
-        else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
+        
+        // Controla a visibilidade e estado do botão de exportar
+        if (visaoAtiva === 'boasVindas') {
+            mainContentAreaEl.innerHTML = `<div class="text-center p-10 card"><p class="text-xl">Selecione um <strong>Tipo de Unidade</strong> ou clique em <strong>Ver Inventário Completo</strong>.</p></div>`;
+            patrimonioActionsContainer.classList.add('hidden');
+            exportPdfBtn.disabled = true;
+        } else if (visaoAtiva === 'unidade' || visaoAtiva === 'resumo') {
             const reportContent = visaoAtiva === 'unidade' ? `<div class="lg:col-span-3 card"><h3 class="text-xl font-bold mb-4">Relatório Descritivo</h3><div class="text-slate-600 space-y-2">${GerarRelatorioUnidade(currentFilteredData)}</div></div>` : '';
             mainContentAreaEl.innerHTML = `<div><h2 class="text-3xl font-bold mb-6">${tituloDaVisao}</h2><div class="grid grid-cols-1 lg:grid-cols-5 gap-6"><div class="lg:col-span-2 card"><div class="chart-container"><canvas id="estadoChart"></canvas></div></div>${reportContent}</div><h2 class="text-2xl font-bold mt-8 mb-6">Inventário Detalhado</h2><div class="card p-0 overflow-x-auto"><table class="table w-full text-sm"><thead><tr><th>Tomb.</th><th>Tipo</th><th>Descrição</th><th>Unidade</th><th class="text-center">Qtd</th><th>Local</th><th>Estado</th><th>Doação</th><th>Obs.</th><th>Forn.</th></tr></thead><tbody id="inventory-table-body"></tbody></table></div><div id="pagination-controls" class="flex items-center justify-between mt-6"></div></div>`;
             updateDynamicDOMReferences();
             renderTable(filteredAndGroupedItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), filteredAndGroupedItems.length);
             const chartData = ['Novo', 'Bom', 'Regular', 'Avariado'].map(state => currentFilteredData.filter(i => i.state === state).reduce((sum, i) => sum + i.quantity, 0));
             estadoChartInstance = new Chart(document.getElementById('estadoChart'), { type: 'bar', data: { labels: ['Novo', 'Bom', 'Regular', 'Avariado'], datasets: [{ label: 'Qtd.', data: chartData, backgroundColor: ['#16a34a', '#2563eb', '#facc15', '#dc2626'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            
+            patrimonioActionsContainer.classList.remove('hidden');
+            exportPdfBtn.disabled = false;
         }
     }
     
@@ -481,10 +491,98 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function handleFilterChange() { currentPage = 1; if(visaoAtiva === 'unidade' || visaoAtiva === 'resumo') { renderApp(); } }
 
+    function generatePdfReport() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape' });
+
+        // Pega colunas selecionadas
+        const selectedCols = Array.from(document.querySelectorAll('#export-columns-container input[type="checkbox"]:checked'))
+            .map(cb => ({ id: cb.value, title: cb.dataset.name }));
+
+        if (selectedCols.length === 0) {
+            // Futuramente, pode-se substituir isso por um modal de aviso mais elegante
+            alert('Por favor, selecione pelo menos uma coluna para exportar.');
+            return;
+        }
+
+        // Captura dados filtrados
+        const filteredItems = getFilteredItems(dadosOriginais);
+        const groupedItems = agruparItens(filteredItems);
+
+        // Cabeçalhos e dados da tabela
+        const head = [selectedCols.map(c => c.title)];
+        const body = groupedItems.map(item => {
+            const row = [];
+            selectedCols.forEach(col => {
+                switch (col.id) {
+                    case 'tombamento': row.push(item.tombamento); break;
+                    case 'type': row.push(item.type); break;
+                    case 'description': row.push(item.description); break;
+                    case 'unit_condition': row.push(formatUnitName(item)); break;
+                    case 'quantity': row.push(item.quantity); break;
+                    case 'location': row.push(item.location); break;
+                    case 'state': row.push(item.state); break;
+                    case 'donation_source': row.push(item.donation_source || 'N/A'); break;
+                    case 'observation': row.push(item.observation || 'N/A'); break;
+                    case 'supplier': row.push(item.supplier || 'N/A'); break;
+                    default: row.push(''); break;
+                }
+            });
+            return row;
+        });
+
+        // Adiciona um título ao PDF
+        doc.setFontSize(18);
+        doc.text(`Relatório de Patrimônio - ${tituloDaVisao}`, 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 14, 29);
+
+        // Cria tabela no PDF
+        doc.autoTable({
+            head: head,
+            body: body,
+            startY: 35,
+            theme: 'striped',
+            headStyles: { fillColor: [22, 163, 74] }, // Verde
+            styles: { fontSize: 8 },
+        });
+
+        // Salva
+        doc.save(`relatorio-patrimonio-${new Date().toISOString().slice(0,10)}.pdf`);
+        closeExportModal();
+    }
+
+
     function initApp() {
-        filtroServicoEl = document.getElementById('filtro-servico'); filtroEstadoEl = document.getElementById('filtro-estado'); filtroBuscaEl = document.getElementById('filtro-busca'); filtroDoacaoEl = document.getElementById('filtro-doacao'); mainContentAreaEl = document.getElementById('main-content-area'); verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn'); navButtons = document.querySelectorAll('.nav-btn'); contentPanes = document.querySelectorAll('main > div[id^="content-"]'); mainContentEstoqueEl = document.getElementById('main-content-estoque'); filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade'); filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca'); filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria'); filtroTotalItemEl = document.getElementById('filtro-total-item'); filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade'); filtroTotalEstadoEl = document.getElementById('filtro-total-estado'); connectionStatusEl = document.getElementById('connectionStatus'); openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn'); unidadeModal = document.getElementById('unidade-modal'); modalOverlay = document.getElementById('modal-overlay'); closeModalBtn = document.getElementById('close-modal-btn'); unidadeSearchInput = document.getElementById('unidade-search-input'); unidadeListContainer = document.getElementById('unidade-list-container'); clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
+        // Seletores de elementos DOM
+        filtroServicoEl = document.getElementById('filtro-servico');
+        filtroEstadoEl = document.getElementById('filtro-estado');
+        filtroBuscaEl = document.getElementById('filtro-busca');
+        filtroDoacaoEl = document.getElementById('filtro-doacao');
+        mainContentAreaEl = document.getElementById('main-content-area');
+        verResumoGeralBtn = document.getElementById('ver-resumo-geral-btn');
+        navButtons = document.querySelectorAll('.nav-btn');
+        contentPanes = document.querySelectorAll('main > div[id^="content-"]');
+        mainContentEstoqueEl = document.getElementById('main-content-estoque');
+        filtroEstoqueUnidadeEl = document.getElementById('filtro-estoque-unidade');
+        filtroEstoqueBuscaEl = document.getElementById('filtro-estoque-busca');
+        filtroTotalCategoriaEl = document.getElementById('filtro-total-categoria');
+        filtroTotalItemEl = document.getElementById('filtro-total-item');
+        filtroTotalUnidadeEl = document.getElementById('filtro-total-unidade');
+        filtroTotalEstadoEl = document.getElementById('filtro-total-estado');
+        connectionStatusEl = document.getElementById('connectionStatus');
         
-        // Elementos dos novos filtros avançados
+        // Modal de Unidade
+        openUnidadeModalBtn = document.getElementById('open-unidade-modal-btn');
+        unidadeModal = document.getElementById('unidade-modal');
+        modalOverlay = document.getElementById('modal-overlay');
+        closeModalBtn = document.getElementById('close-modal-btn');
+        unidadeSearchInput = document.getElementById('unidade-search-input');
+        unidadeListContainer = document.getElementById('unidade-list-container');
+        clearUnidadeSelectionBtn = document.getElementById('clear-unidade-selection-btn');
+        
+        // Filtros avançados
         toggleAdvancedFiltersBtn = document.getElementById('toggle-advanced-filters-btn');
         advancedFiltersContainerEl = document.getElementById('advanced-filters-container');
         filtroTombamentoEl = document.getElementById('filtro-tombamento');
@@ -493,6 +591,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtroFornecedorEl = document.getElementById('filtro-fornecedor');
         filtroObservacaoEl = document.getElementById('filtro-observacao');
 
+        // Exportação PDF
+        patrimonioActionsContainer = document.getElementById('patrimonio-actions');
+        exportPdfBtn = document.getElementById('export-pdf-btn');
+        exportPdfModal = document.getElementById('export-pdf-modal');
+        exportModalOverlay = document.getElementById('export-modal-overlay');
+        closeExportModalBtn = document.getElementById('close-export-modal-btn');
+        confirmExportBtn = document.getElementById('confirm-export-btn');
+        cancelExportBtn = document.getElementById('cancel-export-btn');
+
+        // --- Lógica do Modal de Exportação ---
+        const openExportModal = () => {
+            exportPdfModal.classList.remove('hidden');
+            setTimeout(() => {
+                exportModalOverlay.classList.remove('opacity-0');
+                exportPdfModal.querySelector('.modal-container').classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+
+        const closeExportModal = () => {
+            exportPdfModal.querySelector('.modal-container').classList.add('scale-95', 'opacity-0');
+            exportModalOverlay.classList.add('opacity-0');
+            setTimeout(() => exportPdfModal.classList.add('hidden'), 300);
+        };
+
+        exportPdfBtn.addEventListener('click', openExportModal);
+        closeExportModalBtn.addEventListener('click', closeExportModal);
+        cancelExportBtn.addEventListener('click', closeExportModal);
+        exportModalOverlay.addEventListener('click', closeExportModal);
+        confirmExportBtn.addEventListener('click', generatePdfReport);
+
+        // --- Event Listeners ---
         filtroServicoEl.addEventListener('change', function() { selectedUnidadeValue = ''; openUnidadeModalBtn.textContent = 'Selecione uma Unidade...'; openUnidadeModalBtn.disabled = !this.value; if (!this.value) { visaoAtiva = 'boasVindas'; dadosOriginais = []; renderApp(); } else { visaoAtiva = 'unidade'; dadosOriginais = allItems.filter(item => item.id.startsWith(`${this.value}_`)); tituloDaVisao = `Inventário de Todas as Unidades (${this.options[this.selectedIndex].text})`; mainContentAreaEl.innerHTML = `<div class="card text-center p-10"><p>Selecione uma <strong>Unidade</strong> para ver detalhes ou veja o resumo de todas as unidades do tipo <strong>${this.options[this.selectedIndex].text}</strong> abaixo.</p></div>`; handleFilterChange(); } });
         [filtroEstadoEl, filtroDoacaoEl].forEach(el => el.addEventListener('change', handleFilterChange));
         filtroBuscaEl.addEventListener('input', debounce(handleFilterChange, 400));
